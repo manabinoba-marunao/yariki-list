@@ -322,22 +322,12 @@ td.td-name { padding-left: 16px; text-align: left; }
 <div id="view-student" class="view active">
   <div class="student-view">
 
-    <!-- ニックネーム入力 -->
+    <!-- 名前選択 -->
     <div id="screen-name">
       <div class="screen-eyebrow">🌱 やりきリスト</div>
       <h2>理想の自分になろう！</h2>
-      <p style="font-size:13px;color:var(--ink2);margin-bottom:20px;">ニックネームを入力してね</p>
-      <input id="nickname-input" type="text" placeholder="例：さくら、たろう"
-        style="width:100%;padding:14px 16px;border:2px solid var(--border);border-radius:var(--radius);
-        font-size:16px;font-family:var(--font);outline:none;background:var(--surface);color:var(--ink);margin-bottom:12px;"
-        oninput="document.getElementById('nickname-input').style.borderColor='var(--accent)'"
-      >
-      <div id="nickname-error" style="color:var(--danger);font-size:12px;font-weight:700;min-height:18px;margin-bottom:10px;"></div>
-      <button onclick="submitNickname()"
-        style="width:100%;padding:15px;background:var(--ink);color:white;border:none;border-radius:var(--radius);
-        font-family:var(--font);font-size:15px;font-weight:900;cursor:pointer;letter-spacing:.04em;">
-        つぎへ →
-      </button>
+      <p>自分の名前を選んでね</p>
+      <div class="name-grid" id="name-grid"></div>
     </div>
 
     <!-- PIN入力 -->
@@ -508,24 +498,21 @@ async function loadAllData() {
 // ════════ 生徒ビュー ════════
 
 function renderNameGrid() {
-  // ニックネーム入力方式のため不要
+  const grid = document.getElementById('name-grid');
+  grid.innerHTML = STUDENTS.map(s => `
+    <div class="name-card" onclick="selectStudentForPin(${s.id})">
+      <div class="grade-badge">${s.grade || ''}</div>
+      ${s.name}
+    </div>
+  `).join('');
 }
 
-// ニックネーム送信 → PIN画面へ
-function submitNickname() {
-  const nickname = document.getElementById('nickname-input').value.trim();
-  const errEl = document.getElementById('nickname-error');
-  if (!nickname) { errEl.textContent = 'ニックネームを入力してね'; return; }
-
-  // ニックネームで生徒を検索（nameフィールドと照合）
-  const student = STUDENTS.find(s => s.name === nickname || s.nickname === nickname);
-  if (!student) { errEl.textContent = 'ニックネームが見つかりません。先生に確認してね'; return; }
-
-  errEl.textContent = '';
-  currentStudent = student;
+// 名前タップ → PIN画面へ
+function selectStudentForPin(id) {
+  currentStudent = STUDENTS.find(s => String(s.id) === String(id));
   pinBuffer = '';
   updatePinDots();
-  document.getElementById('pin-title').textContent = nickname + ' さん';
+  document.getElementById('pin-title').textContent = currentStudent.name + ' さん';
   document.getElementById('pin-error').textContent = '';
   document.getElementById('screen-name').style.display = 'none';
   document.getElementById('screen-pin').style.display = 'block';
@@ -648,8 +635,6 @@ async function submitRecord() {
 
 function backToNames() {
   currentStudent = null; pinBuffer = '';
-  document.getElementById('nickname-input').value = '';
-  document.getElementById('nickname-error').textContent = '';
   document.getElementById('screen-name').style.display = 'block';
   document.getElementById('screen-pin').style.display = 'none';
   document.getElementById('screen-input').style.display = 'none';
@@ -864,10 +849,6 @@ function toggleExpand(id){
 
 // ── view切替 ──
 function showView(v,btn){
-  if(v==='teacher'){
-    const pw=prompt('先生用パスワードを入力してください');
-    if(pw!=='6462'){ showToast('パスワードが違います'); return; }
-  }
   document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('view-'+v).classList.add('active');
