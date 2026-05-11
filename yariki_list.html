@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>６つの習慣やりきリスト</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f4f2ed;
+  --surface: #ffffff;
+  --surface2: #f9f8f5;
+  --border: #e5e1d8;
+  --ink: #1c1a16;
+  --ink2: #6b6760;
+  --ink3: #b0ada6;
+  --accent: #2a6b4e;
+  --accent-light: #e8f5ef;
+  --warn: #d97706;
+  --warn-light: #fef3c7;
+  --danger: #c0392b;
+  --danger-light: #fde8e6;
+  --ok: #2a6b4e;
+  --radius: 14px;
+  --font: 'Zen Kaku Gothic New', sans-serif;
+  --mono: 'DM Mono', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font); background: var(--bg); color: var(--ink); min-height: 100vh; }
+
+.view { display: none; }
+.view.active { display: block; }
+
+/* ─── nav ─── */
+.top-nav {
+  background: var(--ink); display: flex; align-items: center;
+  padding: 0 16px; height: 52px; position: sticky; top: 0; z-index: 100; gap: 4px;
+}
+.nav-logo { font-size: 14px; font-weight: 900; color: white; margin-right: auto; letter-spacing: .04em; }
+.nav-sub { font-size: 10px; color: rgba(255,255,255,.4); margin-left: 6px; }
+.nav-btn {
+  padding: 7px 14px; border-radius: 99px; font-size: 12px; font-weight: 700;
+  font-family: var(--font); border: none; cursor: pointer;
+  color: rgba(255,255,255,.5); background: none; transition: all .15s;
+}
+.nav-btn.active { background: rgba(255,255,255,.12); color: #fff; }
+
+/* ─── loading ─── */
+.loading-overlay {
+  position: fixed; inset: 0; background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 200; gap: 14px;
+}
+.spinner {
+  width: 36px; height: 36px; border: 3px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 13px; color: var(--ink2); }
+
+/* ════════ 生徒ビュー ════════ */
+.student-view { max-width: 440px; margin: 0 auto; padding: 20px 16px 60px; }
+
+/* 名前選択 */
+.name-select-screen { animation: fadeUp .3s ease; }
+.screen-eyebrow { font-size: 11px; font-weight: 700; color: var(--accent); letter-spacing: .1em; margin-bottom: 6px; }
+.name-select-screen h2 { font-size: 22px; font-weight: 900; margin-bottom: 6px; }
+.name-select-screen p { font-size: 13px; color: var(--ink2); margin-bottom: 20px; }
+.name-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.name-card {
+  background: var(--surface); border: 2px solid var(--border);
+  border-radius: var(--radius); padding: 14px 12px;
+  cursor: pointer; text-align: center; transition: all .15s;
+  font-size: 13px; font-weight: 700;
+}
+.name-card:hover { border-color: var(--accent); background: var(--accent-light); }
+.name-card:active { transform: scale(.97); }
+.name-card .grade-badge { font-size: 10px; font-weight: 700; color: var(--ink3); margin-bottom: 4px; }
+
+/* PIN入力 */
+.pin-screen { animation: fadeUp .3s ease; }
+.pin-screen h2 { font-size: 20px; font-weight: 900; margin-bottom: 6px; }
+.pin-screen p { font-size: 13px; color: var(--ink2); margin-bottom: 24px; }
+.pin-dots {
+  display: flex; gap: 14px; justify-content: center; margin-bottom: 28px;
+}
+.pin-dot {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--border); transition: background .15s;
+}
+.pin-dot.filled { background: var(--ink); }
+.pin-keypad {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 280px; margin: 0 auto;
+}
+.pin-key {
+  padding: 18px 0; border-radius: var(--radius);
+  background: var(--surface); border: 1.5px solid var(--border);
+  font-size: 20px; font-weight: 700; font-family: var(--mono);
+  cursor: pointer; text-align: center; transition: all .1s;
+  user-select: none;
+}
+.pin-key:active { transform: scale(.94); background: var(--border); }
+.pin-key.del { font-size: 16px; color: var(--ink2); }
+.pin-error {
+  text-align: center; color: var(--danger); font-size: 13px;
+  font-weight: 700; margin-top: 16px; min-height: 20px;
+}
+
+/* 入力画面 */
+.input-screen { animation: fadeUp .3s ease; }
+.back-btn {
+  font-size: 12px; color: var(--ink2); background: none; border: none;
+  cursor: pointer; font-family: var(--font); padding: 0;
+  margin-bottom: 12px; display: flex; align-items: center; gap: 4px;
+}
+.student-header { margin-bottom: 20px; }
+.student-header h1 { font-size: 24px; font-weight: 900; }
+.date-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.date-chip {
+  font-family: var(--mono); font-size: 11px;
+  background: var(--accent-light); color: var(--accent);
+  border-radius: 99px; padding: 3px 10px;
+}
+.already-done-banner {
+  background: var(--accent-light); border: 1.5px solid var(--accent);
+  border-radius: var(--radius); padding: 12px 16px;
+  font-size: 13px; color: var(--accent); font-weight: 700;
+  margin-bottom: 16px; display: none;
+}
+.streak-bar {
+  background: var(--ink); border-radius: var(--radius);
+  padding: 14px 18px; display: flex; align-items: center;
+  margin-bottom: 20px; color: white; gap: 16px;
+}
+.streak-num { font-family: var(--mono); font-size: 38px; color: #6ee7b7; line-height: 1; }
+.habit-list { display: flex; flex-direction: column; gap: 10px; }
+.habit-item {
+  background: var(--surface); border: 2px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+  cursor: pointer; transition: all .15s;
+  position: relative; overflow: hidden; user-select: none;
+}
+.habit-item:active { transform: scale(.98); }
+.habit-item.done { border-color: var(--accent); background: var(--accent-light); }
+.habit-item.done::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 4px; background: var(--accent);
+}
+.habit-icon {
+  width: 42px; height: 42px; border-radius: 12px;
+  background: var(--bg); display: flex; align-items: center;
+  justify-content: center; font-size: 20px; flex-shrink: 0; transition: background .15s;
+}
+.habit-item.done .habit-icon { background: #c7ead8; }
+.habit-name { font-size: 14px; font-weight: 700; }
+.habit-check {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 2px solid var(--border); background: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; transition: all .15s; flex-shrink: 0; color: transparent;
+}
+.habit-item.done .habit-check { background: var(--accent); border-color: var(--accent); color: white; }
+.progress-wrap { margin-top: 18px; }
+.progress-track { background: var(--border); border-radius: 99px; height: 7px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width .4s cubic-bezier(.34,1.56,.64,1); }
+.progress-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink2); margin-top: 6px; font-family: var(--mono); }
+.submit-btn {
+  width: 100%; margin-top: 20px; padding: 16px;
+  background: var(--ink); color: white; border: none;
+  border-radius: var(--radius); font-family: var(--font);
+  font-size: 15px; font-weight: 900; cursor: pointer;
+  letter-spacing: .04em; transition: all .15s;
+}
+.submit-btn:hover { opacity: .9; }
+.submit-btn:active { transform: scale(.98); }
+.submit-btn.done-state { background: var(--accent); }
+.submit-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+/* ════════ 先生ビュー ════════ */
+.teacher-view { padding: 20px 20px 60px; max-width: 980px; margin: 0 auto; }
+.teacher-header { margin-bottom: 20px; }
+.teacher-header h1 { font-size: 22px; font-weight: 900; }
+.teacher-header p { font-size: 12px; color: var(--ink2); margin-top: 4px; }
+.period-row { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+.period-tab {
+  padding: 7px 18px; border-radius: 99px; font-size: 12px; font-weight: 700;
+  font-family: var(--font); border: 2px solid var(--border);
+  background: var(--surface); color: var(--ink2); cursor: pointer; transition: all .15s;
+}
+.period-tab.active { background: var(--ink); color: white; border-color: var(--ink); }
+.stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 20px; }
+@media(max-width:600px){ .stats-grid { grid-template-columns: repeat(2,1fr); } }
+.stat-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+.stat-val { font-family: var(--mono); font-size: 30px; line-height: 1; margin-bottom: 5px; }
+.stat-val.c-ok { color: var(--ok); }
+.stat-val.c-warn { color: var(--warn); }
+.stat-val.c-danger { color: var(--danger); }
+.stat-val.c-blue { color: #2563eb; }
+.stat-lbl { font-size: 11px; color: var(--ink2); }
+.filter-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+.fchip {
+  padding: 5px 14px; border-radius: 99px; border: 1.5px solid var(--border);
+  font-size: 12px; font-weight: 700; font-family: var(--font);
+  background: var(--surface); color: var(--ink2); cursor: pointer; transition: all .15s;
+}
+.fchip.active { background: var(--ink); color: white; border-color: var(--ink); }
+.fchip.f-danger.active { background: var(--danger); border-color: var(--danger); }
+.fchip.f-warn.active { background: var(--warn); border-color: var(--warn); }
+.fchip.f-ok.active { background: var(--ok); border-color: var(--ok); color: white; }
+.search-box {
+  margin-left: auto; padding: 6px 12px; border: 1.5px solid var(--border);
+  border-radius: 8px; font-size: 12px; font-family: var(--font);
+  background: var(--surface); color: var(--ink); outline: none; width: 160px;
+}
+.search-box:focus { border-color: var(--accent); }
+.tbl-wrap { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.tbl-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 680px; }
+thead th {
+  padding: 10px 8px; font-size: 10px; font-weight: 700; color: var(--ink3);
+  text-align: center; background: var(--surface2);
+  border-bottom: 1.5px solid var(--border); letter-spacing: .06em;
+  text-transform: uppercase; white-space: nowrap;
+}
+thead th.th-name { text-align: left; padding-left: 16px; min-width: 130px; }
+thead th.th-habit { min-width: 60px; max-width: 90px; font-size: 9px; }
+tbody tr { border-bottom: 1px solid #f0ede6; cursor: pointer; transition: background .1s; }
+tbody tr:hover { background: var(--surface2); }
+tbody tr:last-child { border-bottom: none; }
+td { padding: 10px 8px; text-align: center; vertical-align: middle; }
+td.td-name { padding-left: 16px; text-align: left; }
+.sname { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.sdot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.sdot.danger { background: var(--danger); box-shadow: 0 0 6px rgba(192,57,43,.5); }
+.sdot.warn { background: var(--warn); }
+.sdot.ok { background: var(--ok); }
+.cell-val {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 24px; border-radius: 6px; font-size: 12px; font-weight: 700;
+}
+.cell-val.ok { background: #d4edda; color: var(--ok); }
+.cell-val.ng { background: var(--danger-light); color: var(--danger); }
+.cell-val.empty { background: #f0ede6; color: var(--ink3); font-size: 10px; }
+.rate-wrap { display: flex; align-items: center; gap: 5px; justify-content: center; }
+.rate-num { font-family: var(--mono); font-size: 11px; width: 32px; text-align: right; white-space: nowrap; }
+.rate-track { width: 40px; height: 5px; background: var(--border); border-radius: 99px; overflow: hidden; }
+.rate-bar { height: 100%; border-radius: 99px; }
+.rate-bar.high { background: var(--ok); }
+.rate-bar.mid { background: var(--warn); }
+.rate-bar.low { background: var(--danger); }
+.streak-cell { font-family: var(--mono); font-size: 14px; font-weight: 500; }
+.streak-cell.high { color: var(--ok); }
+.streak-cell.mid { color: var(--warn); }
+.streak-cell.low { color: var(--ink3); }
+.expand-row { display: none; }
+.expand-row.open { display: table-row; }
+.expand-inner { padding: 0 16px 16px; background: var(--surface2); text-align: left; }
+.expand-title { font-size: 11px; font-weight: 700; color: var(--ink2); padding: 14px 0 10px; letter-spacing: .06em; }
+.habit-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px,1fr)); gap: 8px; }
+.hcard { background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+.hcard-name { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+.hcard-dots { display: flex; gap: 3px; flex-wrap: wrap; margin-bottom: 8px; }
+.hdot { width: 16px; height: 16px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; }
+.hdot.ok { background: #d4edda; color: var(--ok); }
+.hdot.ng { background: var(--danger-light); color: var(--danger); }
+.hdot.empty { background: #f0ede6; color: var(--ink3); }
+.hcard-stats { display: flex; gap: 10px; }
+.hcs { font-size: 10px; color: var(--ink2); }
+.hcs span { font-family: var(--mono); font-size: 13px; color: var(--ink); display: block; }
+.tbl-legend {
+  display: flex; gap: 14px; padding: 10px 16px;
+  border-top: 1.5px solid var(--border); font-size: 11px; color: var(--ink2);
+  background: var(--surface2); flex-wrap: wrap;
+}
+.leg { display: flex; align-items: center; gap: 5px; }
+.leg-dot { width: 14px; height: 14px; border-radius: 3px; }
+
+/* refresh btn */
+.refresh-btn {
+  padding: 7px 14px; border-radius: 99px; font-size: 12px; font-weight: 700;
+  font-family: var(--font); border: 1.5px solid var(--border);
+  background: var(--surface); color: var(--ink2); cursor: pointer; transition: all .15s;
+  margin-left: auto;
+}
+.refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* toast */
+.toast {
+  position: fixed; bottom: 28px; left: 50%;
+  transform: translateX(-50%) translateY(60px);
+  background: var(--ink); color: white;
+  padding: 10px 22px; border-radius: 99px;
+  font-size: 13px; font-weight: 700;
+  opacity: 0; transition: all .3s cubic-bezier(.34,1.56,.64,1);
+  z-index: 999; white-space: nowrap; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+
+<div class="top-nav">
+  <div class="nav-logo">🌱 ６つの習慣やりきリスト</div>
+  <button class="nav-btn active" onclick="showView('student',this)">🎒 生徒</button>
+  <button class="nav-btn" onclick="showView('teacher',this)">👩‍🏫 先生</button>
+</div>
+
+<!-- loading -->
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text">読み込み中...</div>
+</div>
+
+<!-- ════ 生徒ビュー ════ -->
+<div id="view-student" class="view active">
+  <div class="student-view">
+
+    <!-- ニックネーム入力 -->
+    <div id="screen-name">
+      <div class="screen-eyebrow">🌱 ６つの習慣やりきリスト</div>
+      <h2>理想の自分になろう！</h2>
+      <p style="font-size:13px;color:var(--ink2);margin-bottom:20px;">ニックネームを入力してね</p>
+      <input id="nickname-input" type="text" placeholder="例：さくら、たろう"
+        style="width:100%;padding:14px 16px;border:2px solid var(--border);border-radius:var(--radius);
+        font-size:16px;font-family:var(--font);outline:none;background:var(--surface);color:var(--ink);margin-bottom:12px;"
+        oninput="document.getElementById('nickname-input').style.borderColor='var(--accent)'"
+      >
+      <div id="nickname-error" style="color:var(--danger);font-size:12px;font-weight:700;min-height:18px;margin-bottom:10px;"></div>
+      <button onclick="submitNickname()"
+        style="width:100%;padding:15px;background:var(--ink);color:white;border:none;border-radius:var(--radius);
+        font-family:var(--font);font-size:15px;font-weight:900;cursor:pointer;letter-spacing:.04em;">
+        つぎへ →
+      </button>
+    </div>
+
+    <!-- PIN入力 -->
+    <div id="screen-pin" style="display:none;">
+      <button class="back-btn" onclick="backToNames()">← 名前選択に戻る</button>
+      <h2 id="pin-title"></h2>
+      <p>4桁の暗証番号を入力してね</p>
+      <div class="pin-dots" id="pin-dots">
+        <div class="pin-dot"></div><div class="pin-dot"></div>
+        <div class="pin-dot"></div><div class="pin-dot"></div>
+      </div>
+      <div class="pin-keypad">
+        <div class="pin-key" onclick="pinInput('1')">1</div>
+        <div class="pin-key" onclick="pinInput('2')">2</div>
+        <div class="pin-key" onclick="pinInput('3')">3</div>
+        <div class="pin-key" onclick="pinInput('4')">4</div>
+        <div class="pin-key" onclick="pinInput('5')">5</div>
+        <div class="pin-key" onclick="pinInput('6')">6</div>
+        <div class="pin-key" onclick="pinInput('7')">7</div>
+        <div class="pin-key" onclick="pinInput('8')">8</div>
+        <div class="pin-key" onclick="pinInput('9')">9</div>
+        <div class="pin-key" style="visibility:hidden;"></div>
+        <div class="pin-key" onclick="pinInput('0')">0</div>
+        <div class="pin-key del" onclick="pinDelete()">⌫</div>
+      </div>
+      <div class="pin-error" id="pin-error"></div>
+    </div>
+
+    <!-- 習慣入力 -->
+    <div id="screen-input" style="display:none;">
+      <button class="back-btn" onclick="backToNames()">← 名前選択に戻る</button>
+      <div class="student-header">
+        <h1 id="s-name-title"></h1>
+        <div class="date-row">
+          <span class="date-chip" id="s-date-chip"></span>
+        </div>
+      </div>
+      <div class="already-done-banner" id="done-banner">✅ 今日はもう記録済みです！</div>
+      <div class="streak-bar">
+        <div>
+          <div class="streak-num" id="s-streak">0</div>
+          <div style="font-size:11px;opacity:.5;margin-top:2px;">日連続 🔥</div>
+        </div>
+        <div style="margin-left:auto;text-align:right;">
+          <div style="font-size:10px;opacity:.5;margin-bottom:3px;">今週の達成率</div>
+          <div style="font-size:20px;font-weight:900;font-family:var(--mono);" id="s-week-rate">—%</div>
+        </div>
+      </div>
+      <div class="habit-list" id="s-habit-list"></div>
+      <div class="progress-wrap">
+        <div class="progress-track"><div class="progress-fill" id="s-prog" style="width:0%"></div></div>
+        <div class="progress-meta">
+          <span id="s-prog-label">0 / 6</span>
+          <span id="s-prog-pct">0%</span>
+        </div>
+      </div>
+      <button class="submit-btn" id="s-submit-btn" onclick="submitRecord()">今日の記録を送る</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ 先生ビュー ════ -->
+<div id="view-teacher" class="view">
+  <div class="teacher-view">
+    <div class="teacher-header">
+      <h1>📊 やりきリスト ダッシュボード</h1>
+      <p id="t-period-label"></p>
+    </div>
+    <div class="period-row">
+      <button class="period-tab active" onclick="setPeriod('today',this)">今日</button>
+      <button class="period-tab" onclick="setPeriod('week',this)">今週</button>
+      <button class="period-tab" onclick="setPeriod('month',this)">今月</button>
+      <button class="period-tab" onclick="setPeriod('streak',this)">連続記録</button>
+    </div>
+    <div class="stats-grid" id="t-stats"></div>
+    <div class="filter-row">
+      <button class="fchip active" onclick="setFilter('all',this)">全員</button>
+      <button class="fchip f-danger" onclick="setFilter('danger',this)">🔴 要注意</button>
+      <button class="fchip f-warn" onclick="setFilter('warn',this)">🟡 気になる</button>
+      <button class="fchip f-ok" onclick="setFilter('ok',this)">🟢 順調</button>
+      <input class="search-box" placeholder="🔍 名前で検索" oninput="setSearch(this.value)">
+      <button class="refresh-btn" onclick="loadAllData()">🔄 更新</button>
+    </div>
+    <div class="tbl-wrap">
+      <div class="tbl-scroll">
+        <table><thead id="t-thead"></thead><tbody id="t-tbody"></tbody></table>
+      </div>
+      <div class="tbl-legend">
+        <div class="leg"><div class="leg-dot" style="background:#d4edda;"></div>○ 達成</div>
+        <div class="leg"><div class="leg-dot" style="background:#fde8e6;"></div>× 未達成</div>
+        <div class="leg"><div class="leg-dot" style="background:#f0ede6;"></div>— 未入力</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxim2lkno5C1Q72f_OEAebTOMWMD53JVINDnL6vOgvoaSuz-l_F4tcBs6wSXZtgUubc3Q/exec';
+const TODAY = new Date().toISOString().slice(0,10);
+
+// ── API ──
+async function api(action, body={}) {
+  const url = GAS_URL + '?action=' + action;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      body: JSON.stringify({ action, ...body }),
+    });
+    return await res.json();
+  } catch(e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+// ── 状態 ──
+let STUDENTS = [];
+let ALL_RECORDS = {}; // {studentId: {date: [0/1/null x6]}}
+let currentStudent = null;
+let currentDone = new Set();
+let pinBuffer = '';
+let tPeriod = 'today';
+let tFilter = 'all';
+let tSearch = '';
+let expandedId = null;
+
+function daysAgo(n) {
+  const d = new Date(); d.setDate(d.getDate()-n);
+  return d.toISOString().slice(0,10);
+}
+
+// ── 初期化 ──
+async function init() {
+  document.getElementById('loading').style.display = 'flex';
+  await loadAllData();
+  document.getElementById('loading').style.display = 'none';
+}
+
+async function loadAllData() {
+  document.getElementById('loading').style.display = 'flex';
+
+  // 生徒一覧取得
+  const sRes = await api('getStudents');
+  if (sRes.ok && sRes.students.length > 0) {
+    // 退塾生を除外
+    STUDENTS = sRes.students.filter(s => s.grade !== '退塾' && s.grade !== '退会');
+  }
+
+  // 全記録取得
+  const rRes = await api('getAllRecords', { days: 35 });
+  if (rRes.ok) {
+    ALL_RECORDS = rRes.records || {};
+  }
+
+  // 実データのみ使用（デモデータなし）
+
+  renderNameGrid();
+  document.getElementById('loading').style.display = 'none';
+}
+
+// ════════ 生徒ビュー ════════
+
+function renderNameGrid() {
+  // ニックネーム入力方式のため不要
+}
+
+// ニックネーム送信 → PIN画面へ
+function submitNickname() {
+  const nickname = document.getElementById('nickname-input').value.trim();
+  const errEl = document.getElementById('nickname-error');
+  if (!nickname) { errEl.textContent = 'ニックネームを入力してね'; return; }
+
+  // ニックネームで生徒を検索（nameフィールドと照合）
+  const student = STUDENTS.find(s => s.name === nickname || s.nickname === nickname);
+  if (!student) { errEl.textContent = 'ニックネームが見つかりません。先生に確認してね'; return; }
+
+  errEl.textContent = '';
+  currentStudent = student;
+  pinBuffer = '';
+  updatePinDots();
+  document.getElementById('pin-title').textContent = nickname + ' さん';
+  document.getElementById('pin-error').textContent = '';
+  document.getElementById('screen-name').style.display = 'none';
+  document.getElementById('screen-pin').style.display = 'block';
+  document.getElementById('screen-input').style.display = 'none';
+}
+
+// PIN入力
+function pinInput(n) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += n;
+  updatePinDots();
+  if (pinBuffer.length === 4) verifyPin();
+}
+function pinDelete() {
+  pinBuffer = pinBuffer.slice(0,-1);
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+}
+function updatePinDots() {
+  document.querySelectorAll('.pin-dot').forEach((d,i) => {
+    d.classList.toggle('filled', i < pinBuffer.length);
+  });
+}
+
+async function verifyPin() {
+  const res = await api('verifyPin', { studentId: currentStudent.id, pin: pinBuffer });
+  if (res.ok && res.valid) {
+    showInputScreen();
+  } else {
+    document.getElementById('pin-error').textContent = '暗証番号が違います。もう一度！';
+    pinBuffer = '';
+    updatePinDots();
+  }
+}
+
+function showInputScreen() {
+  document.getElementById('screen-pin').style.display = 'none';
+  document.getElementById('screen-input').style.display = 'block';
+
+  const d = new Date();
+  document.getElementById('s-name-title').textContent = currentStudent.name;
+  document.getElementById('s-date-chip').textContent =
+    `${d.getMonth()+1}/${d.getDate()}（${'日月火水木金土'[d.getDay()]}）`;
+
+  currentDone = new Set();
+  const todayRec = ALL_RECORDS[currentStudent.id]?.[TODAY];
+
+  const banner = document.getElementById('done-banner');
+  const btn = document.getElementById('s-submit-btn');
+  if (todayRec) {
+    banner.style.display = 'block';
+    todayRec.forEach((v,i) => { if(v===1) currentDone.add(i); });
+    btn.textContent = '✅ 提出済み（変更して再送信）';
+    btn.classList.remove('done-state');
+    btn.disabled = false;
+  } else {
+    banner.style.display = 'none';
+    btn.textContent = '今日の記録を送る';
+    btn.classList.remove('done-state');
+    btn.disabled = false;
+  }
+
+  document.getElementById('s-streak').textContent = calcStreak(currentStudent.id);
+  document.getElementById('s-week-rate').textContent = calcWeekRate(currentStudent.id) + '%';
+  renderHabitList();
+}
+
+function renderHabitList() {
+  const icons = ['📖','🏃','✏️','⏰','🥗','📵','💪','🎵','🧹','💤'];
+  const list = document.getElementById('s-habit-list');
+  list.innerHTML = (currentStudent.habits||[]).map((h,i) => `
+    <div class="habit-item ${currentDone.has(i)?'done':''}" onclick="toggleHabit(${i})">
+      
+      <div style="flex:1;"><div class="habit-name">${h}</div></div>
+      <div class="habit-check">${currentDone.has(i)?'✓':''}</div>
+    </div>
+  `).join('');
+  updateProgress();
+}
+
+function toggleHabit(i) {
+  if(currentDone.has(i)) currentDone.delete(i); else currentDone.add(i);
+  renderHabitList();
+}
+
+function updateProgress() {
+  const n = currentDone.size, total = (currentStudent.habits||[]).length;
+  const pct = total===0 ? 0 : Math.round(n/total*100);
+  document.getElementById('s-prog').style.width = pct+'%';
+  document.getElementById('s-prog-label').textContent = `${n} / ${total} 完了`;
+  document.getElementById('s-prog-pct').textContent = pct+'%';
+}
+
+async function submitRecord() {
+  const btn = document.getElementById('s-submit-btn');
+  btn.disabled = true;
+  btn.textContent = '送信中...';
+
+  const records = (currentStudent.habits||[]).map((_,i) => currentDone.has(i)?1:0);
+  const res = await api('saveRecord', {
+    studentId: currentStudent.id,
+    date: TODAY,
+    records,
+  });
+
+  if (res.ok) {
+    // ローカルにも反映
+    if (!ALL_RECORDS[currentStudent.id]) ALL_RECORDS[currentStudent.id] = {};
+    ALL_RECORDS[currentStudent.id][TODAY] = records;
+
+    btn.textContent = '✅ 記録しました！';
+    btn.classList.add('done-state');
+    document.getElementById('done-banner').style.display = 'block';
+    showToast(`${currentDone.size}個達成！記録完了 🎉`);
+  } else {
+    btn.textContent = '⚠ 送信失敗。再試行してください';
+    btn.disabled = false;
+  }
+}
+
+function backToNames() {
+  currentStudent = null; pinBuffer = '';
+  document.getElementById('nickname-input').value = '';
+  document.getElementById('nickname-error').textContent = '';
+  document.getElementById('screen-name').style.display = 'block';
+  document.getElementById('screen-pin').style.display = 'none';
+  document.getElementById('screen-input').style.display = 'none';
+}
+
+function calcStreak(sid) {
+  const r = ALL_RECORDS[sid] || {};
+  let streak = 0;
+  for (let d=0; d<=60; d++) {
+    const rec = r[daysAgo(d)];
+    if (!rec) break;
+    if (rec.every(v=>v===1)) streak++; else break;
+  }
+  return streak;
+}
+function calcWeekRate(sid) {
+  const r = ALL_RECORDS[sid] || {};
+  let total=0, done=0;
+  for (let d=0;d<7;d++) {
+    const rec = r[daysAgo(d)];
+    if(rec){ total+=rec.length; done+=rec.filter(v=>v===1).length; }
+  }
+  return total===0?0:Math.round(done/total*100);
+}
+
+// ════════ 先生ビュー ════════
+
+function getStudentStatus(sid) {
+  const r = ALL_RECORDS[sid] || {};
+  let miss=0;
+  for(let d=0;d<3;d++){
+    const rec=r[daysAgo(d)];
+    if(!rec||rec.some(v=>v===0)) miss++;
+  }
+  if(miss>=3) return 'danger';
+  if(miss>=1) return 'warn';
+  return 'ok';
+}
+function getRate(sid, period) {
+  const r = ALL_RECORDS[sid] || {};
+  const days = period==='today'?1:period==='week'?7:30;
+  let total=0,done=0;
+  for(let d=0;d<days;d++){
+    const rec=r[daysAgo(d)];
+    if(rec){total+=rec.length;done+=rec.filter(v=>v===1).length;}
+  }
+  return total===0?null:Math.round(done/total*100);
+}
+
+function setPeriod(p,btn) {
+  tPeriod=p;
+  document.querySelectorAll('.period-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTeacher();
+}
+function setFilter(f,btn) {
+  tFilter=f;
+  document.querySelectorAll('.fchip').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTeacher();
+}
+function setSearch(v){ tSearch=v; renderTeacher(); }
+
+function renderTeacher() {
+  const labels = {today:'今日',week:'今週（7日間）',month:'今月（30日間）',streak:'連続記録'};
+  document.getElementById('t-period-label').textContent = `${labels[tPeriod]} ／ 全${STUDENTS.length}名`;
+
+  const submitted = STUDENTS.filter(s=>ALL_RECORDS[s.id]?.[TODAY]).length;
+  const danger    = STUDENTS.filter(s=>getStudentStatus(s.id)==='danger').length;
+  const maxStreak = Math.max(0,...STUDENTS.map(s=>calcStreak(s.id)));
+  const avgRate   = (() => {
+    const rates = STUDENTS.map(s=>getRate(s.id,'week')).filter(r=>r!==null);
+    return rates.length===0?0:Math.round(rates.reduce((a,b)=>a+b,0)/rates.length);
+  })();
+
+  document.getElementById('t-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-val c-ok">${submitted}</div><div class="stat-lbl">今日提出済み</div></div>
+    <div class="stat-card"><div class="stat-val c-warn">${STUDENTS.length-submitted}</div><div class="stat-lbl">今日未提出</div></div>
+    <div class="stat-card"><div class="stat-val c-danger">${danger}</div><div class="stat-lbl">🔴 要注意</div></div>
+    <div class="stat-card"><div class="stat-val c-blue">${maxStreak}</div><div class="stat-lbl">最長連続🔥 / 今週平均${avgRate}%</div></div>
+  `;
+
+  let list = STUDENTS.filter(s=>{
+    if(tFilter!=='all'&&getStudentStatus(s.id)!==tFilter) return false;
+    if(tSearch&&!s.name.includes(tSearch)) return false;
+    return true;
+  });
+
+  const thead = document.getElementById('t-thead');
+  if(tPeriod==='streak'){
+    thead.innerHTML=`<tr><th class="th-name">名前</th><th>全習慣連続</th><th class="th-rate">今週達成率</th><th>習慣別連続</th></tr>`;
+  } else if(tPeriod==='week'){
+    // 週間ビュー：習慣名×曜日
+    const days = Array.from({length:7},(_,i)=>{
+      const d = new Date(); d.setDate(d.getDate()-6+i);
+      const dow = '日月火水木金土'[d.getDay()];
+      return `<th class="th-habit" style="font-size:9px;">${(d.getMonth()+1)}/${d.getDate()}<br>${dow}</th>`;
+    }).join('');
+    thead.innerHTML=`<tr><th class="th-name">名前 / 習慣</th>${days}<th class="th-rate">達成率</th></tr>`;
+  } else {
+    const habitHeaders = Array.from({length:6},(_,i)=>
+      `<th class="th-habit">${['①','②','③','④','⑤','⑥'][i]}</th>`).join('');
+    thead.innerHTML=`<tr><th class="th-name">名前</th>${habitHeaders}<th class="th-rate">達成率</th></tr>`;
+  }
+
+  const tbody = document.getElementById('t-tbody');
+  tbody.innerHTML='';
+  if(list.length===0){
+    tbody.innerHTML=`<tr><td colspan="9" style="padding:40px;text-align:center;color:var(--ink3);">該当する生徒がいません</td></tr>`;
+    return;
+  }
+
+  // 週間ビューは習慣別に行を展開
+  if(tPeriod==='week'){
+    list.forEach(s=>{
+      const status=getStudentStatus(s.id);
+      const rate=getRate(s.id,'week');
+      const rateClass=rate===null?'':rate>=70?'high':rate>=40?'mid':'low';
+      const streak=calcStreak(s.id);
+      const isExpanded=expandedId===String(s.id);
+
+      // 7日分の日付配列
+      const dates=Array.from({length:7},(_,i)=>{
+        const d=new Date(); d.setDate(d.getDate()-6+i);
+        return d.toISOString().slice(0,10);
+      });
+
+      // 生徒名行
+      const nameTr=document.createElement('tr');
+      if(isExpanded) nameTr.classList.add('expanded');
+      nameTr.style.background='var(--surface2)';
+      nameTr.innerHTML=`
+        <td class="td-name" colspan="9" style="padding:8px 16px;">
+          <div class="sname" style="cursor:pointer;" onclick="toggleExpand('${s.id}')">
+            <span class="sdot ${status}"></span>
+            <strong>${s.name}</strong>
+            <span style="font-size:10px;color:var(--ink3);margin-left:4px;">${s.grade||''}</span>
+            ${streak>=3?`<span style="font-size:11px;">🔥${streak}日</span>`:''}
+            <span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:${rateClass==='high'?'var(--ok)':rateClass==='mid'?'var(--warn)':'var(--danger)'};">今週 ${rate??'—'}${rate!==null?'%':''}</span>
+            <span style="font-size:10px;color:var(--ink3);margin-left:8px;">${isExpanded?'▲':'▼'}</span>
+          </div>
+        </td>`;
+      tbody.appendChild(nameTr);
+
+      // 習慣別行（展開時）
+      if(isExpanded){
+        (s.habits||[]).forEach((h,hi)=>{
+          const habitTr=document.createElement('tr');
+          habitTr.style.borderBottom='1px solid #f0ede6';
+          const cells=dates.map(date=>{
+            const rec=ALL_RECORDS[s.id]?.[date];
+            const v=rec?rec[hi]:null;
+            return `<td style="text-align:center;padding:6px 4px;">
+              <span class="cell-val ${v===1?'ok':v===0?'ng':'empty'}">${v===1?'○':v===0?'×':'—'}</span>
+            </td>`;
+          }).join('');
+          let done7=0,total7=0;
+          dates.forEach(date=>{
+            const rec=ALL_RECORDS[s.id]?.[date];
+            if(rec){total7++;if(rec[hi]===1)done7++;}
+          });
+          const hr=total7===0?null:Math.round(done7/total7*100);
+          const hrClass=hr===null?'':hr>=70?'high':hr>=40?'mid':'low';
+          habitTr.innerHTML=`
+            <td class="td-name" style="padding:6px 16px 6px 28px;font-size:12px;color:var(--ink2);">
+              ${['①','②','③','④','⑤','⑥'][hi]} ${h}
+            </td>
+            ${cells}
+            <td style="text-align:center;">
+              <div class="rate-wrap">
+                <span class="rate-num">${hr??'—'}${hr!==null?'%':''}</span>
+                <div class="rate-track"><div class="rate-bar ${hrClass}" style="width:${hr||0}%"></div></div>
+              </div>
+            </td>`;
+          tbody.appendChild(habitTr);
+        });
+      }
+    });
+    return;
+  }
+
+  list.forEach(s=>{
+    const status=getStudentStatus(s.id);
+    const rate=getRate(s.id, tPeriod==='streak'?'week':tPeriod);
+    const rateClass=rate===null?'':rate>=70?'high':rate>=40?'mid':'low';
+    const streak=calcStreak(s.id);
+    const streakClass=streak>=7?'high':streak>=3?'mid':'low';
+    const todayRec=ALL_RECORDS[s.id]?.[TODAY];
+    const isExpanded=expandedId===String(s.id);
+
+    let cells='';
+    if(tPeriod==='streak'){
+      const perHabit=(s.habits||[]).map((_,hi)=>{
+        let cnt=0;
+        for(let d=0;d<=60;d++){
+          const rec=ALL_RECORDS[s.id]?.[daysAgo(d)];
+          if(rec&&rec[hi]===1) cnt++; else break;
+        }
+        return cnt;
+      });
+      cells=`
+        <td><span class="streak-cell ${streakClass}">${streak}日</span></td>
+        <td><div class="rate-wrap">
+          <span class="rate-num">${rate??'—'}${rate!==null?'%':''}</span>
+          <div class="rate-track"><div class="rate-bar ${rateClass}" style="width:${rate||0}%"></div></div>
+        </div></td>
+        <td style="text-align:left;padding:8px 12px;">
+          <div style="display:flex;gap:4px;flex-wrap:wrap;">
+            ${perHabit.map((cnt,i)=>`
+              <span style="font-size:10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:2px 7px;white-space:nowrap;">
+                ${['①','②','③','④','⑤','⑥'][i]}<span style="font-family:var(--mono);font-weight:700;color:${cnt>=7?'var(--ok)':cnt>=3?'var(--warn)':'var(--ink3)'};">${cnt}日</span>
+              </span>`).join('')}
+          </div>
+        </td>`;
+    } else {
+      const cellData=tPeriod==='today'
+        ?(todayRec||Array(6).fill(null))
+        :(s.habits||[]).map((_,hi)=>{
+            const days=tPeriod==='week'?7:30;
+            let total=0,done=0;
+            for(let d=0;d<days;d++){
+              const rec=ALL_RECORDS[s.id]?.[daysAgo(d)];
+              if(rec){total++;if(rec[hi]===1)done++;}
+            }
+            return total===0?null:Math.round(done/total*100);
+          });
+      cells=(s.habits||[]).map((_,i)=>{
+        const v=cellData[i];
+        if(tPeriod==='today'){
+          return `<td><span class="cell-val ${v===1?'ok':v===0?'ng':'empty'}">${v===1?'○':v===0?'×':'—'}</span></td>`;
+        } else {
+          return `<td><span class="cell-val ${v===null?'empty':v>=70?'ok':'ng'}">${v===null?'—':v+'%'}</span></td>`;
+        }
+      }).join('');
+      cells+=`<td><div class="rate-wrap">
+        <span class="rate-num">${rate??'—'}${rate!==null?'%':''}</span>
+        <div class="rate-track"><div class="rate-bar ${rateClass}" style="width:${rate||0}%"></div></div>
+      </div></td>`;
+    }
+
+    const tr=document.createElement('tr');
+    if(isExpanded) tr.classList.add('expanded');
+    tr.innerHTML=`
+      <td class="td-name">
+        <div class="sname"><span class="sdot ${status}"></span>${s.name}${streak>=7?'<span style="font-size:11px;">🔥'+streak+'日</span>':''}</div>
+        <div style="font-size:10px;color:var(--ink3);margin-top:2px;">${s.grade||''}</div>
+      </td>${cells}`;
+    tr.onclick=()=>toggleExpand(String(s.id));
+    tbody.appendChild(tr);
+
+    // 展開行
+    const expTr=document.createElement('tr');
+    expTr.classList.add('expand-row');
+    if(isExpanded) expTr.classList.add('open');
+    const colSpan=tPeriod==='streak'?4:8;
+    expTr.innerHTML=`<td colspan="${colSpan}" class="expand-inner">
+      <div class="expand-title">📋 習慣別 詳細（直近14日）</div>
+      <div class="habit-cards">
+        ${(s.habits||[]).map((h,hi)=>{
+          const dots=Array.from({length:14},(_,d)=>{
+            const rec=ALL_RECORDS[s.id]?.[daysAgo(d)];
+            const v=rec?rec[hi]:null;
+            return `<div class="hdot ${v===1?'ok':v===0?'ng':'empty'}">${v===1?'○':v===0?'×':'—'}</div>`;
+          }).join('');
+          let d14=0,t14=0;
+          for(let d=0;d<14;d++){const rec=ALL_RECORDS[s.id]?.[daysAgo(d)];if(rec){t14++;if(rec[hi]===1)d14++;}}
+          const r14=t14===0?'—':Math.round(d14/t14*100)+'%';
+          let hs=0;
+          for(let d=0;d<=60;d++){const rec=ALL_RECORDS[s.id]?.[daysAgo(d)];if(rec&&rec[hi]===1)hs++;else break;}
+          return `<div class="hcard">
+            <div class="hcard-name">${['①','②','③','④','⑤','⑥'][hi]} ${h}</div>
+            <div class="hcard-dots">${dots}</div>
+            <div class="hcard-stats">
+              <div class="hcs">14日達成率<span>${r14}</span></div>
+              <div class="hcs">現在連続<span>${hs}日</span></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </td>`;
+    tbody.appendChild(expTr);
+  });
+}
+
+function toggleExpand(id){
+  expandedId=expandedId===id?null:id;
+  renderTeacher();
+}
+
+// ── view切替 ──
+function showView(v,btn){
+  if(v==='teacher'){
+    const pw=prompt('先生用パスワードを入力してください');
+    if(pw!=='6462'){ showToast('パスワードが違います'); return; }
+  }
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(v==='teacher') renderTeacher();
+}
+
+// ── toast ──
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ── デモデータ（GASにデータがない場合） ──
+function getDemoStudents(){
+  return [
+    {id:1,name:'田中 さくら',grade:'小6',habits:['英単語10個','読書30分','日記を書く','早起き6:30','野菜を食べる','スマホ制限9時']},
+    {id:2,name:'山田 太郎',grade:'中2',habits:['数学ドリル','筋トレ10分','読書20分','早寝10時','朝ご飯食べる','勉強机を片す']},
+    {id:3,name:'佐藤 花音',grade:'小5',habits:['音読10分','縄跳び100回','日記3行','早起き7時','ゲーム1時間以内','感謝を言う']},
+    {id:4,name:'鈴木 拓海',grade:'中3',habits:['英語単語','過去問1題','体幹トレ','睡眠7時間','スマホ制限','復習ノート']},
+    {id:5,name:'伊藤 彩香',grade:'高1',habits:['単語暗記','予習1時間','運動20分','早寝11時','朝食必ず','日記']},
+  ];
+}
+function generateDemoRecords(){
+  const r={};
+  getDemoStudents().forEach(s=>{
+    r[s.id]={};
+    for(let d=1;d<=14;d++){
+      if(Math.random()<0.8){
+        r[s.id][daysAgo(d)]=s.habits.map(()=>Math.random()<0.75?1:0);
+      }
+    }
+  });
+  return r;
+}
+
+// 起動
+init();
+</script>
+</body>
+</html>
