@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>のびしろ習慣トラッカー</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;background:#f5f4f0;color:#2c2c2a;min-height:100vh}
+.header{background:#7F77DD;color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.header h1{font-size:17px;font-weight:500}
+.sync-btn{font-size:12px;padding:5px 12px;border-radius:20px;border:1.5px solid rgba(255,255,255,.6);background:none;color:#fff;cursor:pointer}
+.sync-btn:active{opacity:.7}
+.tabs{display:flex;background:#fff;border-bottom:1px solid #e0dfd8;position:sticky;top:49px;z-index:9}
+.tab{flex:1;padding:12px 4px;font-size:13px;text-align:center;cursor:pointer;border:none;background:none;color:#888;border-bottom:2px solid transparent}
+.tab.active{color:#7F77DD;border-bottom:2px solid #7F77DD;font-weight:500}
+.page{display:none;padding:16px}
+.page.active{display:block}
+.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid #e8e7e0}
+.section-title{font-size:12px;font-weight:500;color:#aaa;letter-spacing:.04em;margin-bottom:10px;text-transform:uppercase}
+.btn{display:block;width:100%;padding:12px;border-radius:10px;border:none;font-size:14px;font-weight:500;cursor:pointer;margin-bottom:8px}
+.btn-primary{background:#7F77DD;color:#fff}
+.btn-secondary{background:#f0efe8;color:#555}
+.btn:active{opacity:.8}
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;background:#fafaf8;color:#2c2c2a;outline:none;font-family:inherit}
+input:focus,select:focus,textarea:focus{border-color:#7F77DD}
+label{font-size:13px;color:#666;display:block;margin-bottom:4px}
+.form-group{margin-bottom:14px}
+
+/* ダッシュボード */
+.student-selector{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none}
+.student-selector::-webkit-scrollbar{display:none}
+.stu-btn{flex-shrink:0;padding:6px 14px;border-radius:20px;border:1.5px solid #ddd;background:#fff;font-size:13px;cursor:pointer;white-space:nowrap}
+.stu-btn.active{background:#7F77DD;color:#fff;border-color:#7F77DD}
+.habit-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f0efe8}
+.habit-item:last-child{border-bottom:none}
+.habit-check{width:24px;height:24px;border-radius:6px;border:2px solid #ddd;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.habit-check.checked{background:#7F77DD;border-color:#7F77DD}
+.habit-check.checked::after{content:'✓';color:#fff;font-size:14px;font-weight:600}
+.habit-name{font-size:15px;flex:1}
+.streak-badge{background:#fff8e6;color:#f59e0b;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500}
+.date-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.date-nav button{background:none;border:none;font-size:20px;cursor:pointer;padding:4px 8px;color:#666}
+.date-display{font-size:14px;font-weight:500}
+
+/* 成長記録 */
+.tree-card{background:#fff;border-radius:12px;padding:20px 16px;text-align:center;margin-bottom:12px;border:1px solid #e8e7e0}
+.streak-big{font-size:52px;font-weight:600;color:#7F77DD;line-height:1}
+.tree-wrap{display:flex;justify-content:center;margin:12px 0 8px}
+.tree-svg{width:160px;height:180px}
+.msg-card{background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:12px;border:1px solid #e8e7e0}
+.msg-text{font-size:14px;color:#555;line-height:1.6}
+.badge-grid{display:flex;flex-wrap:wrap;gap:8px}
+.badge{padding:6px 12px;border-radius:20px;font-size:12px;background:#f0efe8;color:#aaa}
+.badge.earned{background:#7F77DD;color:#fff}
+
+/* カレンダー */
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:8px}
+.cal-cell{aspect-ratio:1;border-radius:3px;background:#f0efe8}
+.cal-cell.done{background:#7F77DD}
+.cal-cell.partial{background:#AFA9EC}
+
+/* 生徒管理 */
+.student-card{background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px;border:1px solid #e8e7e0}
+.student-name{font-size:16px;font-weight:500;margin-bottom:4px}
+.student-meta{font-size:12px;color:#aaa;margin-bottom:10px}
+.habit-tag{display:inline-block;background:#f0efe8;color:#666;font-size:11px;padding:2px 8px;border-radius:10px;margin:2px}
+.danger-btn{background:#fff0f0;color:#e55;font-size:13px;padding:6px 14px;border-radius:8px;border:none;cursor:pointer}
+
+/* 写真 */
+.photo-thumb{width:60px;height:60px;border-radius:8px;object-fit:cover;cursor:pointer}
+.photos-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+
+/* 写真モーダル */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;align-items:center;justify-content:center}
+.modal.open{display:flex}
+.modal img{max-width:90vw;max-height:85vh;border-radius:8px}
+.modal-close{position:absolute;top:16px;right:20px;color:#fff;font-size:28px;cursor:pointer;line-height:1}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📚 のびしろ習慣トラッカー</h1>
+  <button class="sync-btn" onclick="syncAll()">同期</button>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('dash')">ダッシュボード</button>
+  <button class="tab" onclick="showTab('growth')">成長記録</button>
+  <button class="tab" onclick="showTab('students')">生徒管理</button>
+</div>
+
+<!-- ダッシュボード -->
+<div id="dash" class="page active">
+  <div class="date-nav">
+    <button onclick="changeDate(-1)">‹</button>
+    <span class="date-display" id="date-display"></span>
+    <button onclick="changeDate(1)">›</button>
+  </div>
+  <div class="student-selector" id="dash-selector"></div>
+  <div id="dash-content"></div>
+</div>
+
+<!-- 成長記録 -->
+<div id="growth" class="page">
+  <div class="student-selector" id="growth-selector"></div>
+  <div id="growth-view"></div>
+</div>
+
+<!-- 生徒管理 -->
+<div id="students" class="page">
+  <button class="btn btn-primary" onclick="openAddStudent()">＋ 生徒を追加</button>
+  <div id="student-list"></div>
+</div>
+
+<!-- 生徒追加モーダル風フォーム -->
+<div id="add-form" style="display:none;padding:16px;background:#f5f4f0;min-height:100vh;position:fixed;inset:0;z-index:50;overflow-y:auto">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+    <button onclick="closeAddStudent()" style="background:none;border:none;font-size:20px;cursor:pointer">‹</button>
+    <span style="font-size:17px;font-weight:500">生徒を追加</span>
+  </div>
+  <div class="card">
+    <div class="form-group">
+      <label>生徒名</label>
+      <input id="in-name" type="text" placeholder="例：田中さくら">
+    </div>
+    <div class="form-group">
+      <label>学年</label>
+      <select id="in-grade">
+        <option value="">選択してください</option>
+        <option>小1</option><option>小2</option><option>小3</option>
+        <option>小4</option><option>小5</option><option>小6</option>
+        <option>中1</option><option>中2</option><option>中3</option>
+        <option>高1</option><option>高2</option><option>高3</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>習慣（1行に1つ）</label>
+      <textarea id="in-habits" rows="5" placeholder="例：&#10;漢字10問&#10;計算ドリル1ページ&#10;音読5分&#10;英単語10個"></textarea>
+    </div>
+  </div>
+  <button class="btn btn-primary" onclick="saveStudent()">保存する</button>
+  <button class="btn btn-secondary" onclick="closeAddStudent()">キャンセル</button>
+</div>
+
+<!-- 写真モーダル -->
+<div class="modal" id="photo-modal">
+  <span class="modal-close" onclick="closeModal()">×</span>
+  <img id="modal-img" src="" alt="">
+</div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbw0b4_T-lmAPxVzlKRlMiTBHNjsHvHLwYL2Cfuy36OHsg0CcvAJ-NYBP3xE94EZK5UvuA/exec';
+
+let data = { students: [] };
+let currentDate = new Date().toISOString().slice(0,10);
+let currentDashStudent = 0;
+let currentGrowthStudent = 0;
+
+function showTab(id) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+  if (id==='dash') renderDash();
+  if (id==='growth') renderGrowth();
+  if (id==='students') renderStudents();
+}
+
+// ========== データ同期 ==========
+function syncAll() {
+  const btn = document.querySelector('.sync-btn');
+  btn.textContent = '同期中…';
+  fetch(GAS_URL + '?action=load')
+    .then(r=>r.json())
+    .then(d=>{ data = d; localStorage.setItem('htData', JSON.stringify(d)); renderCurrent(); btn.textContent = '同期'; })
+    .catch(()=>{ btn.textContent = '同期'; alert('通信エラー。ローカルデータを使用します。'); });
+}
+
+function saveRemote() {
+  fetch(GAS_URL, { method:'POST', body: JSON.stringify({ action:'save', data }) })
+    .catch(()=>{});
+}
+
+function renderCurrent() {
+  const active = document.querySelector('.page.active');
+  if (!active) return;
+  const id = active.id;
+  if (id==='dash') renderDash();
+  if (id==='growth') renderGrowth();
+  if (id==='students') renderStudents();
+}
+
+// ========== ダッシュボード ==========
+function changeDate(d) {
+  const dt = new Date(currentDate);
+  dt.setDate(dt.getDate() + d);
+  const today = new Date().toISOString().slice(0,10);
+  if (dt.toISOString().slice(0,10) > today) return;
+  currentDate = dt.toISOString().slice(0,10);
+  renderDash();
+}
+
+function renderDash() {
+  const dp = document.getElementById('date-display');
+  const d = new Date(currentDate + 'T12:00:00');
+  const today = new Date().toISOString().slice(0,10);
+  dp.textContent = currentDate === today ? '今日 ' + formatDate(d) : formatDate(d);
+
+  const sel = document.getElementById('dash-selector');
+  if (data.students.length === 0) {
+    sel.innerHTML = '';
+    document.getElementById('dash-content').innerHTML = '<div class="card" style="text-align:center;color:#aaa;padding:30px">まず「生徒管理」タブで生徒を追加してください</div>';
+    return;
+  }
+  if (currentDashStudent >= data.students.length) currentDashStudent = 0;
+  sel.innerHTML = data.students.map((s,i)=>`<button class="stu-btn${i===currentDashStudent?' active':''}" onclick="selectDashStudent(${i})">${s.name}</button>`).join('');
+
+  const s = data.students[currentDashStudent];
+  if (!s.records) s.records = {};
+  if (!s.records[currentDate]) s.records[currentDate] = new Array(s.habits.length).fill(false);
+
+  const streak = calcStreak(s);
+  let html = `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="font-size:16px;font-weight:500">${s.name}</span><span class="streak-badge">🔥 ${streak}日連続</span></div>`;
+  html += s.habits.map((h,i)=>`
+    <div class="habit-item">
+      <div class="habit-check${s.records[currentDate][i]?' checked':''}" onclick="toggleHabit(${i})"></div>
+      <span class="habit-name">${h}</span>
+    </div>`).join('');
+  html += '</div>';
+
+  // 写真アップロード
+  if (!s.photos) s.photos = {};
+  if (!s.photos[currentDate]) s.photos[currentDate] = [];
+  const photos = s.photos[currentDate];
+  html += `<div class="card"><p class="section-title">今日の記録写真</p>
+    <div class="photos-row" id="photos-row">${photos.map((p,i)=>`<img class="photo-thumb" src="${p}" onclick="openModal('${p}')">`).join('')}</div>
+    <label style="display:inline-block;margin-top:10px;cursor:pointer">
+      <span class="btn btn-secondary" style="display:inline-block;width:auto;padding:8px 14px;font-size:13px;border-radius:8px">📷 写真を追加</span>
+      <input type="file" accept="image/*" style="display:none" onchange="addPhoto(event)">
+    </label>
+  </div>`;
+  document.getElementById('dash-content').innerHTML = html;
+}
+
+function selectDashStudent(i) {
+  currentDashStudent = i;
+  renderDash();
+}
+
+function toggleHabit(i) {
+  const s = data.students[currentDashStudent];
+  if (!s.records[currentDate]) s.records[currentDate] = new Array(s.habits.length).fill(false);
+  s.records[currentDate][i] = !s.records[currentDate][i];
+  localStorage.setItem('htData', JSON.stringify(data));
+  saveRemote();
+  renderDash();
+}
+
+function addPhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const s = data.students[currentDashStudent];
+    if (!s.photos) s.photos = {};
+    if (!s.photos[currentDate]) s.photos[currentDate] = [];
+    s.photos[currentDate].push(ev.target.result);
+    localStorage.setItem('htData', JSON.stringify(data));
+    saveRemote();
+    renderDash();
+  };
+  reader.readAsDataURL(file);
+}
+
+function formatDate(d) {
+  return `${d.getMonth()+1}月${d.getDate()}日（${'日月火水木金土'[d.getDay()]}）`;
+}
+
+// ========== 成長記録（木） ==========
+function renderGrowth() {
+  const sel = document.getElementById('growth-selector');
+  if (data.students.length === 0) {
+    sel.innerHTML = '';
+    document.getElementById('growth-view').innerHTML = '<div class="card" style="text-align:center;color:#aaa;padding:30px">生徒を追加すると成長記録が表示されます</div>';
+    return;
+  }
+  if (currentGrowthStudent >= data.students.length) currentGrowthStudent = 0;
+  sel.innerHTML = data.students.map((s,i)=>`<button class="stu-btn${i===currentGrowthStudent?' active':''}" onclick="selectGrowthStudent(${i})">${s.name}</button>`).join('');
+
+  const s = data.students[currentGrowthStudent];
+  const streak = calcStreak(s);
+  const treeSVG = buildTreeSVG(streak);
+
+  const milestones = [
+    {d:3,label:'3日',icon:'🌱'},{d:7,label:'1週間',icon:'🌿'},{d:14,label:'2週間',icon:'🌳'},
+    {d:30,label:'1ヶ月',icon:'🍎'},{d:60,label:'2ヶ月',icon:'🌸'},{d:100,label:'100日',icon:'⭐'},
+    {d:150,label:'150日',icon:'🌟'},{d:200,label:'200日',icon:'💫'},{d:250,label:'250日',icon:'🏆'},
+    {d:300,label:'300日',icon:'👑'},{d:365,label:'1年！',icon:'🎊'}
+  ];
+
+  const today = new Date();
+  let calHtml = '<div class="calendar-grid">';
+  for (let i=27; i>=0; i--) {
+    const dt = new Date(today); dt.setDate(dt.getDate()-i);
+    const k = dt.toISOString().slice(0,10);
+    const rec = s.records && s.records[k];
+    let cls = 'cal-cell';
+    if (rec && s.habits.length > 0) {
+      const rate = rec.filter(Boolean).length / s.habits.length;
+      if (rate === 1) cls += ' done';
+      else if (rate > 0) cls += ' partial';
+    }
+    calHtml += `<div class="${cls}" title="${k}"></div>`;
+  }
+  calHtml += '</div>';
+
+  // 写真ギャラリー
+  const allPhotos = [];
+  if (s.photos) {
+    Object.keys(s.photos).sort().reverse().forEach(date => {
+      s.photos[date].forEach(p => allPhotos.push({date, src: p}));
+    });
+  }
+  const photoHtml = allPhotos.length > 0
+    ? `<div class="card"><p class="section-title">成長の記録写真</p><div class="photos-row">${allPhotos.map(p=>`<img class="photo-thumb" src="${p.src}" title="${p.date}" onclick="openModal('${p.src}')">`).join('')}</div></div>`
+    : '';
+
+  document.getElementById('growth-view').innerHTML = `
+    <div class="tree-card">
+      <p style="font-size:13px;color:#aaa;margin-bottom:4px">現在の連続記録</p>
+      <div class="streak-big">${streak}</div>
+      <div style="font-size:14px;color:#aaa;margin-bottom:12px">日連続達成中 🔥</div>
+      <div class="tree-wrap">${treeSVG}</div>
+      <p style="font-size:12px;color:#aaa">続けるほど木が大きく育ちます</p>
+    </div>
+    <div class="msg-card">
+      <p style="font-size:12px;color:#888;margin-bottom:6px">${s.name}さんへのメッセージ</p>
+      <p class="msg-text">${getMessage(streak)}</p>
+    </div>
+    <div class="card">
+      <p class="section-title">獲得バッジ</p>
+      <div class="badge-grid">
+        ${milestones.map(m=>`<div class="badge${streak>=m.d?' earned':''}">${streak>=m.d?m.icon+' ':''}${m.label}</div>`).join('')}
+      </div>
+    </div>
+    <div class="card">
+      <p class="section-title">過去28日の記録</p>
+      <div style="display:flex;gap:10px;margin-bottom:6px;font-size:11px;color:#aaa">
+        <span><span style="display:inline-block;width:10px;height:10px;background:#7F77DD;border-radius:2px;vertical-align:middle;margin-right:3px"></span>全完了</span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:#AFA9EC;border-radius:2px;vertical-align:middle;margin-right:3px"></span>一部達成</span>
+      </div>
+      ${calHtml}
+    </div>
+    ${photoHtml}
+  `;
+}
+
+/**
+ * 木のSVGを生成（365日対応・12段階、常にviewBox内に収まる）
+ * viewBox = "0 0 160 180"  地面y=158固定  中心x=80
+ *
+ * 成長の変化一覧：
+ *   0日       : 芽（ちいさな幹だけ）
+ *   1〜6日    : 小さな芽（小さな冠）
+ *   7〜13日   : 若木（左枝が生える）
+ *   14〜29日  : 木（右枝も生える）
+ *   30〜59日  : 大きな木（濃い緑・冠が大きく）
+ *   60〜99日  : 大木（実が3〜5個）
+ *   100〜149日: 100日の木（★+実7個）
+ *   150〜199日: 150日の木（金色の実）
+ *   200〜249日: 200日の木（桜の花びら舞う）
+ *   250〜299日: 250日の木（蝶が飛ぶ）
+ *   300〜364日: 300日の木（王冠が光る）
+ *   365日〜   : 1年の大樹（花火と王冠）
+ */
+function buildTreeSVG(streak) {
+  const cx = 80, groundY = 158;
+
+  // 12段階のパラメータ [trunkH, trunkW, crownR, leafColor, label]
+  // crownR=0 は芽（冠なし）
+  const stages = [
+    [8,  4,  0,  '#A8DFC9', '芽'],           // 0: 0日
+    [18, 6,  16, '#9FE1CB', '小さな芽'],     // 1: 1〜6日
+    [28, 7,  22, '#6DCFAD', '若木'],         // 2: 7〜13日
+    [36, 8,  27, '#45BE95', '木'],           // 3: 14〜29日
+    [44, 9,  33, '#2BB68A', '大きな木'],     // 4: 30〜59日
+    [50, 10, 38, '#1A9E73', '大木'],         // 5: 60〜99日
+    [50, 10, 38, '#0F8060', '100日の木'],    // 6: 100〜149日
+    [50, 10, 38, '#0A6E52', '150日の木'],    // 7: 150〜199日
+    [50, 10, 38, '#087045', '200日の木'],    // 8: 200〜249日
+    [50, 10, 38, '#065C38', '250日の木'],    // 9: 250〜299日
+    [50, 10, 38, '#044D2E', '300日の木'],    // 10: 300〜364日
+    [50, 10, 38, '#022A19', '1年の大樹'],   // 11: 365日〜
+  ];
+
+  let si;
+  if      (streak === 0)   si = 0;
+  else if (streak < 7)     si = 1;
+  else if (streak < 14)    si = 2;
+  else if (streak < 30)    si = 3;
+  else if (streak < 60)    si = 4;
+  else if (streak < 100)   si = 5;
+  else if (streak < 150)   si = 6;
+  else if (streak < 200)   si = 7;
+  else if (streak < 250)   si = 8;
+  else if (streak < 300)   si = 9;
+  else if (streak < 365)   si = 10;
+  else                     si = 11;
+
+  const [trunkH, trunkW, crownR, green, label] = stages[si];
+  const trunkX = cx - trunkW / 2;
+  const trunkY = groundY - trunkH;
+  // 冠の中心：幹の上端より少し上（crownR-8 だけ上）
+  const crownCY = trunkY - crownR + 8;
+
+  // ---- 芽（stage0）----
+  if (si === 0) {
+    return `<svg class="tree-svg" viewBox="0 0 160 180" xmlns="http://www.w3.org/2000/svg">
+      <rect x="${trunkX}" y="${trunkY}" width="${trunkW}" height="${trunkH}" rx="2" fill="#C4B89A"/>
+      <text x="${cx}" y="172" text-anchor="middle" font-size="11" fill="#888">${label}</text>
+    </svg>`;
+  }
+
+  // ---- 左右の枝（si>=2で左、>=3で右）----
+  const br = crownR * 0.55;
+  const bx = crownR * 0.68;
+  const by = crownR * 0.08;
+  const leftBranch  = si >= 2 ? `<circle cx="${cx-bx}" cy="${crownCY+by}" r="${br}" fill="${green}" opacity=".82"/>` : '';
+  const rightBranch = si >= 3 ? `<circle cx="${cx+bx}" cy="${crownCY+by}" r="${br}" fill="${green}" opacity=".82"/>` : '';
+
+  // ---- 実（si>=5、冠の内側に収まる位置） ----
+  const fruitPositions = [
+    [cx-10, crownCY-12],[cx+10, crownCY-12],[cx, crownCY-22],
+    [cx-18, crownCY+2],[cx+18, crownCY+2],
+    [cx-6,  crownCY+14],[cx+6,  crownCY+14]
+  ];
+  let fruitCount = 0;
+  if (si === 5)  fruitCount = 3;
+  if (si === 6)  fruitCount = 7;
+  if (si >= 7)   fruitCount = 7;
+  const fruitColor = si >= 7 ? '#F5C842' : '#E05252'; // 150日〜は金色の実
+  let fruits = '';
+  for (let i = 0; i < fruitCount && i < fruitPositions.length; i++) {
+    fruits += `<circle cx="${fruitPositions[i][0]}" cy="${fruitPositions[i][1]}" r="4.5" fill="${fruitColor}" opacity=".95"/>`;
+  }
+
+  // ---- ★ 100日〜 ----
+  const star = si >= 6
+    ? `<text x="${cx}" y="${crownCY - crownR - 4}" text-anchor="middle" font-size="16" fill="#F5C842">★</text>`
+    : '';
+
+  // ---- 桜の花びら（si>=8: 200日〜） ----
+  let cherry = '';
+  if (si >= 8) {
+    const petals = [[cx-32,crownCY-8],[cx+34,crownCY-14],[cx-28,crownCY+20],[cx+30,crownCY+18],[cx-10,crownCY-38],[cx+12,crownCY-40]];
+    petals.forEach(([px,py])=>{
+      cherry += `<circle cx="${px}" cy="${py}" r="4" fill="#FFB7C5" opacity=".8"/>`;
+    });
+  }
+
+  // ---- 蝶（si>=9: 250日〜） ----
+  let butterfly = '';
+  if (si >= 9) {
+    butterfly = `
+      <ellipse cx="${cx-28}" cy="${crownCY-30}" rx="7" ry="5" fill="#B388FF" opacity=".8" transform="rotate(-20,${cx-28},${crownCY-30})"/>
+      <ellipse cx="${cx-20}" cy="${crownCY-30}" rx="5" ry="4" fill="#CE93D8" opacity=".8" transform="rotate(20,${cx-20},${crownCY-30})"/>`;
+  }
+
+  // ---- 王冠（si>=10: 300日〜） ----
+  let crown = '';
+  if (si >= 10) {
+    const cy2 = crownCY - crownR - 16;
+    crown = `<path d="M${cx-12} ${cy2+8} L${cx-14} ${cy2} L${cx-8} ${cy2+5} L${cx} ${cy2-2} L${cx+8} ${cy2+5} L${cx+14} ${cy2} L${cx+12} ${cy2+8} Z" fill="#F5C842" opacity=".95"/>`;
+  }
+
+  // ---- 花火（si>=11: 365日） ----
+  let fireworks = '';
+  if (si >= 11) {
+    const fwDots = (fcx, fcy, color) => {
+      let s = '';
+      for (let a = 0; a < 360; a += 45) {
+        const rad = a * Math.PI / 180;
+        s += `<circle cx="${Math.round(fcx+Math.cos(rad)*14)}" cy="${Math.round(fcy+Math.sin(rad)*14)}" r="2.5" fill="${color}" opacity=".85"/>`;
+      }
+      return s;
+    };
+    fireworks = fwDots(cx-30, 20, '#FF6B6B') + fwDots(cx+32, 16, '#F5C842') + fwDots(cx, 8, '#7F77DD');
+  }
+
+  return `<svg class="tree-svg" viewBox="0 0 160 180" xmlns="http://www.w3.org/2000/svg">
+    ${fireworks}
+    ${crown}
+    ${star}
+    ${cherry}
+    ${butterfly}
+    ${leftBranch}
+    ${rightBranch}
+    <circle cx="${cx}" cy="${crownCY}" r="${crownR}" fill="${green}"/>
+    ${fruits}
+    <rect x="${trunkX}" y="${trunkY}" width="${trunkW}" height="${trunkH}" rx="3" fill="#C4B89A"/>
+    <text x="${cx}" y="172" text-anchor="middle" font-size="11" fill="#555">${label}</text>
+  </svg>`;
+}
+
+function selectGrowthStudent(i) {
+  currentGrowthStudent = i;
+  renderGrowth();
+}
+
+function getMessage(n) {
+  if (n === 0)    return 'さあ、今日から始めよう！最初の一歩が一番大事。';
+  if (n < 3)      return `${n}日目！続けることが力になる。明日も一緒に頑張ろう！`;
+  if (n < 7)      return `${n}日連続！習慣の芽が出てきたよ。この調子！`;
+  if (n < 14)     return `${n}日連続！1週間を超えたね。すごい継続力！`;
+  if (n < 30)     return `${n}日連続！もう立派な習慣。木がどんどん育ってるよ！`;
+  if (n < 60)     return `${n}日連続！1ヶ月達成！あなたの努力が形になってる。`;
+  if (n < 100)    return `${n}日連続！圧倒的な継続力！この木はもう誰にも止められない！`;
+  if (n < 150)    return `${n}日連続！100日の壁を突破した伝説の習慣マスター！`;
+  if (n < 200)    return `${n}日連続！金色の実がなったよ。本物の力が身についてる！`;
+  if (n < 250)    return `${n}日連続！花びらが舞うほどの継続力。あなたはすごい！`;
+  if (n < 300)    return `${n}日連続！蝶も認める習慣の達人。ここまで来たら止まれない！`;
+  if (n < 365)    return `${n}日連続！王冠を戴く習慣の王者。あと少しで1年！`;
+  if (n === 365)  return `🎊 365日達成！1年間毎日続けた。本当にすごい。この木はあなたの証だ！`;
+  return `${n}日連続！365日を超えた大樹。もうあなたの習慣は一生ものだ！`;
+}
+
+// ========== 生徒管理 ==========
+function renderStudents() {
+  const el = document.getElementById('student-list');
+  if (data.students.length === 0) {
+    el.innerHTML = '<div class="card" style="text-align:center;color:#aaa;padding:24px">生徒がまだ追加されていません</div>';
+    return;
+  }
+  el.innerHTML = data.students.map((s,i)=>`
+    <div class="student-card">
+      <div class="student-name">${s.name}</div>
+      <div class="student-meta">${s.grade || '学年未設定'}</div>
+      <div style="margin-bottom:10px">${s.habits.map(h=>`<span class="habit-tag">${h}</span>`).join('')}</div>
+      <button class="danger-btn" onclick="deleteStudent(${i})">削除</button>
+    </div>`).join('');
+}
+
+function openAddStudent() {
+  document.getElementById('add-form').style.display = 'block';
+}
+
+function closeAddStudent() {
+  document.getElementById('add-form').style.display = 'none';
+  document.getElementById('in-name').value = '';
+  document.getElementById('in-grade').value = '';
+  document.getElementById('in-habits').value = '';
+}
+
+function saveStudent() {
+  const name = document.getElementById('in-name').value.trim();
+  const grade = document.getElementById('in-grade').value;
+  const habitsRaw = document.getElementById('in-habits').value;
+  if (!name) { alert('生徒名を入力してください'); return; }
+  const habits = habitsRaw.split('\n').map(h=>h.trim()).filter(Boolean);
+  if (habits.length === 0) { alert('習慣を1つ以上入力してください'); return; }
+  data.students.push({ name, grade, habits, records: {}, photos: {} });
+  localStorage.setItem('htData', JSON.stringify(data));
+  saveRemote();
+  closeAddStudent();
+  renderStudents();
+}
+
+function deleteStudent(i) {
+  if (!confirm(`「${data.students[i].name}」を削除しますか？`)) return;
+  data.students.splice(i, 1);
+  localStorage.setItem('htData', JSON.stringify(data));
+  saveRemote();
+  renderStudents();
+}
+
+// ========== 連続記録計算 ==========
+function calcStreak(s) {
+  if (!s.records) return 0;
+  let streak = 0;
+  const today = new Date();
+  for (let i=0; i<365; i++) {
+    const dt = new Date(today); dt.setDate(dt.getDate()-i);
+    const k = dt.toISOString().slice(0,10);
+    const rec = s.records[k];
+    if (!rec || !rec.some(Boolean)) { if (i===0) continue; break; }
+    if (rec.every(Boolean)) streak++;
+    else break;
+  }
+  return streak;
+}
+
+// ========== 写真モーダル ==========
+function openModal(src) {
+  document.getElementById('modal-img').src = src;
+  document.getElementById('photo-modal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('photo-modal').classList.remove('open');
+}
+
+// ========== 初期化 ==========
+function init() {
+  const saved = localStorage.getItem('htData');
+  if (saved) data = JSON.parse(saved);
+  renderDash();
+  syncAll();
+}
+
+init();
+</script>
+</body>
+</html>
