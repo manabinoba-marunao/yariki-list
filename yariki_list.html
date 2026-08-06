@@ -240,9 +240,9 @@ td.td-name { padding-left: 16px; text-align: left; }
   display: inline-flex; align-items: center; justify-content: center;
   width: 36px; height: 24px; border-radius: 6px; font-size: 12px; font-weight: 700;
 }
-.cell-val.ok { background: #e8f5ef; color: var(--ok); }
-.cell-val.ng { background: white; color: transparent; }
-.cell-val.empty { background: white; color: transparent; }
+.cell-val.ok { background: #d4edda; color: var(--ok); }
+.cell-val.ng { background: var(--danger-light); color: var(--danger); }
+.cell-val.empty { background: #f0ede6; color: var(--ink3); font-size: 10px; }
 .rate-wrap { display: flex; align-items: center; gap: 5px; justify-content: center; }
 .rate-num { font-family: var(--mono); font-size: 11px; width: 32px; text-align: right; white-space: nowrap; }
 .rate-track { width: 40px; height: 5px; background: var(--border); border-radius: 99px; overflow: hidden; }
@@ -263,9 +263,9 @@ td.td-name { padding-left: 16px; text-align: left; }
 .hcard-name { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
 .hcard-dots { display: flex; gap: 3px; flex-wrap: wrap; margin-bottom: 8px; }
 .hdot { width: 16px; height: 16px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; }
-.hdot.ok { background: #e8f5ef; color: var(--ok); }
-.hdot.ng { background: white; border: 1px solid var(--border); color: transparent; }
-.hdot.empty { background: white; border: 1px solid var(--border); color: transparent; }
+.hdot.ok { background: #d4edda; color: var(--ok); }
+.hdot.ng { background: var(--danger-light); color: var(--danger); }
+.hdot.empty { background: #f0ede6; color: var(--ink3); }
 .hcard-stats { display: flex; gap: 10px; }
 .hcs { font-size: 10px; color: var(--ink2); }
 .hcs span { font-family: var(--mono); font-size: 13px; color: var(--ink); display: block; }
@@ -303,161 +303,144 @@ td.td-name { padding-left: 16px; text-align: left; }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ════════════════════
-   月報ビュー
-════════════════════ */
-.monthly-view { padding: 20px 20px 80px; max-width: 980px; margin: 0 auto; }
-.month-nav {
-  display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
-  background: var(--surface); border: 1.5px solid var(--border);
-  border-radius: var(--radius); padding: 14px 20px;
+/* ════ RPG ════ */
+:root {
+  --gold: #ffd700;
+  --gold2: #ffaa00;
+  --rpg-green: #00ff88;
+  --rpg-red: #ff4466;
+  --rpg-purple: #aa44ff;
+  --rpg-blue: #4488ff;
+  --rpg-bg: #0d0d1a;
+  --rpg-surface: #151528;
+  --rpg-border: #2a2a4a;
+  --font-game: 'DotGothic16', monospace;
 }
-.month-nav-title { flex: 1; text-align: center; font-size: 20px; font-weight: 900; }
-.month-nav-btn {
-  width: 36px; height: 36px; border-radius: 50%;
-  border: 1.5px solid var(--border); background: var(--bg);
-  font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;
-  transition: all .15s; flex-shrink: 0;
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
+
+/* ボス討伐タブ */
+#view-boss { background: var(--rpg-bg); min-height: 100vh; }
+.boss-view { max-width: 600px; margin: 0 auto; padding: 20px 16px 60px; }
+
+.boss-arena {
+  background: linear-gradient(180deg,#1a0a2e,#0d0d1a);
+  border: 1px solid var(--rpg-purple);
+  border-radius: 12px; padding: 20px; margin-bottom: 20px;
+  position: relative; overflow: hidden;
+  box-shadow: 0 0 30px rgba(170,68,255,.15);
 }
-.month-nav-btn:hover { border-color: var(--ink); background: var(--ink); color: white; }
-.monthly-summary-bar { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 20px; }
-@media(max-width:600px){ .monthly-summary-bar { grid-template-columns: repeat(2,1fr); } }
-.monthly-cards { display: flex; flex-direction: column; gap: 8px; }
-.monthly-card {
-  background: var(--surface); border: 1.5px solid var(--border);
-  border-radius: var(--radius); padding: 14px 16px;
+.boss-arena::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background: linear-gradient(90deg,transparent,var(--rpg-purple),var(--rpg-blue),var(--rpg-purple),transparent);
+}
+.boss-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.boss-label { font-family:var(--font-game); font-size:10px; color:var(--rpg-purple); letter-spacing:.15em; }
+.boss-period { font-size:10px; color:#8888bb; font-family:var(--mono); }
+.boss-main { display:flex; align-items:center; gap:20px; margin-bottom:16px; }
+.boss-sprite { width:100px; height:100px; flex-shrink:0; animation:boss-float 3s ease-in-out infinite; }
+@keyframes boss-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+.boss-name { font-family:var(--font-game); font-size:17px; color:#e8e6ff; margin-bottom:4px; text-shadow:0 0 20px rgba(170,68,255,.5); }
+.boss-lv { font-size:11px; color:var(--rpg-red); font-family:var(--mono); margin-bottom:10px; }
+.hp-label { display:flex; justify-content:space-between; font-size:10px; font-family:var(--mono); margin-bottom:4px; }
+.hp-text { color:var(--rpg-red); font-weight:700; }
+.hp-nums { color:#8888bb; }
+.hp-track { height:14px; background:rgba(255,68,102,.15); border:1px solid rgba(255,68,102,.3); border-radius:3px; overflow:hidden; }
+.hp-fill { height:100%; background:linear-gradient(90deg,#ff2244,#ff6688); border-radius:2px; transition:width 1s cubic-bezier(.4,0,.2,1); }
+.damage-log {
+  background:rgba(0,0,0,.4); border:1px solid var(--rpg-border); border-radius:6px;
+  padding:10px 12px; font-family:var(--font-game); font-size:11px; color:#8888bb;
+  line-height:1.9; max-height:75px; overflow-y:auto; margin-bottom:14px;
+}
+.log-dmg { color:var(--gold); }
+.log-crit { color:var(--rpg-red); }
+.log-bonus { color:var(--rpg-green); }
+.total-damage { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.dmg-card { background:rgba(0,0,0,.3); border:1px solid var(--rpg-border); border-radius:6px; padding:8px; text-align:center; }
+.dmg-val { font-family:var(--mono); font-size:16px; color:var(--gold); }
+.dmg-lbl { font-size:9px; color:#8888bb; margin-top:2px; }
+
+/* ランキング */
+.rank-section { margin-bottom:16px; }
+.rpg-section-title {
+  font-family:var(--font-game); font-size:11px; color:var(--gold); letter-spacing:.12em;
+  margin-bottom:10px; display:flex; align-items:center; gap:8px;
+}
+.rpg-section-title::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,#2a2a4a,transparent); }
+.rank-list { display:flex; flex-direction:column; gap:6px; }
+.rank-item {
+  background:var(--rpg-surface); border:1px solid var(--rpg-border);
+  border-radius:8px; padding:10px 12px; display:flex; align-items:center;
+  gap:10px; transition:all .15s;
+}
+.rank-item.rank-1 { border-color:var(--gold); box-shadow:0 0 12px rgba(255,215,0,.15); }
+.rank-item.rank-2 { border-color:#c0c0c0; }
+.rank-item.rank-3 { border-color:#cd7f32; }
+.rank-num { font-family:var(--mono); font-size:14px; width:24px; text-align:center; flex-shrink:0; }
+.rank-num.gold { color:var(--gold); }
+.rank-num.silver { color:#c0c0c0; }
+.rank-num.bronze { color:#cd7f32; }
+.rank-avatar { width:36px; height:36px; border-radius:8px; background:var(--rpg-border); border:1px solid var(--rpg-border); overflow:hidden; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.rank-avatar img { width:100%; height:100%; object-fit:cover; }
+.rank-body { flex:1; min-width:0; }
+.rank-name { font-size:13px; font-weight:700; color:#e8e6ff; }
+.rank-sub { font-size:10px; color:#8888bb; margin-top:1px; }
+.dmg-bar-wrap { display:flex; align-items:center; gap:6px; margin-top:4px; }
+.dmg-bar-track { flex:1; height:4px; background:var(--rpg-border); border-radius:99px; overflow:hidden; }
+.dmg-bar-fill { height:100%; background:linear-gradient(90deg,var(--gold2),var(--gold)); border-radius:99px; }
+.dmg-num { font-family:var(--mono); font-size:11px; color:var(--gold); flex-shrink:0; width:50px; text-align:right; }
+.lv-badge-rpg { font-family:var(--mono); font-size:11px; background:var(--rpg-surface); border:1px solid var(--rpg-border); border-radius:4px; padding:2px 7px; color:var(--rpg-purple); flex-shrink:0; }
+
+/* 生徒のRPGステータス（入力画面に追加）*/
+.rpg-status-bar {
+  background: linear-gradient(135deg,#0d0d1a,#1a0a2e);
+  border: 1px solid var(--rpg-border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 16px;
   display: flex; align-items: center; gap: 14px;
-  cursor: pointer; transition: all .15s;
 }
-.monthly-card:hover { border-color: var(--accent); background: var(--accent-light); }
-.mc-info { flex: 0 0 120px; }
-.mc-name { font-size: 13px; font-weight: 700; }
-.mc-grade { font-size: 10px; color: var(--ink3); margin-top: 2px; }
-.mc-days { font-family: var(--mono); font-size: 11px; color: var(--ink2); margin-top: 4px; }
-.mc-bars { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-.mc-bar-row { display: flex; align-items: center; gap: 6px; }
-.mc-bar-label { font-size: 9px; color: var(--ink3); width: 14px; text-align: right; flex-shrink: 0; font-weight: 700; }
-.mc-bar-track { flex: 1; height: 5px; background: var(--border); border-radius: 99px; overflow: hidden; }
-.mc-bar-fill { height: 100%; border-radius: 99px; }
-.mc-bar-pct { font-size: 9px; font-family: var(--mono); color: var(--ink2); width: 28px; flex-shrink: 0; text-align: right; }
-.mc-overall { flex: 0 0 54px; text-align: center; }
-.mc-overall-num { font-family: var(--mono); font-size: 22px; font-weight: 700; line-height: 1; }
-.mc-overall-lbl { font-size: 9px; color: var(--ink3); margin-top: 2px; }
-.mc-btn {
-  font-size: 11px; font-weight: 700; padding: 8px 14px; border-radius: 99px;
-  background: var(--ink); color: white; border: none; cursor: pointer;
-  flex-shrink: 0; transition: opacity .15s;
-}
-.mc-btn:hover { opacity: .8; }
+.rpg-lv-block { text-align:center; flex-shrink:0; }
+.rpg-lv-num { font-family:var(--font-game); font-size:28px; color:var(--gold); line-height:1; text-shadow:0 0 12px rgba(255,215,0,.4); }
+.rpg-lv-label { font-size:9px; color:#8888bb; font-family:var(--mono); }
+.rpg-info { flex:1; }
+.rpg-title { font-family:var(--font-game); font-size:11px; color:var(--rpg-purple); margin-bottom:6px; }
+.rpg-exp-wrap { display:flex; align-items:center; gap:6px; }
+.rpg-exp-track { flex:1; height:6px; background:var(--rpg-border); border-radius:99px; overflow:hidden; }
+.rpg-exp-fill { height:100%; background:linear-gradient(90deg,var(--rpg-purple),var(--rpg-blue)); border-radius:99px; transition:width .6s; }
+.rpg-exp-label { font-size:9px; color:#8888bb; font-family:var(--mono); flex-shrink:0; }
+.rpg-atk { font-size:10px; color:var(--rpg-red); font-family:var(--mono); margin-top:4px; }
 
-/* ════════════════════
-   月報モーダル
-════════════════════ */
-.modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,.55);
-  z-index: 200; display: none; align-items: flex-start;
-  justify-content: center; overflow-y: auto; padding: 20px;
+/* レベルアップオーバーレイ */
+.levelup-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.88);
+  display:flex; align-items:center; justify-content:center;
+  z-index:500; opacity:0; pointer-events:none; transition:opacity .3s;
 }
-.modal-overlay.open { display: flex; }
-.modal-box {
-  background: white; border-radius: 18px;
-  width: 100%; max-width: 860px; margin: auto;
-  overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.3);
-}
-.modal-header {
-  padding: 18px 24px; border-bottom: 1.5px solid var(--border);
-  display: flex; align-items: center; gap: 12px;
-  background: var(--ink); color: white;
-}
-.modal-title { font-size: 17px; font-weight: 900; flex: 1; }
-.modal-subtitle { font-size: 11px; opacity: .6; margin-top: 3px; }
-.modal-close {
-  width: 32px; height: 32px; border-radius: 50%;
-  border: 1.5px solid rgba(255,255,255,.3); background: transparent;
-  color: white; font-size: 16px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; transition: all .15s;
-}
-.modal-close:hover { background: var(--danger); border-color: var(--danger); }
-.modal-body { padding: 20px 24px; }
-.report-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
-.report-chip { font-size: 11px; padding: 4px 12px; background: var(--accent-light); border-radius: 99px; color: var(--accent); font-weight: 700; }
-.report-chip.warn { background: var(--warn-light); color: var(--warn); }
-.report-chip.danger { background: var(--danger-light); color: var(--danger); }
-.cal-wrap { overflow-x: auto; margin-bottom: 22px; }
-.cal-table { border-collapse: collapse; font-size: 10px; min-width: 500px; width: 100%; }
-.cal-table th, .cal-table td { border: 1px solid #e5e1d8; padding: 4px 2px; text-align: center; white-space: nowrap; line-height: 1.3; }
-.cal-habit-header { font-size: 9px; font-weight: 700; text-align: left !important; padding: 4px 8px !important; background: var(--surface2); color: var(--ink2); min-width: 90px; }
-.cal-day-header { font-size: 9px; font-weight: 700; background: var(--surface2); color: var(--ink2); min-width: 22px; padding: 4px 2px; }
-.cal-day-header.sat { color: #2563eb; background: #eff6ff; }
-.cal-day-header.sun { color: var(--danger); background: #fef2f2; }
-.cal-cell-ok { background: #e8f5ef; color: var(--ok); font-weight: 900; font-size: 13px; }
-.cal-cell-ng { background: white; color: transparent; font-size: 9px; }
-.cal-cell-empty { background: white; color: transparent; font-size: 9px; }
-.cal-submit-row-header { font-size: 9px; font-weight: 700; text-align: left !important; padding: 4px 8px !important; background: var(--ink); color: white; }
-.cal-submit-ok { background: var(--ink); color: white; font-size: 10px; }
-.cal-submit-empty { background: #e8e5de; color: var(--ink3); font-size: 9px; }
-.cal-submit-rate { background: var(--ink); color: white; font-weight: 700; font-size: 11px; padding: 4px 8px; }
-.cal-month-rate-header { font-size: 9px; font-weight: 700; background: var(--surface2); color: var(--ink2); min-width: 44px; border-left: 2px solid var(--border); }
-.cal-rate-cell { font-weight: 700; font-size: 11px; padding: 4px 8px; border-left: 2px solid var(--border); }
-.cal-rate-cell.high { background: #d4edda; color: var(--ok); }
-.cal-rate-cell.mid { background: var(--warn-light); color: var(--warn); }
-.cal-rate-cell.low { background: var(--danger-light); color: var(--danger); }
-.cal-rate-cell.neutral { background: var(--surface2); color: var(--ink2); }
-.habit-summary-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
-@media(max-width:600px){ .habit-summary-grid { grid-template-columns: repeat(2,1fr); } }
-.hs-card { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px; }
-.hs-num { font-size: 9px; color: var(--ink3); font-weight: 700; letter-spacing: .06em; margin-bottom: 3px; }
-.hs-name { font-size: 11px; font-weight: 700; margin-bottom: 10px; }
-.hs-bar-track { height: 8px; background: var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 6px; }
-.hs-bar-fill { height: 100%; border-radius: 99px; }
-.hs-rate { font-family: var(--mono); font-size: 20px; font-weight: 700; }
-.hs-detail { font-size: 10px; color: var(--ink3); margin-top: 2px; }
-.modal-footer {
-  padding: 14px 24px; border-top: 1.5px solid var(--border);
-  display: flex; gap: 8px; justify-content: flex-end; background: var(--surface2);
-}
-.btn-print { padding: 10px 22px; background: var(--ink); color: white; border: none; border-radius: 99px; font-family: var(--font); font-size: 13px; font-weight: 700; cursor: pointer; }
-.btn-print:hover { opacity: .85; }
-.btn-secondary { padding: 10px 20px; background: var(--surface); color: var(--ink); border: 1.5px solid var(--border); border-radius: 99px; font-family: var(--font); font-size: 13px; font-weight: 700; cursor: pointer; }
-.btn-secondary:hover { border-color: var(--ink2); }
+.levelup-overlay.show { opacity:1; pointer-events:all; }
+.levelup-box { text-align:center; animation:levelup-pop .4s cubic-bezier(.34,1.56,.64,1); }
+@keyframes levelup-pop { from{transform:scale(.5);opacity:0} to{transform:scale(1);opacity:1} }
+.levelup-text { font-family:var(--font-game); font-size:28px; color:var(--gold); margin-bottom:8px; animation:glow-pulse 1s ease-in-out infinite alternate; }
+@keyframes glow-pulse { from{text-shadow:0 0 20px rgba(255,215,0,.6)} to{text-shadow:0 0 40px rgba(255,215,0,1),0 0 80px rgba(255,215,0,.5)} }
+.levelup-num { font-family:var(--font-game); font-size:52px; color:white; margin-bottom:8px; }
+.levelup-title-text { font-family:var(--font-game); font-size:15px; color:var(--rpg-purple); margin-bottom:20px; }
+.levelup-close { padding:10px 28px; background:var(--gold); color:#0d0d1a; border:none; border-radius:6px; font-family:var(--font-game); font-size:12px; cursor:pointer; }
 
-/* ════════════════════
-   印刷スタイル
-════════════════════ */
-@media print {
-  @page { size: A4 landscape; margin: 12mm; }
-  .top-nav, .loading-overlay, #view-student, #view-teacher, #view-monthly,
-  .modal-overlay, .toast { display: none !important; }
-  #print-area { display: block !important; width: 100%; background: white; font-family: sans-serif; }
-  .print-header { display: flex; align-items: flex-end; justify-content: space-between; border-bottom: 2pt solid #1c1a16; padding-bottom: 6pt; margin-bottom: 10pt; }
-  .print-title { font-size: 15pt; font-weight: 900; }
-  .print-sub { font-size: 9pt; color: #6b6760; margin-top: 2pt; }
-  .print-meta { font-size: 9pt; color: #6b6760; text-align: right; }
-  .print-cal { border-collapse: collapse; width: 100%; font-size: 7pt; margin-bottom: 10pt; }
-  .print-cal th, .print-cal td { border: 0.5pt solid #ccc; padding: 2pt 1pt; text-align: center; }
-  .print-cal .ph { background: #f4f2ed; font-weight: 700; text-align: left; padding-left: 4pt; }
-  .print-cal .dh { background: #f4f2ed; font-weight: 700; min-width: 14pt; font-size: 6pt; }
-  .print-cal .dh.sat { color: #2563eb; }
-  .print-cal .dh.sun { color: #c0392b; }
-  .print-cal .ok { background: #e8f5ef; color: #2a6b4e; font-weight: 900; font-size: 9pt; }
-  .print-cal .ng { background: white; }
-  .print-cal .em { background: white; }
-  .print-cal .sr { background: #1c1a16; color: white; font-weight: 700; text-align: left; padding-left: 4pt; }
-  .print-cal .sc { background: #1c1a16; color: white; }
-  .print-cal .ns { background: #e8e5de; color: #b0ada6; }
-  .print-cal .rr { background: #f4f2ed; font-weight: 700; font-size: 8pt; border-left: 1pt solid #999; text-align: center; }
-  .print-cal .rr.hi { color: #2a6b4e; }
-  .print-cal .rr.mi { color: #d97706; }
-  .print-cal .rr.lo { color: #c0392b; }
-  .print-habits { display: grid; grid-template-columns: repeat(6,1fr); gap: 5pt; }
-  .print-hcard { border: 0.5pt solid #ccc; border-radius: 3pt; padding: 5pt 7pt; }
-  .print-hnum { font-size: 7pt; color: #b0ada6; font-weight: 700; }
-  .print-hname { font-size: 8pt; font-weight: 700; margin-bottom: 4pt; }
-  .print-hbar-track { height: 5pt; background: #e5e1d8; border-radius: 3pt; overflow: hidden; margin-bottom: 3pt; }
-  .print-hbar-fill { height: 100%; border-radius: 3pt; }
-  .print-hrate { font-size: 13pt; font-weight: 700; }
-  .print-footer { margin-top: 8pt; font-size: 7pt; color: #b0ada6; text-align: right; }
+/* 攻撃エフェクト */
+.attack-effect { position:fixed; inset:0; pointer-events:none; z-index:200; }
+.damage-number {
+  font-family:var(--font-game); font-size:44px; color:var(--gold);
+  text-shadow:0 0 20px rgba(255,215,0,.8); opacity:0;
+  animation:dmg-pop 1.2s ease-out forwards;
+  position:absolute; top:35%; left:40%;
 }
+@keyframes dmg-pop { 0%{transform:translateY(0) scale(.5);opacity:1} 50%{transform:translateY(-60px) scale(1.2);opacity:1} 100%{transform:translateY(-120px);opacity:0} }
+.crit-text { font-family:var(--font-game); font-size:16px; color:var(--rpg-red); position:absolute; top:28%; left:35%; animation:crit-pop 1s ease-out forwards; }
+@keyframes crit-pop { 0%{transform:scale(.5) rotate(-10deg);opacity:1} 50%{transform:scale(1.3) rotate(5deg);opacity:1} 100%{transform:scale(1);opacity:0} }
+
+/* スクリーン震動 */
+@keyframes screen-shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-4px)} 40%{transform:translateX(4px)} 60%{transform:translateX(-3px)} 80%{transform:translateX(3px)} }
+.shake { animation:screen-shake .3s ease-out; }
+
 </style>
 </head>
 <body>
@@ -465,8 +448,8 @@ td.td-name { padding-left: 16px; text-align: left; }
 <div class="top-nav">
   <div class="nav-logo">🌱 ６つの習慣やりきリスト</div>
   <button class="nav-btn active" onclick="showView('student',this)">🎒 生徒</button>
+  <button class="nav-btn" onclick="showView('boss',this)">⚔ ボス討伐</button>
   <button class="nav-btn" onclick="showView('teacher',this)">👩‍🏫 先生</button>
-  <button class="nav-btn" onclick="showView('monthly',this)">📅 月報</button>
 </div>
 
 <!-- loading -->
@@ -533,6 +516,20 @@ td.td-name { padding-left: 16px; text-align: left; }
         </div>
       </div>
       <div class="already-done-banner" id="done-banner">✅ 今日はもう記録済みです！</div>
+      <div class="rpg-status-bar" id="rpg-status-bar">
+        <div class="rpg-lv-block">
+          <div class="rpg-lv-num" id="rpg-lv">1</div>
+          <div class="rpg-lv-label">LEVEL</div>
+        </div>
+        <div class="rpg-info">
+          <div class="rpg-title" id="rpg-title">みならい</div>
+          <div class="rpg-exp-wrap">
+            <div class="rpg-exp-track"><div class="rpg-exp-fill" id="rpg-exp-fill" style="width:0%"></div></div>
+            <div class="rpg-exp-label" id="rpg-exp-label">EXP 0</div>
+          </div>
+          <div class="rpg-atk" id="rpg-atk">ATK —</div>
+        </div>
+      </div>
       <div class="streak-bar">
         <div>
           <div class="streak-num" id="s-streak">0</div>
@@ -558,6 +555,74 @@ td.td-name { padding-left: 16px; text-align: left; }
 </div>
 
 <!-- ════ 先生ビュー ════ -->
+
+<!-- ════ ボス討伐ビュー ════ -->
+<div id="view-boss" class="view">
+  <div class="boss-view">
+    <div class="boss-arena">
+      <div class="boss-header">
+        <div class="boss-label">⚠ BOSS BATTLE</div>
+        <div class="boss-period" id="boss-period"></div>
+      </div>
+      <div class="boss-main">
+        <div class="boss-sprite">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="50" cy="65" rx="28" ry="22" fill="#2d0a4e"/>
+            <ellipse cx="50" cy="63" rx="26" ry="20" fill="#3d1060"/>
+            <circle cx="50" cy="38" r="22" fill="#3d1060"/>
+            <circle cx="50" cy="36" r="20" fill="#4a1275"/>
+            <ellipse cx="42" cy="33" rx="5" ry="6" fill="#ff0044"/>
+            <ellipse cx="58" cy="33" rx="5" ry="6" fill="#ff0044"/>
+            <ellipse cx="42" cy="34" rx="3" ry="4" fill="#ff4488"/>
+            <ellipse cx="58" cy="34" rx="3" ry="4" fill="#ff4488"/>
+            <circle cx="43" cy="32" r="1.5" fill="white"/>
+            <circle cx="59" cy="32" r="1.5" fill="white"/>
+            <path d="M40 44 Q50 52 60 44" stroke="#ff0044" stroke-width="2" fill="none"/>
+            <polygon points="44,46 42,52 46,46" fill="white"/>
+            <polygon points="56,46 54,46 58,52" fill="white"/>
+            <polygon points="36,18 30,4 42,16" fill="#aa44ff"/>
+            <polygon points="64,18 70,4 58,16" fill="#aa44ff"/>
+            <path d="M24,50 Q10,35 15,20 Q20,35 28,45" fill="#2d0a4e" opacity=".8"/>
+            <path d="M76,50 Q90,35 85,20 Q80,35 72,45" fill="#2d0a4e" opacity=".8"/>
+            <ellipse cx="28" cy="68" rx="8" ry="5" fill="#3d1060" transform="rotate(-30 28 68)"/>
+            <ellipse cx="72" cy="68" rx="8" ry="5" fill="#3d1060" transform="rotate(30 72 68)"/>
+          </svg>
+        </div>
+        <div class="boss-info">
+          <div class="boss-name" id="boss-name">読み込み中...</div>
+          <div class="boss-lv">☠ <span id="boss-lv-text">BOSS</span> &nbsp;|&nbsp; 残り <span id="boss-days">—</span>日</div>
+          <div class="hp-label">
+            <span class="hp-text">HP</span>
+            <span class="hp-nums"><span id="boss-hp-cur">—</span> / <span id="boss-hp-max">—</span></span>
+          </div>
+          <div class="hp-track"><div class="hp-fill" id="boss-hp-bar" style="width:100%"></div></div>
+        </div>
+      </div>
+      <div class="damage-log" id="damage-log">▶ ボスが現れた！みんなで習慣を続けて倒せ！</div>
+      <div class="total-damage">
+        <div class="dmg-card"><div class="dmg-val" id="today-dmg">0</div><div class="dmg-lbl">今日の総ダメージ</div></div>
+        <div class="dmg-card"><div class="dmg-val" id="month-dmg">0</div><div class="dmg-lbl">累計ダメージ</div></div>
+        <div class="dmg-card"><div class="dmg-val" style="color:var(--rpg-green);" id="active-count">0</div><div class="dmg-lbl">今日の参戦人数</div></div>
+      </div>
+    </div>
+    <div class="rank-section">
+      <div class="rpg-section-title">⚔ 今月のダメージランキング</div>
+      <div class="rank-list" id="rank-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- レベルアップ演出 -->
+<div class="levelup-overlay" id="levelup-overlay">
+  <div class="levelup-box">
+    <div class="levelup-text">LEVEL UP！</div>
+    <div class="levelup-num" id="levelup-num">2</div>
+    <div class="levelup-title-text" id="levelup-title-text">いっぽまえ</div>
+    <button class="levelup-close" onclick="document.getElementById('levelup-overlay').classList.remove('show')">つぎへ ▶</button>
+  </div>
+</div>
+<div class="attack-effect" id="attack-effect"></div>
+
 <div id="view-teacher" class="view">
   <div class="teacher-view">
     <div class="teacher-header">
@@ -584,50 +649,13 @@ td.td-name { padding-left: 16px; text-align: left; }
         <table><thead id="t-thead"></thead><tbody id="t-tbody"></tbody></table>
       </div>
       <div class="tbl-legend">
-        <div class="leg"><div class="leg-dot" style="background:#e8f5ef;border:1px solid #2a6b4e;"></div>× やりきった！</div>
-        <div class="leg"><div class="leg-dot" style="background:white;border:1px solid #e5e1d8;"></div>空欄 まだこれから</div>
+        <div class="leg"><div class="leg-dot" style="background:#d4edda;"></div>○ 達成</div>
+        <div class="leg"><div class="leg-dot" style="background:#fde8e6;"></div>× 未達成</div>
+        <div class="leg"><div class="leg-dot" style="background:#f0ede6;"></div>— 未入力</div>
       </div>
     </div>
   </div>
 </div>
-
-<!-- ════ 月報ビュー ════ -->
-<div id="view-monthly" class="view">
-  <div class="monthly-view">
-    <div class="teacher-header">
-      <h1>📅 月報</h1>
-      <p>生徒ごとの月間習慣達成状況。保護者向けレポートを印刷できます。</p>
-    </div>
-    <div class="month-nav">
-      <button class="month-nav-btn" onclick="changeMonth(-1)">←</button>
-      <div class="month-nav-title" id="month-nav-title"></div>
-      <button class="month-nav-btn" onclick="changeMonth(1)">→</button>
-    </div>
-    <div class="monthly-summary-bar" id="monthly-summary"></div>
-    <div class="monthly-cards" id="monthly-cards"></div>
-  </div>
-</div>
-
-<!-- ════ 月報モーダル ════ -->
-<div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
-  <div class="modal-box">
-    <div class="modal-header">
-      <div>
-        <div class="modal-title" id="modal-title"></div>
-        <div class="modal-subtitle" id="modal-subtitle"></div>
-      </div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <div class="modal-body" id="modal-body"></div>
-    <div class="modal-footer">
-      <button class="btn-secondary" onclick="closeModal()">閉じる</button>
-      <button class="btn-print" onclick="printReport()">🖨 保護者向け印刷</button>
-    </div>
-  </div>
-</div>
-
-<!-- ════ 印刷エリア ════ -->
-<div id="print-area" style="display:none;padding:0;"></div>
 
 <div class="toast" id="toast"></div>
 
@@ -683,7 +711,7 @@ async function loadAllData() {
   }
 
   // 全記録取得
-  const rRes = await api('getAllRecords', { days: 65 });
+  const rRes = await api('getAllRecords', { days: 35 });
   if (rRes.ok) {
     ALL_RECORDS = rRes.records || {};
   }
@@ -779,6 +807,7 @@ function showInputScreen() {
 
   document.getElementById('s-streak').textContent = calcStreak(currentStudent.id);
   document.getElementById('s-week-rate').textContent = calcWeekRate(currentStudent.id) + '%';
+  updateRpgStatus(currentStudent.id);
   renderHabitList();
 }
 
@@ -828,7 +857,31 @@ async function submitRecord() {
     btn.textContent = '✅ 記録しました！';
     btn.classList.add('done-state');
     document.getElementById('done-banner').style.display = 'block';
-    showToast(`${currentDone.size}個達成！記録完了 🎉`);
+
+    // RPG攻撃処理
+    const exp = calcExpFromRecords(currentStudent.id);
+    const info = getLevelInfo(exp);
+    const streak = calcStreak(currentStudent.id);
+    const bonus = streak >= 7 ? 2 : streak >= 3 ? 1.5 : 1;
+    const done = currentDone.size;
+    const isCrit = done === 6 && Math.random() < 0.3;
+    const dmg = Math.round(done * info.lv * 10 * bonus * (isCrit ? 2 : 1));
+    const expGain = done * 10 + (done === 6 ? 40 : 0);
+    const oldLv = info.lv;
+
+    // EXP加算後のLv確認
+    const newInfo = getLevelInfo(exp + expGain);
+    if (newInfo.lv > oldLv) {
+      setTimeout(() => {
+        document.getElementById('levelup-num').textContent = newInfo.lv;
+        document.getElementById('levelup-title-text').textContent = getTitle(newInfo.lv);
+        document.getElementById('levelup-overlay').classList.add('show');
+      }, 600);
+    }
+
+    setTimeout(() => showAttackEffect(dmg, isCrit, currentStudent.name), 200);
+    updateRpgStatus(currentStudent.id);
+    showToast(`${done}個達成！ボスに${dmg}ダメージ！EXP+${expGain} 🎉`);
   } else {
     btn.textContent = '⚠ 送信失敗。再試行してください';
     btn.disabled = false;
@@ -992,7 +1045,7 @@ function renderTeacher() {
             const rec=ALL_RECORDS[s.id]?.[date];
             const v=rec?rec[hi]:null;
             return `<td style="text-align:center;padding:6px 4px;">
-              <span class="cell-val ${v===1?'ok':'empty'}">${v===1?'×':''}</span>
+              <span class="cell-val ${v===1?'ok':v===0?'ng':'empty'}">${v===1?'○':v===0?'×':'—'}</span>
             </td>`;
           }).join('');
           let done7=0,total7=0;
@@ -1068,7 +1121,7 @@ function renderTeacher() {
       cells=(s.habits||[]).map((_,i)=>{
         const v=cellData[i];
         if(tPeriod==='today'){
-          return `<td><span class="cell-val ${v===1?'ok':'empty'}">${v===1?'×':''}</span></td>`;
+          return `<td><span class="cell-val ${v===1?'ok':v===0?'ng':'empty'}">${v===1?'○':v===0?'×':'—'}</span></td>`;
         } else {
           return `<td><span class="cell-val ${v===null?'empty':v>=70?'ok':'ng'}">${v===null?'—':v+'%'}</span></td>`;
         }
@@ -1101,7 +1154,7 @@ function renderTeacher() {
           const dots=Array.from({length:14},(_,d)=>{
             const rec=ALL_RECORDS[s.id]?.[daysAgo(d)];
             const v=rec?rec[hi]:null;
-            return `<div class="hdot ${v===1?'ok':'empty'}">${v===1?'×':''}</div>`;
+            return `<div class="hdot ${v===1?'ok':v===0?'ng':'empty'}">${v===1?'○':v===0?'×':'—'}</div>`;
           }).join('');
           let d14=0,t14=0;
           for(let d=0;d<14;d++){const rec=ALL_RECORDS[s.id]?.[daysAgo(d)];if(rec){t14++;if(rec[hi]===1)d14++;}}
@@ -1130,7 +1183,7 @@ function toggleExpand(id){
 
 // ── view切替 ──
 function showView(v,btn){
-  if(v==='teacher'||v==='monthly'){
+  if(v==='teacher'){
     const pw=prompt('先生用パスワードを入力してください');
     if(pw!=='6462'){ showToast('パスワードが違います'); return; }
   }
@@ -1139,7 +1192,7 @@ function showView(v,btn){
   document.getElementById('view-'+v).classList.add('active');
   if(btn) btn.classList.add('active');
   if(v==='teacher') renderTeacher();
-  if(v==='monthly') renderMonthly();
+  if(v==='boss') { loadBossData(); renderBossView(); }
 }
 
 // ── toast ──
@@ -1172,285 +1225,236 @@ function generateDemoRecords(){
   return r;
 }
 
-// ════════ 月報ビュー ════════
-
-let reportYear = new Date().getFullYear();
-let reportMonth = new Date().getMonth();
-let reportStudentId = null;
-
-function getMonthDates(year, month) {
-  const dates = [];
-  const d = new Date(year, month, 1);
-  while (d.getMonth() === month) {
-    dates.push(d.toISOString().slice(0,10));
-    d.setDate(d.getDate()+1);
-  }
-  return dates;
-}
-
-function getMonthStats(sid, year, month) {
-  const r = ALL_RECORDS[sid] || {};
-  const student = STUDENTS.find(s => String(s.id) === String(sid));
-  if (!student) return null;
-  const dates = getMonthDates(year, month);
-  let submitted = 0;
-  const habitStats = (student.habits||[]).map(() => ({ done:0, total:0 }));
-  dates.forEach(date => {
-    const rec = r[date];
-    if (rec) {
-      submitted++;
-      rec.forEach((v,hi) => {
-        if (hi < habitStats.length) {
-          habitStats[hi].total++;
-          if (v===1) habitStats[hi].done++;
-        }
-      });
-    }
-  });
-  const totalDone = habitStats.reduce((s,h)=>s+h.done, 0);
-  const totalAll  = habitStats.reduce((s,h)=>s+h.total, 0);
-  return {
-    submitted,
-    monthDays: dates.length,
-    habitStats,
-    overallRate: totalAll===0 ? null : Math.round(totalDone/totalAll*100)
-  };
-}
-
-function changeMonth(delta) {
-  reportMonth += delta;
-  if (reportMonth < 0)  { reportMonth=11; reportYear--; }
-  if (reportMonth > 11) { reportMonth=0;  reportYear++; }
-  renderMonthly();
-}
-
-function renderMonthly() {
-  const mn = `${reportYear}年${reportMonth+1}月`;
-  document.getElementById('month-nav-title').textContent = mn;
-
-  const allStats = STUDENTS.map(s => getMonthStats(s.id, reportYear, reportMonth)).filter(Boolean);
-  const ratedStats = allStats.filter(s => s.overallRate !== null);
-  const avgRate = ratedStats.length===0 ? null : Math.round(ratedStats.reduce((a,s)=>a+s.overallRate,0)/ratedStats.length);
-  const submittedAny = allStats.filter(s=>s.submitted>0).length;
-  const fullMonth = allStats.filter(s=>s.submitted===s.monthDays).length;
-
-  document.getElementById('monthly-summary').innerHTML = `
-    <div class="stat-card"><div class="stat-val c-ok">${submittedAny}</div><div class="stat-lbl">提出実績あり（${mn}）</div></div>
-    <div class="stat-card"><div class="stat-val c-blue">${avgRate!==null?avgRate+'%':'—'}</div><div class="stat-lbl">平均達成率</div></div>
-    <div class="stat-card"><div class="stat-val c-warn">${fullMonth}</div><div class="stat-lbl">全日提出達成者</div></div>
-  `;
-
-  const container = document.getElementById('monthly-cards');
-  container.innerHTML = '';
-  const habitNums = ['①','②','③','④','⑤','⑥'];
-  const barColors = ['#2a6b4e','#2563eb','#d97706','#7c3aed','#c0392b','#0891b2'];
-
-  STUDENTS.forEach(s => {
-    const stats = getMonthStats(s.id, reportYear, reportMonth);
-    if (!stats) return;
-    const or = stats.overallRate;
-    const rateColor = or===null?'var(--ink3)':or>=70?'var(--ok)':or>=40?'var(--warn)':'var(--danger)';
-
-    const barsHtml = stats.habitStats.map((h,hi) => {
-      const pct = h.total===0 ? 0 : Math.round(h.done/h.total*100);
-      return `<div class="mc-bar-row">
-        <span class="mc-bar-label">${habitNums[hi]}</span>
-        <div class="mc-bar-track"><div class="mc-bar-fill" style="width:${pct}%;background:${barColors[hi]};"></div></div>
-        <span class="mc-bar-pct">${h.total===0?'—':pct+'%'}</span>
-      </div>`;
-    }).join('');
-
-    const card = document.createElement('div');
-    card.className = 'monthly-card';
-    card.innerHTML = `
-      <div class="mc-info">
-        <div class="mc-name">${s.name}</div>
-        <div class="mc-grade">${s.grade||''}</div>
-        <div class="mc-days">${stats.submitted}日/${stats.monthDays}日提出</div>
-      </div>
-      <div class="mc-bars">${barsHtml}</div>
-      <div class="mc-overall">
-        <div class="mc-overall-num" style="color:${rateColor};">${or!==null?or+'%':'—'}</div>
-        <div class="mc-overall-lbl">総達成率</div>
-      </div>
-      <button class="mc-btn" onclick="event.stopPropagation();showStudentReport('${s.id}')">詳細・印刷</button>
-    `;
-    card.onclick = () => showStudentReport(String(s.id));
-    container.appendChild(card);
-  });
-}
-
-function showStudentReport(sid) {
-  reportStudentId = sid;
-  const s = STUDENTS.find(x => String(x.id)===String(sid));
-  if (!s) return;
-  const stats = getMonthStats(sid, reportYear, reportMonth);
-  const r = ALL_RECORDS[sid] || {};
-  const dates = getMonthDates(reportYear, reportMonth);
-  const mn = `${reportYear}年${reportMonth+1}月`;
-  const weekdays = '日月火水木金土';
-  const habitNums = ['①','②','③','④','⑤','⑥'];
-  const barColors = ['#2a6b4e','#2563eb','#d97706','#7c3aed','#c0392b','#0891b2'];
-
-  document.getElementById('modal-title').textContent = `${s.name}（${s.grade||''}）`;
-  document.getElementById('modal-subtitle').textContent = `${mn} 月報`;
-
-  const or = stats.overallRate;
-  const chipClass = or===null?'':or>=70?'':or>=40?'warn':'danger';
-  let chipsHtml = `<span class="report-chip">${mn}</span>`;
-  chipsHtml += `<span class="report-chip">${stats.submitted}日提出 / ${stats.monthDays}日中</span>`;
-  if (or!==null) chipsHtml += `<span class="report-chip ${chipClass}">総達成率 ${or}%</span>`;
-
-  // カレンダーテーブル
-  let calHtml = `<div class="cal-wrap"><table class="cal-table"><thead><tr>
-    <th class="cal-habit-header">習慣</th>
-    ${dates.map(date => {
-      const day = new Date(date).getDay();
-      const d = parseInt(date.slice(8));
-      const cls = day===0?'sun':day===6?'sat':'';
-      return `<th class="cal-day-header ${cls}">${d}<br><span style="font-size:8px;">${weekdays[day]}</span></th>`;
-    }).join('')}
-    <th class="cal-month-rate-header">月間<br>達成率</th>
-  </tr></thead><tbody>`;
-
-  // 提出行
-  calHtml += `<tr>
-    <td class="cal-submit-row-header">📋 提出</td>
-    ${dates.map(date => r[date]
-      ? `<td class="cal-submit-ok">○</td>`
-      : `<td class="cal-submit-empty">—</td>`
-    ).join('')}
-    <td class="cal-submit-rate">${stats.submitted}/${stats.monthDays}</td>
-  </tr>`;
-
-  // 習慣行
-  (s.habits||[]).forEach((habitName, hi) => {
-    const hs = stats.habitStats[hi] || {done:0,total:0};
-    const pct = hs.total===0 ? null : Math.round(hs.done/hs.total*100);
-    const rateClass = pct===null?'neutral':pct>=70?'high':pct>=40?'mid':'low';
-    calHtml += `<tr>
-      <td class="cal-habit-header">${habitNums[hi]} ${habitName}</td>
-      ${dates.map(date => {
-        const rec = r[date];
-        if (!rec) return `<td class="cal-cell-empty"></td>`;
-        return rec[hi]===1
-          ? `<td class="cal-cell-ok">×</td>`
-          : `<td class="cal-cell-ng"></td>`;
-      }).join('')}
-      <td class="cal-rate-cell ${rateClass}">${pct!==null?pct+'%':'—'}</td>
-    </tr>`;
-  });
-  calHtml += `</tbody></table></div>`;
-
-  // 習慣サマリー
-  const summaryHtml = `
-    <div style="font-size:11px;font-weight:700;color:var(--ink2);margin-bottom:12px;letter-spacing:.06em;">習慣別 月間サマリー</div>
-    <div class="habit-summary-grid">
-      ${(s.habits||[]).map((h,hi) => {
-        const hs = stats.habitStats[hi] || {done:0,total:0};
-        const pct = hs.total===0 ? null : Math.round(hs.done/hs.total*100);
-        const rateColor = pct===null?'var(--ink3)':pct>=70?'var(--ok)':pct>=40?'var(--warn)':'var(--danger)';
-        return `<div class="hs-card">
-          <div class="hs-num">${habitNums[hi]}</div>
-          <div class="hs-name">${h}</div>
-          <div class="hs-bar-track"><div class="hs-bar-fill" style="width:${pct||0}%;background:${barColors[hi]};"></div></div>
-          <div class="hs-rate" style="color:${rateColor};">${pct!==null?pct+'%':'—'}</div>
-          <div class="hs-detail">${hs.done}日達成 / ${hs.total}日提出</div>
-        </div>`;
-      }).join('')}
-    </div>`;
-
-  document.getElementById('modal-body').innerHTML =
-    `<div class="report-chips">${chipsHtml}</div>${calHtml}${summaryHtml}`;
-  document.getElementById('modal-overlay').classList.add('open');
-}
-
-function closeModal() {
-  document.getElementById('modal-overlay').classList.remove('open');
-}
-function closeModalOutside(e) {
-  if (e.target===document.getElementById('modal-overlay')) closeModal();
-}
-
-function printReport() {
-  if (!reportStudentId) return;
-  const s = STUDENTS.find(x => String(x.id)===String(reportStudentId));
-  if (!s) return;
-  const stats = getMonthStats(reportStudentId, reportYear, reportMonth);
-  const r = ALL_RECORDS[reportStudentId] || {};
-  const dates = getMonthDates(reportYear, reportMonth);
-  const mn = `${reportYear}年${reportMonth+1}月`;
-  const weekdays = '日月火水木金土';
-  const habitNums = ['①','②','③','④','⑤','⑥'];
-  const barColors = ['#2a6b4e','#2563eb','#d97706','#7c3aed','#c0392b','#0891b2'];
-  const or = stats.overallRate;
-
-  let calHtml = `<table class="print-cal"><thead><tr>
-    <th class="ph">習慣</th>
-    ${dates.map(date => {
-      const day = new Date(date).getDay();
-      const d = parseInt(date.slice(8));
-      const cls = day===0?'sun':day===6?'sat':'';
-      return `<th class="dh ${cls}">${d}<br>${weekdays[day]}</th>`;
-    }).join('')}
-    <th class="ph" style="text-align:center;">月間達成率</th>
-  </tr></thead><tbody>`;
-
-  calHtml += `<tr>
-    <td class="sr">📋 提出状況</td>
-    ${dates.map(date => r[date]?`<td class="sc">○</td>`:`<td class="ns">—</td>`).join('')}
-    <td class="sr" style="text-align:center;">${stats.submitted}/${stats.monthDays}日</td>
-  </tr>`;
-
-  (s.habits||[]).forEach((habitName, hi) => {
-    const hs = stats.habitStats[hi] || {done:0,total:0};
-    const pct = hs.total===0 ? null : Math.round(hs.done/hs.total*100);
-    const rateClass = pct===null?'':pct>=70?'hi':pct>=40?'mi':'lo';
-    calHtml += `<tr>
-      <td class="ph">${habitNums[hi]} ${habitName}</td>
-      ${dates.map(date => {
-        const rec = r[date];
-        if (!rec) return `<td class="em"></td>`;
-        return rec[hi]===1?`<td class="ok">×</td>`:`<td class="ng"></td>`;
-      }).join('')}
-      <td class="rr ${rateClass}">${pct!==null?pct+'%':'—'}</td>
-    </tr>`;
-  });
-  calHtml += `</tbody></table>`;
-
-  const habitsHtml = `<div class="print-habits">
-    ${(s.habits||[]).map((h,hi) => {
-      const hs = stats.habitStats[hi] || {done:0,total:0};
-      const pct = hs.total===0 ? null : Math.round(hs.done/hs.total*100);
-      const rateColor = pct===null?'#b0ada6':pct>=70?'#2a6b4e':pct>=40?'#d97706':'#c0392b';
-      return `<div class="print-hcard">
-        <div class="print-hnum">${habitNums[hi]}</div>
-        <div class="print-hname">${h}</div>
-        <div class="print-hbar-track"><div class="print-hbar-fill" style="width:${pct||0}%;background:${barColors[hi]};"></div></div>
-        <div class="print-hrate" style="color:${rateColor};">${pct!==null?pct+'%':'—'}</div>
-        <div style="font-size:7pt;color:#b0ada6;">${hs.done}日達成/${hs.total}日提出</div>
-      </div>`;
-    }).join('')}
-  </div>`;
-
-  document.getElementById('print-area').innerHTML = `
-    <div class="print-header">
-      <div>
-        <div class="print-title">🌱 ６つの習慣やりきリスト 月報　${s.name}（${s.grade||''}）</div>
-        <div class="print-sub">${mn}　提出${stats.submitted}日/${stats.monthDays}日　総達成率 ${or!==null?or+'%':'—'}</div>
-      </div>
-      <div class="print-meta">保護者向けレポート<br>発行日：${new Date().toLocaleDateString('ja-JP')}</div>
-    </div>
-    ${calHtml}
-    <div style="font-size:8pt;font-weight:700;color:#6b6760;margin:8pt 0 5pt;">習慣別 月間サマリー</div>
-    ${habitsHtml}
-    <div class="print-footer">× やりきった！　空欄 まだこれから</div>
-  `;
-  window.print();
-}
-
 // 起動
-init();
+init().then(() => {
+  loadBossData();
+});
+
+// ════════════════════
+// RPGシステム
+// ════════════════════
+const LEVEL_TABLE = [
+  {lv:1,  exp:0,      title:'みならい'},
+  {lv:5,  exp:300,    title:'いっぽまえ'},
+  {lv:10, exp:1000,   title:'めざめし者'},
+  {lv:20, exp:4000,   title:'きたえし者'},
+  {lv:30, exp:10000,  title:'つわもの'},
+  {lv:40, exp:22000,  title:'猛者'},
+  {lv:50, exp:42000,  title:'伝説への道'},
+  {lv:60, exp:70000,  title:'伝説'},
+  {lv:70, exp:108000, title:'英雄'},
+  {lv:80, exp:158000, title:'覚醒者'},
+  {lv:90, exp:220000, title:'神話級'},
+  {lv:99, exp:290000, title:'理想の自分'},
+  {lv:100,exp:300000, title:'理想の自分・極'},
+];
+
+let RPG_DATA = {}; // {studentId: {exp, monthDmg}}
+let BOSS_DATA = null;
+
+function getLevelInfo(exp) {
+  let base = LEVEL_TABLE[0];
+  for (let i = LEVEL_TABLE.length-1; i >= 0; i--) {
+    if (exp >= LEVEL_TABLE[i].exp) { base = LEVEL_TABLE[i]; break; }
+  }
+  const nextEntry = LEVEL_TABLE.find(t => t.exp > exp);
+  const nextExp = nextEntry ? nextEntry.exp : base.exp + 1000;
+  const prevExp = base.exp;
+  const progress = nextEntry ? (exp - prevExp) / (nextExp - prevExp) : 1;
+  // Lv計算：区間内線形補間
+  const nextLv = nextEntry ? nextEntry.lv : base.lv + Math.floor((exp - base.exp)/1000) + 1;
+  const lv = base.lv + Math.floor(progress * (nextLv - base.lv));
+  return { lv, title: base.title, progress, nextExp, exp };
+}
+
+function getTitle(lv) {
+  for (let i = LEVEL_TABLE.length-1; i >= 0; i--) {
+    if (lv >= LEVEL_TABLE[i].lv) return LEVEL_TABLE[i].title;
+  }
+  return 'みならい';
+}
+
+function calcExpFromRecords(sid) {
+  const r = ALL_RECORDS[sid] || {};
+  let exp = 0;
+  Object.values(r).forEach(rec => {
+    if (!rec) return;
+    const done = rec.filter(v=>v===1).length;
+    exp += done * 10;
+    if (done === 6) exp += 40;
+  });
+  // 連続7日ボーナス
+  let streak7 = 0;
+  for (let d = 0; d <= 365; d++) {
+    const rec = r[daysAgo(d)];
+    if (rec && rec.every(v=>v===1)) streak7++;
+    else if (streak7 >= 7) { exp += 200; streak7 = 0; }
+    else streak7 = 0;
+  }
+  return exp;
+}
+
+function calcMonthDmg(sid) {
+  const r = ALL_RECORDS[sid] || {};
+  const now = new Date();
+  let dmg = 0;
+  for (let d = 0; d < 31; d++) {
+    const date = daysAgo(d);
+    const rec = r[date];
+    if (!rec) continue;
+    const dateObj = new Date(date);
+    if (dateObj.getMonth() !== now.getMonth()) continue;
+    const done = rec.filter(v=>v===1).length;
+    const exp = calcExpFromRecords(sid);
+    const info = getLevelInfo(exp);
+    const streak = (() => {
+      let s = 0;
+      for (let dd = d; dd <= d+7; dd++) {
+        const rr = r[daysAgo(dd)];
+        if (rr && rr.every(v=>v===1)) s++; else break;
+      }
+      return s;
+    })();
+    const bonus = streak >= 7 ? 2 : streak >= 3 ? 1.5 : 1;
+    dmg += Math.round(done * info.lv * 10 * bonus);
+  }
+  return dmg;
+}
+
+// ボスデータをGASから取得
+async function loadBossData() {
+  const res = await api('getBoss', {});
+  if (res.ok && res.boss) {
+    BOSS_DATA = res.boss;
+  } else {
+    // デモ用ダミーボス
+    const now = new Date();
+    const lastDay = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+    BOSS_DATA = {
+      name: `${now.getMonth()+1}月の大魔王`,
+      hp: 10000,
+      currentHp: 10000,
+      period: `${now.getFullYear()}/${now.getMonth()+1}/1〜${lastDay}`,
+    };
+  }
+  renderBossView();
+}
+
+// 生徒RPGステータス表示
+function updateRpgStatus(sid) {
+  const exp = calcExpFromRecords(sid);
+  const info = getLevelInfo(exp);
+  const title = getTitle(info.lv);
+  const atk = Math.round(info.lv * 10);
+  const pct = Math.round(info.progress * 100);
+
+  document.getElementById('rpg-lv').textContent = info.lv;
+  document.getElementById('rpg-title').textContent = title;
+  document.getElementById('rpg-exp-fill').style.width = pct + '%';
+  document.getElementById('rpg-exp-label').textContent = `EXP ${exp.toLocaleString()}`;
+  document.getElementById('rpg-atk').textContent = `ATK ${atk} | 連続${calcStreak(sid)}日ボーナス${calcStreak(sid)>=7?'×2':calcStreak(sid)>=3?'×1.5':'なし'}`;
+}
+
+// 送信後にダメージ計算してエフェクト
+function showAttackEffect(dmg, isCrit, name) {
+  const el = document.getElementById('attack-effect');
+  el.innerHTML = `
+    <div class="damage-number">${dmg.toLocaleString()}</div>
+    ${isCrit ? '<div class="crit-text">CRITICAL！</div>' : ''}
+  `;
+  setTimeout(() => el.innerHTML = '', 1500);
+  // ボスHPを削る（ローカル表示用）
+  if (BOSS_DATA) {
+    BOSS_DATA.currentHp = Math.max(0, (BOSS_DATA.currentHp || BOSS_DATA.hp) - dmg);
+    const log = document.getElementById('damage-log');
+    if (log) {
+      const msg = isCrit
+        ? `▶ ${name} クリティカル！<span class="log-crit">${dmg}ダメージ</span>！
+`
+        : `▶ ${name} <span class="log-dmg">${dmg}ダメージ</span>を与えた！
+`;
+      log.innerHTML = msg + log.innerHTML;
+    }
+    renderBossHp();
+  }
+}
+
+// ボスHP表示
+function renderBossHp() {
+  if (!BOSS_DATA) return;
+  const hp = BOSS_DATA.hp || 10000;
+  const cur = BOSS_DATA.currentHp ?? hp;
+  const pct = Math.max(0, cur/hp*100);
+  const el = document.getElementById('boss-hp-bar');
+  if (el) el.style.width = pct + '%';
+  const curEl = document.getElementById('boss-hp-cur');
+  if (curEl) curEl.textContent = cur.toLocaleString();
+  const maxEl = document.getElementById('boss-hp-max');
+  if (maxEl) maxEl.textContent = hp.toLocaleString();
+}
+
+// ボス討伐ビュー描画
+function renderBossView() {
+  if (!BOSS_DATA) return;
+  const now = new Date();
+  const lastDay = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const daysLeft = lastDay - now.getDate();
+
+  const nameEl = document.getElementById('boss-name');
+  if (nameEl) nameEl.textContent = BOSS_DATA.name || '大魔王';
+  const periodEl = document.getElementById('boss-period');
+  if (periodEl) periodEl.textContent = BOSS_DATA.period || `${now.getMonth()+1}月 討伐期間`;
+  const daysEl = document.getElementById('boss-days');
+  if (daysEl) daysEl.textContent = daysLeft;
+  const lvEl = document.getElementById('boss-lv-text');
+  if (lvEl) lvEl.textContent = `BOSS Lv${BOSS_DATA.level||1}`;
+  renderBossHp();
+
+  // ランキング
+  const sorted = STUDENTS
+    .map(s => ({ ...s, exp: calcExpFromRecords(s.id), monthDmg: calcMonthDmg(s.id) }))
+    .sort((a,b) => b.monthDmg - a.monthDmg);
+
+  const maxDmg = sorted[0]?.monthDmg || 1;
+  const totalDmg = sorted.reduce((a,b)=>a+b.monthDmg,0);
+  const submitted = STUDENTS.filter(s=>ALL_RECORDS[s.id]?.[TODAY]).length;
+
+  const tdEl = document.getElementById('today-dmg');
+  if (tdEl) tdEl.textContent = sorted.reduce((a,b)=>{
+    const r = ALL_RECORDS[b.id]?.[TODAY];
+    if (!r) return a;
+    const done = r.filter(v=>v===1).length;
+    const info = getLevelInfo(b.exp);
+    return a + Math.round(done * info.lv * 10);
+  }, 0).toLocaleString();
+  const mdEl = document.getElementById('month-dmg');
+  if (mdEl) mdEl.textContent = totalDmg.toLocaleString();
+  const acEl = document.getElementById('active-count');
+  if (acEl) acEl.textContent = submitted;
+
+  const rankList = document.getElementById('rank-list');
+  if (!rankList) return;
+  rankList.innerHTML = sorted.slice(0,15).map((s,i) => {
+    const info = getLevelInfo(s.exp);
+    const rankClass = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
+    const numText = i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}`;
+    const numClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    const pct = Math.round(s.monthDmg/maxDmg*100);
+    return `<div class="rank-item ${rankClass}">
+      <div class="rank-num ${numClass}">${numText}</div>
+      <div class="rank-avatar">⚔</div>
+      <div class="rank-body">
+        <div class="rank-name">${s.name}</div>
+        <div class="dmg-bar-wrap">
+          <div class="dmg-bar-track"><div class="dmg-bar-fill" style="width:${pct}%"></div></div>
+          <div class="dmg-num">${s.monthDmg.toLocaleString()}</div>
+        </div>
+      </div>
+      <div class="lv-badge-rpg">Lv${info.lv}</div>
+    </div>`;
+  }).join('');
+}
+
 </script>
 </body>
 </html>
