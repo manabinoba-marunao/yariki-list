@@ -565,8 +565,8 @@ td.td-name { padding-left: 16px; text-align: left; }
         <div class="boss-period" id="boss-period"></div>
       </div>
       <div class="boss-main">
-        <div class="boss-sprite">
-          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <div class="boss-sprite" id="boss-sprite-wrap">
+          <svg id="boss-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
             <ellipse cx="50" cy="65" rx="28" ry="22" fill="#2d0a4e"/>
             <ellipse cx="50" cy="63" rx="26" ry="20" fill="#3d1060"/>
             <circle cx="50" cy="38" r="22" fill="#3d1060"/>
@@ -587,6 +587,7 @@ td.td-name { padding-left: 16px; text-align: left; }
             <ellipse cx="28" cy="68" rx="8" ry="5" fill="#3d1060" transform="rotate(-30 28 68)"/>
             <ellipse cx="72" cy="68" rx="8" ry="5" fill="#3d1060" transform="rotate(30 72 68)"/>
           </svg>
+          <img id="boss-img" src="" alt="" style="display:none;width:100%;height:100%;object-fit:contain;border-radius:8px;">
         </div>
         <div class="boss-info">
           <div class="boss-name" id="boss-name">読み込み中...</div>
@@ -628,6 +629,51 @@ td.td-name { padding-left: 16px; text-align: left; }
     <div class="teacher-header">
       <h1>📊 やりきリスト ダッシュボード</h1>
       <p id="t-period-label"></p>
+    </div>
+
+    <!-- 手動入力フォーム -->
+    <div id="manual-form" style="
+      background:var(--surface2); border:1.5px solid var(--border);
+      border-radius:var(--radius); padding:16px; margin-bottom:20px;
+    ">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:700;">✏️ 手動で記録を入力（紙提出の生徒用）</div>
+        <button onclick="toggleManualForm()" style="
+          font-size:11px;padding:4px 10px;border-radius:6px;
+          border:1px solid var(--border);background:var(--surface);
+          cursor:pointer;font-family:var(--font);color:var(--ink2);
+        " id="manual-toggle-btn">▲ 閉じる</button>
+      </div>
+      <div id="manual-form-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+          <div>
+            <div style="font-size:11px;color:var(--ink2);margin-bottom:4px;">生徒を選ぶ</div>
+            <select id="manual-student" style="
+              width:100%;padding:8px;border:1.5px solid var(--border);
+              border-radius:8px;font-family:var(--font);font-size:13px;
+              background:var(--surface);color:var(--ink);outline:none;
+            ">
+              <option value="">選択してください</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--ink2);margin-bottom:4px;">日付</div>
+            <input type="date" id="manual-date" style="
+              width:100%;padding:8px;border:1.5px solid var(--border);
+              border-radius:8px;font-family:var(--font);font-size:13px;
+              background:var(--surface);color:var(--ink);outline:none;
+            ">
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--ink2);margin-bottom:8px;">習慣の達成状況（タップで切替）</div>
+        <div id="manual-habits" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px;"></div>
+        <button onclick="submitManualRecord()" style="
+          width:100%;padding:12px;background:var(--ink);color:white;
+          border:none;border-radius:var(--radius);font-family:var(--font);
+          font-size:14px;font-weight:700;cursor:pointer;
+        ">記録を保存する</button>
+        <div id="manual-result" style="margin-top:8px;font-size:12px;color:var(--accent);text-align:center;min-height:18px;"></div>
+      </div>
     </div>
     <div class="period-row">
       <button class="period-tab active" onclick="setPeriod('today',this)">今日</button>
@@ -880,6 +926,14 @@ async function submitRecord() {
     }
 
     setTimeout(() => showAttackEffect(dmg, isCrit, currentStudent.name), 200);
+    // 今日のダメージを保存
+    try {
+      const saved = JSON.parse(localStorage.getItem('boss_damage') || '{"total":0,"todayDmg":0,"log":[]}');
+      const today = new Date().toISOString().slice(0,10);
+      if (saved.lastDate !== today) { saved.todayDmg = 0; saved.lastDate = today; }
+      saved.todayDmg = (saved.todayDmg || 0) + dmg;
+      localStorage.setItem('boss_damage', JSON.stringify(saved));
+    } catch(e) {}
     updateRpgStatus(currentStudent.id);
     showToast(`${done}個達成！ボスに${dmg}ダメージ！EXP+${expGain} 🎉`);
   } else {
@@ -1191,7 +1245,7 @@ function showView(v,btn){
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('view-'+v).classList.add('active');
   if(btn) btn.classList.add('active');
-  if(v==='teacher') renderTeacher();
+  if(v==='teacher') { renderTeacher(); initManualForm(); }
   if(v==='boss') { loadBossData(); renderBossView(); }
 }
 
@@ -1225,6 +1279,96 @@ function generateDemoRecords(){
   return r;
 }
 
+
+// ════════════════════
+// 手動入力（先生用）
+// ════════════════════
+let manualHabitStates = [];
+let manualFormOpen = true;
+
+function toggleManualForm() {
+  manualFormOpen = !manualFormOpen;
+  document.getElementById('manual-form-body').style.display = manualFormOpen ? 'block' : 'none';
+  document.getElementById('manual-toggle-btn').textContent = manualFormOpen ? '▲ 閉じる' : '▼ 開く';
+}
+
+function initManualForm() {
+  // 生徒セレクト
+  const sel = document.getElementById('manual-student');
+  sel.innerHTML = '<option value="">選択してください</option>' +
+    STUDENTS.map(s => `<option value="${s.id}">${s.nickname || s.name}</option>`).join('');
+
+  // 今日の日付をデフォルト
+  document.getElementById('manual-date').value = TODAY;
+
+  sel.onchange = () => updateManualHabits();
+}
+
+function updateManualHabits() {
+  const sid = document.getElementById('manual-student').value;
+  const student = STUDENTS.find(s => String(s.id) === String(sid));
+  const container = document.getElementById('manual-habits');
+
+  if (!student) { container.innerHTML = ''; return; }
+
+  // 既存の記録を取得
+  const date = document.getElementById('manual-date').value;
+  const existing = ALL_RECORDS[sid]?.[date] || [];
+  manualHabitStates = (student.habits || []).map((h, i) => existing[i] === 1 ? 1 : 0);
+
+  renderManualHabits(student.habits);
+}
+
+function renderManualHabits(habits) {
+  const container = document.getElementById('manual-habits');
+  container.innerHTML = (habits || []).map((h, i) => `
+    <div onclick="toggleManualHabit(${i})" style="
+      padding:8px 10px;border-radius:8px;cursor:pointer;text-align:center;
+      font-size:12px;font-weight:700;transition:all .15s;
+      background:${manualHabitStates[i] ? 'var(--accent-light)' : 'var(--surface)'};
+      border:2px solid ${manualHabitStates[i] ? 'var(--accent)' : 'var(--border)'};
+      color:${manualHabitStates[i] ? 'var(--accent)' : 'var(--ink2)'};
+    " id="manual-habit-${i}">
+      ${manualHabitStates[i] ? '○' : '×'} ${h}
+    </div>
+  `).join('');
+}
+
+function toggleManualHabit(i) {
+  manualHabitStates[i] = manualHabitStates[i] === 1 ? 0 : 1;
+  const sid = document.getElementById('manual-student').value;
+  const student = STUDENTS.find(s => String(s.id) === String(sid));
+  renderManualHabits(student?.habits || []);
+}
+
+async function submitManualRecord() {
+  const sid = document.getElementById('manual-student').value;
+  const date = document.getElementById('manual-date').value;
+  const resultEl = document.getElementById('manual-result');
+
+  if (!sid) { resultEl.textContent = '⚠ 生徒を選んでください'; return; }
+  if (!date) { resultEl.textContent = '⚠ 日付を選んでください'; return; }
+
+  resultEl.textContent = '保存中...';
+
+  const res = await api('saveRecord', {
+    studentId: sid,
+    date,
+    records: manualHabitStates,
+  });
+
+  if (res.ok) {
+    // ローカルにも反映
+    if (!ALL_RECORDS[sid]) ALL_RECORDS[sid] = {};
+    ALL_RECORDS[sid][date] = [...manualHabitStates];
+    resultEl.textContent = '✅ 保存しました！';
+    renderTeacher();
+    setTimeout(() => resultEl.textContent = '', 3000);
+  } else {
+    resultEl.textContent = '⚠ 保存に失敗しました';
+  }
+}
+
 // 起動
 init().then(() => {
   loadBossData();
@@ -1235,18 +1379,18 @@ init().then(() => {
 // ════════════════════
 const LEVEL_TABLE = [
   {lv:1,  exp:0,      title:'みならい'},
-  {lv:5,  exp:300,    title:'いっぽまえ'},
-  {lv:10, exp:1000,   title:'めざめし者'},
-  {lv:20, exp:4000,   title:'きたえし者'},
-  {lv:30, exp:10000,  title:'つわもの'},
-  {lv:40, exp:22000,  title:'猛者'},
-  {lv:50, exp:42000,  title:'伝説への道'},
-  {lv:60, exp:70000,  title:'伝説'},
-  {lv:70, exp:108000, title:'英雄'},
-  {lv:80, exp:158000, title:'覚醒者'},
-  {lv:90, exp:220000, title:'神話級'},
-  {lv:99, exp:290000, title:'理想の自分'},
-  {lv:100,exp:300000, title:'理想の自分・極'},
+  {lv:5,  exp:300,    title:'見習い'},
+  {lv:10, exp:1000,   title:'若武者'},
+  {lv:20, exp:4000,   title:'猛者'},
+  {lv:30, exp:10000,  title:'強者'},
+  {lv:40, exp:22000,  title:'勇者'},
+  {lv:50, exp:42000,  title:'覚醒者'},
+  {lv:60, exp:70000,  title:'烈火の士'},
+  {lv:70, exp:108000, title:'天命を知る者'},
+  {lv:80, exp:158000, title:'無限の求道者'},
+  {lv:90, exp:220000, title:'境界を越えし者'},
+  {lv:99, exp:290000, title:'伝説となりし者'},
+  {lv:100,exp:300000, title:'伝説を超えし者'},
 ];
 
 let RPG_DATA = {}; // {studentId: {exp, monthDmg}}
@@ -1381,9 +1525,15 @@ function showAttackEffect(dmg, isCrit, name) {
 
 // ボスHP表示
 function renderBossHp() {
-  if (!BOSS_DATA) return;
-  const hp = BOSS_DATA.hp || 10000;
-  const cur = BOSS_DATA.currentHp ?? hp;
+  const hp = (BOSS_DATA && BOSS_DATA.hp) || 10000;
+  // ローカルストレージから最新HPを取得
+  let cur;
+  try {
+    const savedHp = localStorage.getItem('boss_current_hp');
+    cur = savedHp !== null ? parseInt(savedHp) : (BOSS_DATA ? (BOSS_DATA.currentHp ?? hp) : hp);
+  } catch(e) {
+    cur = BOSS_DATA ? (BOSS_DATA.currentHp ?? hp) : hp;
+  }
   const pct = Math.max(0, cur/hp*100);
   const el = document.getElementById('boss-hp-bar');
   if (el) el.style.width = pct + '%';
@@ -1402,6 +1552,37 @@ function renderBossView() {
 
   const nameEl = document.getElementById('boss-name');
   if (nameEl) nameEl.textContent = BOSS_DATA.name || '大魔王';
+
+  // ボス画像の切り替え
+  const bossImg = document.getElementById('boss-img');
+  const bossSvg = document.getElementById('boss-svg');
+  if (bossImg && bossSvg) {
+    if (BOSS_DATA.imageUrl && BOSS_DATA.imageUrl.trim() !== '') {
+      bossImg.src = BOSS_DATA.imageUrl;
+      bossImg.style.display = 'block';
+      bossSvg.style.display = 'none';
+    } else {
+      bossImg.style.display = 'none';
+      bossSvg.style.display = 'block';
+    }
+  }
+
+  // ダメージログをローカルストレージから復元
+  try {
+    const saved = JSON.parse(localStorage.getItem('boss_damage') || '{"total":0,"log":[]}');
+    const log = document.getElementById('damage-log');
+    if (log && saved.log && saved.log.length > 0) {
+      log.innerHTML = saved.log.map(l =>
+        l.isCrit
+          ? `▶ [${l.time||''}] ${l.nickname||l.name} <span class="log-crit">会心の一撃！${l.dmg.toLocaleString()}ダメージ</span>⚡`
+          : `▶ [${l.time||''}] ${l.nickname||l.name} <span class="log-dmg">${l.dmg.toLocaleString()}ダメージ</span>を与えた！`
+      ).join('<br>');
+    }
+    const tdEl = document.getElementById('today-dmg');
+    if (tdEl) tdEl.textContent = (saved.todayDmg || 0).toLocaleString();
+    const mdEl = document.getElementById('month-dmg');
+    if (mdEl) mdEl.textContent = (saved.total || 0).toLocaleString();
+  } catch(e) {}
   const periodEl = document.getElementById('boss-period');
   if (periodEl) periodEl.textContent = BOSS_DATA.period || `${now.getMonth()+1}月 討伐期間`;
   const daysEl = document.getElementById('boss-days');
@@ -1440,11 +1621,14 @@ function renderBossView() {
     const numText = i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}`;
     const numClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
     const pct = Math.round(s.monthDmg/maxDmg*100);
+    const displayName = s.nickname || s.name; // ニックネーム優先
+    const title = getTitle(info.lv);
     return `<div class="rank-item ${rankClass}">
       <div class="rank-num ${numClass}">${numText}</div>
       <div class="rank-avatar">⚔</div>
       <div class="rank-body">
-        <div class="rank-name">${s.name}</div>
+        <div class="rank-name">${displayName}</div>
+        <div class="rank-sub" style="color:#8888bb;font-size:10px;">${title}</div>
         <div class="dmg-bar-wrap">
           <div class="dmg-bar-track"><div class="dmg-bar-fill" style="width:${pct}%"></div></div>
           <div class="dmg-num">${s.monthDmg.toLocaleString()}</div>
