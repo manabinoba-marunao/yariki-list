@@ -1,4 +1,4 @@
-<!DOCTYPE html>　
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -709,7 +709,6 @@ td.td-name { padding-left: 16px; text-align: left; }
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxim2lkno5C1Q72f_OEAebTOMWMD53JVINDnL6vOgvoaSuz-l_F4tcBs6wSXZtgUubc3Q/exec';
 const TODAY = new Date().toISOString().slice(0,10);
 
-// ── API ──
 async function api(action, body={}) {
   const url = GAS_URL + '?action=' + action;
   try {
@@ -723,7 +722,6 @@ async function api(action, body={}) {
   }
 }
 
-// ── 状態 ──
 let STUDENTS = [];
 let ALL_RECORDS = {}; // {studentId: {date: [0/1/null x6]}}
 let currentStudent = null;
@@ -739,7 +737,6 @@ function daysAgo(n) {
   return d.toISOString().slice(0,10);
 }
 
-// ── 初期化 ──
 async function init() {
   document.getElementById('loading').style.display = 'flex';
   await loadAllData();
@@ -749,38 +746,30 @@ async function init() {
 async function loadAllData() {
   document.getElementById('loading').style.display = 'flex';
 
-  // 生徒一覧取得
   const sRes = await api('getStudents');
   if (sRes.ok && sRes.students.length > 0) {
-    // 退塾生を除外
     STUDENTS = sRes.students.filter(s => s.grade !== '退塾' && s.grade !== '退会');
   }
 
-  // 全記録取得
   const rRes = await api('getAllRecords', { days: 35 });
   if (rRes.ok) {
     ALL_RECORDS = rRes.records || {};
   }
 
-  // 実データのみ使用（デモデータなし）
 
   renderNameGrid();
   document.getElementById('loading').style.display = 'none';
 }
 
-// ════════ 生徒ビュー ════════
 
 function renderNameGrid() {
-  // ニックネーム入力方式のため不要
 }
 
-// ニックネーム送信 → PIN画面へ
 function submitNickname() {
   const nickname = document.getElementById('nickname-input').value.trim();
   const errEl = document.getElementById('nickname-error');
   if (!nickname) { errEl.textContent = 'ニックネームを入力してね'; return; }
 
-  // ニックネームで生徒を検索（nameフィールドと照合）
   const student = STUDENTS.find(s => s.name === nickname || s.nickname === nickname);
   if (!student) { errEl.textContent = 'ニックネームが見つかりません。先生に確認してね'; return; }
 
@@ -795,7 +784,6 @@ function submitNickname() {
   document.getElementById('screen-input').style.display = 'none';
 }
 
-// PIN入力
 function pinInput(n) {
   if (pinBuffer.length >= 4) return;
   pinBuffer += n;
@@ -896,7 +884,6 @@ async function submitRecord() {
   });
 
   if (res.ok) {
-    // ローカルにも反映
     if (!ALL_RECORDS[currentStudent.id]) ALL_RECORDS[currentStudent.id] = {};
     ALL_RECORDS[currentStudent.id][TODAY] = records;
 
@@ -904,7 +891,6 @@ async function submitRecord() {
     btn.classList.add('done-state');
     document.getElementById('done-banner').style.display = 'block';
 
-    // RPG攻撃処理
     const exp = calcExpFromRecords(currentStudent.id);
     const info = getLevelInfo(exp);
     const streak = calcStreak(currentStudent.id);
@@ -915,7 +901,6 @@ async function submitRecord() {
     const expGain = done * 10 + (done === 6 ? 40 : 0);
     const oldLv = info.lv;
 
-    // EXP加算後のLv確認
     const newInfo = getLevelInfo(exp + expGain);
     if (newInfo.lv > oldLv) {
       setTimeout(() => {
@@ -926,7 +911,6 @@ async function submitRecord() {
     }
 
     setTimeout(() => showAttackEffect(dmg, isCrit, currentStudent.name), 200);
-    // 今日のダメージを保存
     try {
       const saved = JSON.parse(localStorage.getItem('boss_damage') || '{"total":0,"todayDmg":0,"log":[]}');
       const today = new Date().toISOString().slice(0,10);
@@ -971,7 +955,6 @@ function calcWeekRate(sid) {
   return total===0?0:Math.round(done/total*100);
 }
 
-// ════════ 先生ビュー ════════
 
 function getStudentStatus(sid) {
   const r = ALL_RECORDS[sid] || {};
@@ -1038,7 +1021,6 @@ function renderTeacher() {
   if(tPeriod==='streak'){
     thead.innerHTML=`<tr><th class="th-name">名前</th><th>全習慣連続</th><th class="th-rate">今週達成率</th><th>習慣別連続</th></tr>`;
   } else if(tPeriod==='week'){
-    // 週間ビュー：習慣名×曜日
     const days = Array.from({length:7},(_,i)=>{
       const d = new Date(); d.setDate(d.getDate()-6+i);
       const dow = '日月火水木金土'[d.getDay()];
@@ -1058,7 +1040,6 @@ function renderTeacher() {
     return;
   }
 
-  // 週間ビューは習慣別に行を展開
   if(tPeriod==='week'){
     list.forEach(s=>{
       const status=getStudentStatus(s.id);
@@ -1067,13 +1048,11 @@ function renderTeacher() {
       const streak=calcStreak(s.id);
       const isExpanded=expandedId===String(s.id);
 
-      // 7日分の日付配列
       const dates=Array.from({length:7},(_,i)=>{
         const d=new Date(); d.setDate(d.getDate()-6+i);
         return d.toISOString().slice(0,10);
       });
 
-      // 生徒名行
       const nameTr=document.createElement('tr');
       if(isExpanded) nameTr.classList.add('expanded');
       nameTr.style.background='var(--surface2)';
@@ -1090,7 +1069,6 @@ function renderTeacher() {
         </td>`;
       tbody.appendChild(nameTr);
 
-      // 習慣別行（展開時）
       if(isExpanded){
         (s.habits||[]).forEach((h,hi)=>{
           const habitTr=document.createElement('tr');
@@ -1196,7 +1174,6 @@ function renderTeacher() {
     tr.onclick=()=>toggleExpand(String(s.id));
     tbody.appendChild(tr);
 
-    // 展開行
     const expTr=document.createElement('tr');
     expTr.classList.add('expand-row');
     if(isExpanded) expTr.classList.add('open');
@@ -1235,7 +1212,6 @@ function toggleExpand(id){
   renderTeacher();
 }
 
-// ── view切替 ──
 function showView(v,btn){
   if(v==='teacher'){
     const pw=prompt('先生用パスワードを入力してください');
@@ -1249,14 +1225,12 @@ function showView(v,btn){
   if(v==='boss') { loadBossData(); renderBossView(); }
 }
 
-// ── toast ──
 function showToast(msg){
   const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2800);
 }
 
-// ── デモデータ（GASにデータがない場合） ──
 function getDemoStudents(){
   return [
     {id:1,name:'田中 さくら',grade:'小6',habits:['英単語10個','読書30分','日記を書く','早起き6:30','野菜を食べる','スマホ制限9時']},
@@ -1279,10 +1253,6 @@ function generateDemoRecords(){
   return r;
 }
 
-
-// ════════════════════
-// 手動入力（先生用）
-// ════════════════════
 let manualHabitStates = [];
 let manualFormOpen = true;
 
@@ -1293,12 +1263,10 @@ function toggleManualForm() {
 }
 
 function initManualForm() {
-  // 生徒セレクト
   const sel = document.getElementById('manual-student');
   sel.innerHTML = '<option value="">選択してください</option>' +
     STUDENTS.map(s => `<option value="${s.id}">${s.nickname || s.name}</option>`).join('');
 
-  // 今日の日付をデフォルト
   document.getElementById('manual-date').value = TODAY;
 
   sel.onchange = () => updateManualHabits();
@@ -1311,7 +1279,6 @@ function updateManualHabits() {
 
   if (!student) { container.innerHTML = ''; return; }
 
-  // 既存の記録を取得
   const date = document.getElementById('manual-date').value;
   const existing = ALL_RECORDS[sid]?.[date] || [];
   manualHabitStates = (student.habits || []).map((h, i) => existing[i] === 1 ? 1 : 0);
@@ -1358,7 +1325,6 @@ async function submitManualRecord() {
   });
 
   if (res.ok) {
-    // ローカルにも反映
     if (!ALL_RECORDS[sid]) ALL_RECORDS[sid] = {};
     ALL_RECORDS[sid][date] = [...manualHabitStates];
     resultEl.textContent = '✅ 保存しました！';
@@ -1369,14 +1335,10 @@ async function submitManualRecord() {
   }
 }
 
-// 起動
 init().then(() => {
   loadBossData();
 });
 
-// ════════════════════
-// RPGシステム
-// ════════════════════
 const LEVEL_TABLE = [
   {lv:1,  exp:0,      title:'みならい'},
   {lv:5,  exp:300,    title:'見習い'},
@@ -1393,8 +1355,11 @@ const LEVEL_TABLE = [
   {lv:100,exp:300000, title:'伝説を超えし者'},
 ];
 
-let RPG_DATA = {}; // {studentId: {exp, monthDmg}}
+let RPG_DATA = {};
 let BOSS_DATA = null;
+let DAMAGE_LOG = [];
+let TODAY_DMG = 0;
+let MONTH_DMG = 0;
 
 function getLevelInfo(exp) {
   let base = LEVEL_TABLE[0];
@@ -1405,7 +1370,6 @@ function getLevelInfo(exp) {
   const nextExp = nextEntry ? nextEntry.exp : base.exp + 1000;
   const prevExp = base.exp;
   const progress = nextEntry ? (exp - prevExp) / (nextExp - prevExp) : 1;
-  // Lv計算：区間内線形補間
   const nextLv = nextEntry ? nextEntry.lv : base.lv + Math.floor((exp - base.exp)/1000) + 1;
   const lv = base.lv + Math.floor(progress * (nextLv - base.lv));
   return { lv, title: base.title, progress, nextExp, exp };
@@ -1427,7 +1391,6 @@ function calcExpFromRecords(sid) {
     exp += done * 10;
     if (done === 6) exp += 40;
   });
-  // 連続7日ボーナス
   let streak7 = 0;
   for (let d = 0; d <= 365; d++) {
     const rec = r[daysAgo(d)];
@@ -1465,13 +1428,11 @@ function calcMonthDmg(sid) {
   return dmg;
 }
 
-// ボスデータをGASから取得
 async function loadBossData() {
   const res = await api('getBoss', {});
   if (res.ok && res.boss) {
     BOSS_DATA = res.boss;
   } else {
-    // デモ用ダミーボス
     const now = new Date();
     const lastDay = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
     BOSS_DATA = {
@@ -1484,7 +1445,6 @@ async function loadBossData() {
   renderBossView();
 }
 
-// 生徒RPGステータス表示
 function updateRpgStatus(sid) {
   const exp = calcExpFromRecords(sid);
   const info = getLevelInfo(exp);
@@ -1499,7 +1459,6 @@ function updateRpgStatus(sid) {
   document.getElementById('rpg-atk').textContent = `ATK ${atk} | 連続${calcStreak(sid)}日ボーナス${calcStreak(sid)>=7?'×2':calcStreak(sid)>=3?'×1.5':'なし'}`;
 }
 
-// 送信後にダメージ計算してエフェクト
 function showAttackEffect(dmg, isCrit, name) {
   const el = document.getElementById('attack-effect');
   el.innerHTML = `
@@ -1507,7 +1466,6 @@ function showAttackEffect(dmg, isCrit, name) {
     ${isCrit ? '<div class="crit-text">CRITICAL！</div>' : ''}
   `;
   setTimeout(() => el.innerHTML = '', 1500);
-  // ボスHPを削る（ローカル表示用）
   if (BOSS_DATA) {
     BOSS_DATA.currentHp = Math.max(0, (BOSS_DATA.currentHp || BOSS_DATA.hp) - dmg);
     const log = document.getElementById('damage-log');
@@ -1523,10 +1481,8 @@ function showAttackEffect(dmg, isCrit, name) {
   }
 }
 
-// ボスHP表示
 function renderBossHp() {
   const hp = (BOSS_DATA && BOSS_DATA.hp) || 10000;
-  // ローカルストレージから最新HPを取得
   let cur;
   try {
     const savedHp = localStorage.getItem('boss_current_hp');
@@ -1543,7 +1499,6 @@ function renderBossHp() {
   if (maxEl) maxEl.textContent = hp.toLocaleString();
 }
 
-// ボス討伐ビュー描画
 function renderBossView() {
   if (!BOSS_DATA) return;
   const now = new Date();
@@ -1553,7 +1508,6 @@ function renderBossView() {
   const nameEl = document.getElementById('boss-name');
   if (nameEl) nameEl.textContent = BOSS_DATA.name || '大魔王';
 
-  // ボス画像の切り替え
   const bossImg = document.getElementById('boss-img');
   const bossSvg = document.getElementById('boss-svg');
   if (bossImg && bossSvg) {
@@ -1567,7 +1521,6 @@ function renderBossView() {
     }
   }
 
-  // ダメージログをローカルストレージから復元
   try {
     const saved = JSON.parse(localStorage.getItem('boss_damage') || '{"total":0,"log":[]}');
     const log = document.getElementById('damage-log');
@@ -1591,7 +1544,6 @@ function renderBossView() {
   if (lvEl) lvEl.textContent = `BOSS Lv${BOSS_DATA.level||1}`;
   renderBossHp();
 
-  // ランキング
   const sorted = STUDENTS
     .map(s => ({ ...s, exp: calcExpFromRecords(s.id), monthDmg: calcMonthDmg(s.id) }))
     .sort((a,b) => b.monthDmg - a.monthDmg);
