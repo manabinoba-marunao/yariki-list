@@ -1429,19 +1429,35 @@ function calcMonthDmg(sid) {
 }
 
 async function loadBossData() {
-  const res = await api('getBoss', {});
-  if (res.ok && res.boss) {
-    BOSS_DATA = res.boss;
-  } else {
-    const now = new Date();
-    const lastDay = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
-    BOSS_DATA = {
-      name: `${now.getMonth()+1}月の大魔王`,
-      hp: 10000,
-      currentHp: 10000,
-      period: `${now.getFullYear()}/${now.getMonth()+1}/1〜${lastDay}`,
-    };
-  }
+  try {
+    const bossRes = await api('getBoss', {});
+    if (bossRes.ok && bossRes.boss) {
+      BOSS_DATA = bossRes.boss;
+    } else {
+      const now = new Date();
+      const lastDay = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+      BOSS_DATA = {
+        name: `${now.getMonth()+1}月の大魔王`,
+        hp: 10000,
+        currentHp: 10000,
+        period: `${now.getFullYear()}/${now.getMonth()+1}/1〜${lastDay}`,
+      };
+    }
+  } catch(e) {}
+
+  try {
+    const logRes = await api('getDamageLog', { days: 30 });
+    console.log('logRes:', JSON.stringify(logRes).slice(0,300));
+    if (logRes && logRes.ok && Array.isArray(logRes.logs)) {
+      DAMAGE_LOG = logRes.logs;
+      MONTH_DMG = logRes.logs.reduce((sum, l) => sum + (Number(l.damage) || 0), 0);
+      const today = new Date().toISOString().slice(0,10);
+      TODAY_DMG = logRes.logs
+        .filter(l => String(l.date).slice(0,10) === today)
+        .reduce((sum, l) => sum + (Number(l.damage) || 0), 0);
+    }
+  } catch(e) { console.error('ダメージログエラー:', e); }
+
   renderBossView();
 }
 
