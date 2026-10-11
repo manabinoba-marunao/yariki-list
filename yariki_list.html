@@ -337,6 +337,20 @@ td.td-name { padding-left: 16px; text-align: left; }
 .boss-label { font-family:var(--font-game); font-size:10px; color:var(--rpg-purple); letter-spacing:.15em; }
 .boss-period { font-size:10px; color:#8888bb; font-family:var(--mono); }
 .boss-main { display:flex; flex-direction:column; align-items:center; gap:12px; margin-bottom:16px; }
+.boss-sprite.boss-big { width:100%; max-width:560px; height:auto; aspect-ratio:1/1; }
+.boss-sprite.boss-big svg, .boss-sprite.boss-big img { width:100%; height:100%; }
+.boss-intro-overlay { position:fixed; inset:0; z-index:700; background:#000; display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:16px; overflow:hidden; }
+.boss-intro-overlay.show { display:flex; animation:bi-fade .6s ease-out; }
+@keyframes bi-fade { from{opacity:0} to{opacity:1} }
+.bi-warning { font-family:var(--font-game); font-size:26px; color:var(--rpg-red); letter-spacing:.2em; text-shadow:0 0 24px rgba(255,68,102,.9); animation:bi-blink .5s ease-in-out infinite alternate; }
+@keyframes bi-blink { from{opacity:.35} to{opacity:1} }
+.bi-art { width:min(92vw,62vh,560px); aspect-ratio:1/1; opacity:0; transform:scale(.2); }
+.bi-art.go { animation:bi-appear 1.6s cubic-bezier(.2,1.3,.4,1) forwards; }
+.bi-art svg, .bi-art img { width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 0 30px rgba(170,68,255,.8)); }
+@keyframes bi-appear { 0%{opacity:0;transform:scale(.2)} 55%{opacity:1;transform:scale(1.12)} 70%{transform:scale(.96) translateX(-6px)} 80%{transform:scale(1) translateX(6px)} 90%{transform:translateX(-3px)} 100%{opacity:1;transform:scale(1)} }
+.bi-name { font-family:var(--font-game); font-size:24px; color:var(--gold); text-align:center; text-shadow:0 0 24px rgba(255,215,0,.8); opacity:0; transition:opacity .8s; }
+.bi-sub { font-family:var(--font-game); font-size:14px; color:#e8e6ff; text-align:center; opacity:0; transition:opacity .8s; }
+.bi-name.show, .bi-sub.show { opacity:1; }
 .boss-sprite { width:180px; height:180px; flex-shrink:0; animation:boss-float 3s ease-in-out infinite; }
 @keyframes boss-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
 .boss-name { font-family:var(--font-game); font-size:20px; color:#e8e6ff; margin-bottom:4px; text-shadow:0 0 20px rgba(170,68,255,.5); text-align:center; }
@@ -930,6 +944,14 @@ td.td-name { padding-left: 16px; text-align: left; }
 </div>
 
 <!-- 討伐・覚醒演出 -->
+<div class="boss-intro-overlay" id="boss-intro-overlay">
+  <div class="bi-warning">⚠ WARNING ⚠</div>
+  <div class="bi-art" id="bi-art"></div>
+  <div class="bi-name" id="bi-name"></div>
+  <div class="bi-sub" id="bi-sub"></div>
+  <button class="event-skip" id="bi-skip" onclick="closeBossIntro()">タップして戦いへ ▶</button>
+</div>
+
 <div class="boss-event-overlay" id="boss-event-overlay">
   <div class="event-text-1" id="event-text-1">🎉 討伐成功！</div>
   <div class="event-text-2" id="event-text-2"></div>
@@ -2045,10 +2067,40 @@ function showBossDefeated(heroName, treasure) {
   }, 4000);
 }
 
+let pendingBossIntro = false;
 function closeBossEvent() {
   document.getElementById('boss-event-overlay').classList.remove('show');
   // ボス討伐タブを表示
   showView('boss', document.querySelector('.nav-btn:nth-child(2)'));
+  if (pendingBossIntro) { pendingBossIntro = false; setTimeout(showBossIntro, 800); }
+}
+
+function showBossIntro() {
+  if (!BOSS_DATA) return;
+  const ov = document.getElementById('boss-intro-overlay');
+  const art = document.getElementById('bi-art');
+  const nm = document.getElementById('bi-name');
+  const sub = document.getElementById('bi-sub');
+  const skip = document.getElementById('bi-skip');
+  const svgHtml = () => document.getElementById('boss-svg').outerHTML.replace('id="boss-svg"', '').replace(/style="[^"]*"/, '');
+  art.className = 'bi-art';
+  nm.classList.remove('show'); sub.classList.remove('show'); skip.classList.remove('show');
+  nm.textContent = BOSS_DATA.name || '大魔王';
+  sub.textContent = 'が現れた！ 全員の力を合わせて倒せ！';
+  if (BOSS_DATA.imageUrl && String(BOSS_DATA.imageUrl).trim() !== '') {
+    art.innerHTML = '<img src="' + BOSS_DATA.imageUrl + '" alt="">';
+    art.firstChild.onerror = () => { art.innerHTML = svgHtml(); };
+  } else {
+    art.innerHTML = svgHtml();
+  }
+  ov.classList.add('show');
+  setTimeout(() => art.classList.add('go'), 1500);
+  setTimeout(() => nm.classList.add('show'), 3600);
+  setTimeout(() => sub.classList.add('show'), 4800);
+  setTimeout(() => skip.classList.add('show'), 6500);
+}
+function closeBossIntro() {
+  document.getElementById('boss-intro-overlay').classList.remove('show');
 }
 
 function showToast(msg){
@@ -2257,6 +2309,7 @@ function calcMonthDmg(sid) {
 
 async function loadBossData() {
   let previousDefeat = null;
+  let defeatScheduled = false;
   try {
     const bossRes = await api('getBoss', {});
     if (bossRes.ok && bossRes.boss) {
@@ -2293,6 +2346,7 @@ async function loadBossData() {
     try {
       if (!localStorage.getItem(seenKey)) {
         localStorage.setItem(seenKey, '1');
+        defeatScheduled = true;
         setTimeout(() => showBossDefeated(BOSS_DATA.hero, BOSS_DATA.treasure), 800);
         // フラグは消さない（各端末のローカルストレージで管理）
       }
@@ -2305,6 +2359,7 @@ async function loadBossData() {
     try {
       if (!localStorage.getItem(seenKey)) {
         localStorage.setItem(seenKey, '1');
+        defeatScheduled = true;
         setTimeout(() => showBossDefeated(previousDefeat.hero, previousDefeat.treasure), 800);
       }
     } catch(e) {}
@@ -2324,6 +2379,20 @@ async function loadBossData() {
       }
     } catch(e) {}
   }
+
+  // 新しい大魔王（雑魚以外）が登場した時の登場演出（端末ごとに1回）
+  try {
+    const onBossView = document.getElementById('view-boss').classList.contains('active');
+    const isBossType = BOSS_DATA && String(BOSS_DATA.type || '').indexOf('mob') !== 0 && !BOSS_DATA.defeated;
+    if (onBossView && isBossType) {
+      const introKey = `boss_intro_seen_${BOSS_DATA.name}`;
+      if (!localStorage.getItem(introKey)) {
+        localStorage.setItem(introKey, '1');
+        if (defeatScheduled) pendingBossIntro = true;
+        else setTimeout(showBossIntro, 1000);
+      }
+    }
+  } catch(e) {}
 
   renderBossView();
 }
@@ -2433,6 +2502,8 @@ function renderBossView() {
   };
   const bossType = String(BOSS_DATA.type || '');
   const isMob = bossType.indexOf('mob') === 0;
+  const spriteWrapEl = document.getElementById('boss-sprite-wrap');
+  if (spriteWrapEl) spriteWrapEl.classList.toggle('boss-big', !isMob);
   const activeMobSvg = isMob ? (mobSvgMap[bossType] || mobSvgMap.mob_slime) : null;
   if (bossImg && bossSvg) {
     bossImg.style.display = 'none';
