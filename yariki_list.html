@@ -2008,7 +2008,7 @@ function showBossDefeated(heroName, treasure) {
       treasureEl.textContent = `🎁 ドロップ：${treasure}`;
       treasureEl.classList.add('show');
     }
-  }, 1500);
+  }, 2500);
 
   // フェーズ3: 次の敵の気配（固定で「覚醒」と断定しない汎用メッセージに変更）
   setTimeout(() => {
@@ -2017,12 +2017,12 @@ function showBossDefeated(heroName, treasure) {
     t2.textContent = '新たな敵の気配が…！';
     t2.style.color = 'var(--rpg-purple)';
     t3.textContent = '油断せず、つぎの戦いに備えよう...';
-  }, 3500);
+  }, 11000);
 
   // フェーズ4: スキップボタン表示
   setTimeout(() => {
     skip.classList.add('show');
-  }, 5000);
+  }, 6000);
 
   // GASにボス討伐EXPを付与（参加者限定）
   api('grantBossExp', {
