@@ -367,6 +367,8 @@ td.td-name { padding-left: 16px; text-align: left; }
 }
 .log-dmg { color:var(--gold); }
 .log-crit { color:var(--rpg-red); }
+.log-magic { color:#B9A2FF; text-shadow:0 0 6px #8B6BFF; }
+.log-magic-crit { color:#FFE27A; text-shadow:0 0 6px #B57BFF; }
 .log-bonus { color:var(--rpg-green); }
 .total-damage { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
 .dmg-card { background:rgba(0,0,0,.3); border:1px solid var(--rpg-border); border-radius:6px; padding:8px; text-align:center; }
@@ -2534,14 +2536,20 @@ function renderBossView() {
   if (log) {
     if (DAMAGE_LOG && DAMAGE_LOG.length > 0) {
       log.innerHTML = DAMAGE_LOG.map(l => {
-        const nick = l.nickname || l.name || '???';
+        const rawNick = l.nickname || l.name || '???';
         const dmg = Number(l.damage) || 0;
         const crit = l.isCrit === true || l.isCrit === 'true' || l.isCrit === 'YES';
+        // マル単からのダメージは「魔法」として表示
+        const isMagic = /\(マル単\)$/.test(rawNick) || l.habitsDone === 'マル単';
+        const nick = rawNick.replace(/\(マル単\)$/, '');
         // 日付表示（例：8/6）
         const dateStr = l.date ? (() => {
           const d = new Date(l.date);
           return isNaN(d.getTime()) ? String(l.date).slice(5,10).replace('-','/') : `${d.getMonth()+1}/${d.getDate()}`;
         })() : '--';
+        if (isMagic) return crit
+          ? `🔮 [${dateStr}] <b>${nick}</b> の大魔法！<span class="log-magic-crit">✨${dmg.toLocaleString()}の魔法ダメージ</span>`
+          : `🔮 [${dateStr}] <b>${nick}</b> の魔法！<span class="log-magic">${dmg.toLocaleString()}の魔法ダメージ</span>`;
         return crit
           ? `▶ [${dateStr}] <b>${nick}</b> <span class="log-crit">⚡会心の一撃！${dmg.toLocaleString()}ダメージ</span>`
           : `▶ [${dateStr}] <b>${nick}</b> <span class="log-dmg">${dmg.toLocaleString()}ダメージ</span>を与えた！`;
