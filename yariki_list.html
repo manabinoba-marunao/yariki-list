@@ -554,6 +554,52 @@ td.td-name { padding-left: 16px; text-align: left; }
 }
 .event-skip.show { opacity:1; }
 
+/* ═══ 敵の攻撃・状態異常・お菓子 ═══ */
+.status-box {
+  display:none; margin:0 0 12px; padding:12px 14px; border-radius:12px;
+  background:linear-gradient(135deg,#1c1530,#2a1a3e); color:#f1ecff;
+  border:1px solid #6b4bb3; box-shadow:0 0 18px rgba(170,68,255,.25);
+}
+.status-box.show { display:block; }
+.status-box.calm { background:var(--surface); color:var(--ink); border-color:var(--border); box-shadow:none; }
+.status-top { display:flex; align-items:center; gap:10px; }
+.status-icon { font-size:34px; line-height:1; }
+.status-name { font-weight:900; font-size:15px; }
+.status-desc { font-size:12px; opacity:.85; margin-top:2px; }
+.status-howto { font-size:11px; margin-top:8px; padding-top:8px; border-top:1px dashed rgba(255,255,255,.25); line-height:1.7; }
+.status-box.calm .status-howto { border-top-color:var(--border); }
+.candy-chip { margin-left:auto; font-family:var(--mono); font-size:13px; padding:4px 10px; border-radius:999px; background:rgba(255,215,0,.15); border:1px solid rgba(255,215,0,.5); white-space:nowrap; }
+.status-box.calm .candy-chip { background:var(--warn-light); border-color:var(--warn); }
+
+.attack-overlay {
+  position:fixed; inset:0; z-index:650; background:rgba(10,0,20,.94);
+  display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:16px; text-align:center;
+}
+.attack-overlay.show { display:flex; animation:bi-fade .4s ease-out; }
+.atk-warn { font-family:var(--font-game); font-size:22px; color:var(--rpg-red); text-shadow:0 0 20px rgba(255,68,102,.9); animation:bi-blink .4s ease-in-out infinite alternate; }
+.atk-line { font-family:var(--font-game); font-size:15px; color:#e8e6ff; opacity:0; transition:opacity .5s; max-width:340px; line-height:1.7; }
+.atk-icon { font-size:96px; line-height:1; opacity:0; transform:scale(.2); }
+.atk-icon.go { animation:atk-pop 1s cubic-bezier(.2,1.4,.4,1) forwards; }
+@keyframes atk-pop { 0%{opacity:0;transform:scale(.2) rotate(-30deg)} 60%{opacity:1;transform:scale(1.25) rotate(10deg)} 100%{opacity:1;transform:scale(1) rotate(0)} }
+.atk-result { font-family:var(--font-game); font-size:20px; color:var(--gold); text-shadow:0 0 18px rgba(255,215,0,.7); opacity:0; transition:opacity .5s; }
+.atk-help { font-size:12px; color:#c9c3ee; opacity:0; transition:opacity .5s; line-height:1.8; max-width:340px; }
+.attack-overlay .show { opacity:1; }
+.attack-overlay .event-skip.show { opacity:1; }
+.attack-overlay.screen-flash { animation:atk-flash .5s ease-out; }
+@keyframes atk-flash { 0%{background:rgba(255,255,255,.9)} 100%{background:rgba(10,0,20,.94)} }
+
+.rescue-section { margin-bottom:16px; }
+.rescue-list { display:flex; flex-direction:column; gap:6px; }
+.rescue-item { background:var(--rpg-surface); border:1px solid #6b4bb3; border-radius:8px; padding:10px 12px; display:flex; align-items:center; gap:10px; color:#e8e6ff; }
+.rescue-icon { font-size:26px; width:36px; text-align:center; flex-shrink:0; }
+.rescue-body { flex:1; min-width:0; }
+.rescue-name { font-family:var(--font-game); font-size:13px; }
+.rescue-sub { font-size:10px; color:#8888bb; margin-top:2px; }
+.candy-btn { flex-shrink:0; padding:8px 12px; border-radius:8px; border:1px solid var(--gold); background:rgba(255,215,0,.12); color:var(--gold); font-family:var(--font-game); font-size:12px; cursor:pointer; }
+.candy-btn:disabled { opacity:.35; cursor:default; }
+.rescue-note { font-size:11px; color:#8888bb; margin-top:6px; line-height:1.7; }
+.st-tag { margin-left:4px; }
+
 /* スクリーン震動 */
 @keyframes screen-shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-4px)} 40%{transform:translateX(4px)} 60%{transform:translateX(-3px)} 80%{transform:translateX(3px)} }
 .shake { animation:screen-shake .3s ease-out; }
@@ -814,6 +860,7 @@ td.td-name { padding-left: 16px; text-align: left; }
           <div class="rpg-atk" id="rpg-atk">ATK —</div>
         </div>
       </div>
+      <div class="status-box" id="s-status-box"></div>
       <div class="streak-bar">
         <div>
           <div class="streak-num" id="s-streak">0</div>
@@ -938,6 +985,11 @@ td.td-name { padding-left: 16px; text-align: left; }
         <div class="dmg-card"><div class="dmg-val" style="color:var(--rpg-green);" id="active-count">0</div><div class="dmg-lbl">今日の参戦人数</div></div>
       </div>
     </div>
+    <div class="rescue-section" id="rescue-section" style="display:none;">
+      <div class="rpg-section-title">🆘 たすけて！攻撃を受けている仲間</div>
+      <div class="rescue-list" id="rescue-list"></div>
+      <div class="rescue-note" id="rescue-note"></div>
+    </div>
     <div class="rank-section">
       <div class="rpg-section-title">⚔ 今月のダメージランキング</div>
       <div class="rank-list" id="rank-list"></div>
@@ -952,6 +1004,15 @@ td.td-name { padding-left: 16px; text-align: left; }
   <div class="bi-name" id="bi-name"></div>
   <div class="bi-sub" id="bi-sub"></div>
   <button class="event-skip" id="bi-skip" onclick="closeBossIntro()">タップして戦いへ ▶</button>
+</div>
+
+<div class="attack-overlay" id="attack-overlay">
+  <div class="atk-warn" id="atk-warn">⚠ 敵の攻撃！</div>
+  <div class="atk-line" id="atk-line"></div>
+  <div class="atk-icon" id="atk-icon"></div>
+  <div class="atk-result" id="atk-result"></div>
+  <div class="atk-help" id="atk-help"></div>
+  <button class="event-skip" id="atk-skip" onclick="closeEnemyAttack()">タップして続ける ▶</button>
 </div>
 
 <div class="boss-event-overlay" id="boss-event-overlay">
@@ -1214,6 +1275,7 @@ async function verifyPin() {
   const res = await api('verifyPin', { studentId: currentStudent.id, pin: pinBuffer });
   if (res.ok && res.valid) {
     showInputScreen();
+    checkEnemyAttack();
   } else {
     document.getElementById('pin-error').textContent = '暗証番号が違います。もう一度！';
     pinBuffer = '';
@@ -1305,8 +1367,26 @@ async function submitRecord() {
     const streak = calcStreak(currentStudent.id);
     const bonus = streak >= 7 ? 2 : streak >= 3 ? 1.5 : 1;
     const done = currentDone.size;
-    const isCrit = done === 6 && Math.random() < 0.3;
-    const dmg = Math.round(done * info.lv * 10 * bonus * (isCrit ? 2 : 1));
+    const nickname = currentStudent.nickname || currentStudent.name;
+
+    // 友達に助けてもらっているかもしれないので、状態を最新にしてから計算する
+    if (MY_STATUS && MY_STATUS.status) await loadStatuses();
+
+    // 6つ全部やりきったら、魔法・ひるみを自力で打ち破る
+    let spellMsg = '';
+    if (done === 6 && MY_STATUS && MY_STATUS.status) {
+      const br = await api('breakSpell', { studentId: currentStudent.id, nickname });
+      if (br.ok && br.broken) {
+        spellMsg = `✨ ${STATUS_DEFS[MY_STATUS.status]?.name || '魔法'}を打ち破った！EXP+${br.exp} `;
+        setMyStatus({ status: '', end: '', enemy: '' });
+        api('getExpBonus', {}).then(r => { if (r.ok) EXP_BONUSES = r.bonuses || {}; });
+      }
+    }
+    const stDef = (MY_STATUS && MY_STATUS.status) ? STATUS_DEFS[MY_STATUS.status] : null;
+    const critRate = stDef && stDef.critRate ? stDef.critRate : 0.3;
+    const isCrit = done === 6 && Math.random() < critRate;
+    const statusMult = stDef ? stDef.mult() : 1;
+    const dmg = Math.round(done * info.lv * 10 * bonus * (isCrit ? 2 : 1) * statusMult);
     const expGain = done * 10 + (done === 6 ? 40 : 0);
     const oldLv = info.lv;
 
@@ -1319,46 +1399,55 @@ async function submitRecord() {
       }, 600);
     }
 
-    setTimeout(() => showAttackEffect(dmg, isCrit, currentStudent.name), 200);
-
-    // GASにダメージを保存（全員共有）
-    const nickname = currentStudent.nickname || currentStudent.name;
-    api('saveDamage', {
+    // GASにダメージを保存（全員共有）— 1日1回。保存できた時だけボスのHPを減らす
+    const sd = dmg > 0 ? await api('saveDamage', {
       studentId: currentStudent.id,
       nickname,
       damage: dmg,
       isCrit,
       habitsDone: done,
-    });
+    }) : { ok: false };
 
-    // ボスHPをGASに保存
-    if (BOSS_DATA) {
-      const wasAlive = (BOSS_DATA.currentHp ?? BOSS_DATA.hp) > 0;
-      const newHp = Math.max(0, (BOSS_DATA.currentHp ?? BOSS_DATA.hp) - dmg);
-      BOSS_DATA.currentHp = newHp;
-      api('updateBossHp', { currentHp: newHp, heroName: currentStudent?.nickname || currentStudent?.name });
+    if (sd.ok) {
+      setTimeout(() => showAttackEffect(dmg, isCrit, currentStudent.name), 200);
 
-      // ボス討伐！
-      if (wasAlive && newHp <= 0) {
-        try {
-          localStorage.setItem('boss_hero', JSON.stringify({
-            name: nickname,
-            date: TODAY,
-            bossName: BOSS_DATA.name,
-          }));
-        } catch(e) {}
-        showBossDefeated(nickname, BOSS_DATA.treasure);
+      // ボスHPをGASに保存（引き算はGAS側で行う）
+      if (BOSS_DATA) {
+        BOSS_DATA.currentHp = Math.max(0, (BOSS_DATA.currentHp ?? BOSS_DATA.hp) - dmg);
+        const hpRes = await api('updateBossHp', { damage: dmg, heroName: nickname, heroId: currentStudent.id });
+        if (hpRes.ok && typeof hpRes.currentHp === 'number') BOSS_DATA.currentHp = hpRes.currentHp;
+
+        // ボス討伐！（トドメを刺した本人）
+        if (hpRes.ok && hpRes.defeated) {
+          const killedName = hpRes.bossName || BOSS_DATA.name;
+          try {
+            localStorage.setItem('boss_hero', JSON.stringify({ name: nickname, date: TODAY, bossName: killedName }));
+            localStorage.setItem(`boss_defeated_seen_${killedName}`, '1'); // 自分の端末で同じ演出を2回見ないように
+          } catch(e) {}
+          showBossDefeated(nickname, hpRes.treasure || BOSS_DATA.treasure, killedName);
+        }
+      }
+
+      // リアルタイムでダメージログ更新
+      DAMAGE_LOG.unshift({ nickname, damage: dmg, isCrit, date: TODAY });
+      TODAY_DMG += dmg;
+      MONTH_DMG += dmg;
+      renderBossHp();
+
+      // お菓子をひろった！
+      if (sd.drop) {
+        setMyStatus({ candies: sd.candies });
+        setTimeout(() => showToast('🍬 敵がお菓子を落とした！ひろった！（' + sd.candies + '個）'), 3200);
       }
     }
 
-    // リアルタイムでダメージログ更新
-    DAMAGE_LOG.unshift({ nickname, damage: dmg, isCrit, date: TODAY });
-    TODAY_DMG += dmg;
-    MONTH_DMG += dmg;
-    renderBossHp();
-
     updateRpgStatus(currentStudent.id);
-    showToast(`${done}個達成！ボスに${dmg}ダメージ！EXP+${expGain} 🎉`);
+    const effNote = stDef && sd.ok ? `（${stDef.icon}${stDef.name}：${stDef.short}）` : '';
+    showToast(sd.ok
+      ? `${spellMsg}${done}個達成！ボスに${dmg}ダメージ${effNote}！EXP+${expGain} 🎉`
+      : dmg > 0
+        ? `${spellMsg}${done}個達成！記録を更新したよ（今日の攻撃はもう済んでいるよ）`
+        : `${spellMsg}記録しました！`);
   } else {
     btn.textContent = '⚠ 送信失敗。再試行してください';
     btn.disabled = false;
@@ -1367,6 +1456,9 @@ async function submitRecord() {
 
 function backToNames() {
   currentStudent = null; pinBuffer = '';
+  MY_STATUS = null;
+  const sb = document.getElementById('s-status-box');
+  if (sb) sb.className = 'status-box';
   document.getElementById('nickname-input').value = '';
   document.getElementById('nickname-error').textContent = '';
   document.getElementById('screen-name').style.display = 'block';
@@ -2003,7 +2095,7 @@ function showView(v,btn){
   if(v==='monthly') { renderMonthly(); }
 }
 
-function showBossDefeated(heroName, treasure) {
+function showBossDefeated(heroName, treasure, killedBossName) {
   const overlay = document.getElementById('boss-event-overlay');
   const t1 = document.getElementById('event-text-1');
   const t2 = document.getElementById('event-text-2');
@@ -2052,7 +2144,7 @@ function showBossDefeated(heroName, treasure) {
   api('grantBossExp', {
     heroStudentId: currentStudent?.id,
     heroNickname: heroName,
-    bossName: BOSS_DATA?.name || 'ボス',
+    bossName: killedBossName || BOSS_DATA?.name || 'ボス',
   }).then(res => {
     if (res.ok) {
       console.log(`討伐EXP付与: ${res.grantCount}名`);
@@ -2103,6 +2195,215 @@ function showBossIntro() {
 }
 function closeBossIntro() {
   document.getElementById('boss-intro-overlay').classList.remove('show');
+}
+
+// ═══════════════════════════════════════════════
+// 敵の攻撃・状態異常・お菓子
+// ═══════════════════════════════════════════════
+const STATUS_DEFS = {
+  flinch:  { icon:'💫', name:'ひるみ',             short:'ダメージ0.8倍',          desc:'ひるんで力が出ない！今日のダメージが0.8倍', mult:() => 0.8, todayOnly:true },
+  pumpkin: { icon:'🎃', name:'ジャック・オ・ランタン', short:'ダメージ半分',           desc:'頭がカボチャで前が見えない！ダメージが半分', mult:() => 0.5 },
+  bat:     { icon:'🦇', name:'コウモリ',           short:'ダメージ0.1〜2倍',       desc:'フラフラ飛んで、ダメージが0.1〜2倍のどれかになる（大当たりもある！）', mult:() => 0.1 + Math.random() * 1.9 },
+  cat:     { icon:'🐈‍⬛', name:'黒猫',             short:'0.8倍・会心が出やすい', desc:'気まぐれ。ダメージは0.8倍だけど、会心の一撃が出やすい（6つ全部やりきったとき）', mult:() => 0.8, critRate:0.6 },
+  curse:   { icon:'😵', name:'呪い',               short:'ダメージ0.7倍',          desc:'呪いで体が重い。ダメージが0.7倍', mult:() => 0.7 },
+};
+const ENEMY_ATTACK_LINES = {
+  mob_slime:  'あやしいスライムがベトベトをとばしてきた！',
+  mob_goblin: 'おこりんぼゴブリンがこん棒をふりまわした！',
+  mob_ghost:  'ふわふわゴーストが「ばあっ！」とおどかしてきた！',
+  mob_bat:    'なまけコウモリが超音波を出した！耳がキーン！',
+};
+const STATUS_RESULT_LINES = {
+  flinch:  'ひるんでしまった！',
+  pumpkin: 'ジャック・オ・ランタンにされてしまった！',
+  bat:     'コウモリにされてしまった！',
+  cat:     '黒猫にされてしまった！',
+  curse:   '呪われてしまった！',
+};
+
+let STATUS_MAP = {};   // { 生徒ID: { status, end, candies, ... } }
+let MY_STATUS = null;  // ログイン中の生徒の状態
+
+function mdLabel(dateStr) {
+  if (!dateStr) return '';
+  const p = String(dateStr).slice(0, 10).split('-');
+  return p.length === 3 ? `${Number(p[1])}/${Number(p[2])}` : String(dateStr);
+}
+
+async function loadStatuses() {
+  try {
+    const res = await api('getStatuses', {});
+    if (res && res.ok && res.statuses) {
+      STATUS_MAP = res.statuses;
+      if (currentStudent && STATUS_MAP[String(currentStudent.id)]) {
+        const m = STATUS_MAP[String(currentStudent.id)];
+        MY_STATUS = { status: m.status || '', end: m.end || '', enemy: m.enemy || '', candies: Number(m.candies) || 0 };
+        renderMyStatus();
+      }
+    }
+  } catch(e) {}
+}
+
+function setMyStatus(partial) {
+  if (!currentStudent) return;
+  MY_STATUS = { ...(MY_STATUS || { status:'', end:'', enemy:'', candies:0 }), ...partial };
+  STATUS_MAP[String(currentStudent.id)] = { ...(STATUS_MAP[String(currentStudent.id)] || {}), ...MY_STATUS };
+  renderMyStatus();
+}
+
+// ログイン直後：その日はじめてなら敵の攻撃判定
+async function checkEnemyAttack() {
+  if (!currentStudent) return;
+  const sid = currentStudent.id;
+  const res = await api('rollAttack', { studentId: sid, nickname: currentStudent.nickname || currentStudent.name });
+  if (!res || !res.ok || !currentStudent || currentStudent.id !== sid) return; // GAS未更新・別の子に切替済みなら何もしない
+  setMyStatus({ status: res.status || '', end: res.end || '', enemy: res.enemy || '', candies: Number(res.candies) || 0 });
+  if (res.attacked) showEnemyAttack(res);
+}
+
+function renderMyStatus() {
+  const box = document.getElementById('s-status-box');
+  if (!box || !MY_STATUS) return;
+  const candies = Number(MY_STATUS.candies) || 0;
+  const chip = `<div class="candy-chip">🍬 × ${candies}</div>`;
+  const def = MY_STATUS.status ? STATUS_DEFS[MY_STATUS.status] : null;
+  if (def) {
+    const until = def.todayOnly ? '今日だけ' : `${mdLabel(MY_STATUS.end)}まで続く`;
+    box.className = 'status-box show';
+    box.innerHTML = `
+      <div class="status-top">
+        <div class="status-icon">${def.icon}</div>
+        <div><div class="status-name">${def.name}になっている！</div><div class="status-desc">${def.desc}</div></div>
+        ${chip}
+      </div>
+      <div class="status-howto">
+        🔓 元に戻る方法<br>
+        ・習慣を<b>6つ全部</b>やりきる（自力で打ち破れる！）<br>
+        ・友達がお菓子🍬をくれる<br>
+        ・何もしなくても ${until}
+      </div>`;
+  } else {
+    box.className = 'status-box show calm';
+    box.innerHTML = `
+      <div class="status-top">
+        <div class="status-icon">🛡</div>
+        <div><div class="status-name">元気いっぱい！</div><div class="status-desc">仲間がピンチなら「ボス討伐」でお菓子をあげて助けよう</div></div>
+        ${chip}
+      </div>`;
+  }
+}
+
+function showEnemyAttack(res) {
+  const def = STATUS_DEFS[res.status];
+  if (!def) return;
+  // 討伐演出・ボス登場演出が出ている間は、終わるまで待ってから攻撃を見せる
+  const busy = ['boss-event-overlay', 'boss-intro-overlay', 'levelup-overlay']
+    .some(id => document.getElementById(id)?.classList.contains('show'));
+  if (busy) { setTimeout(() => showEnemyAttack(res), 1000); return; }
+  const ov = document.getElementById('attack-overlay');
+  const line = document.getElementById('atk-line');
+  const icon = document.getElementById('atk-icon');
+  const result = document.getElementById('atk-result');
+  const help = document.getElementById('atk-help');
+  const skip = document.getElementById('atk-skip');
+  [line, result, help, skip].forEach(el => el.classList.remove('show'));
+  icon.classList.remove('go');
+
+  const type = String(res.enemyType || '');
+  if (type.indexOf('mob') === 0) {
+    line.textContent = ENEMY_ATTACK_LINES[type] || `${res.enemy}がおそいかかってきた！`;
+  } else if (res.status === 'curse') {
+    line.textContent = `${res.enemy}が呪いの言葉をとなえた！`;
+  } else {
+    line.textContent = `${res.enemy}が「トリック・オア・トリート！」と魔法をとなえた！`;
+  }
+  icon.textContent = def.icon;
+  result.textContent = STATUS_RESULT_LINES[res.status] || `${def.name}になってしまった！`;
+  const until = def.todayOnly ? '今日だけ' : `${mdLabel(res.end)}まで`;
+  help.innerHTML = `${def.desc}（${until}）<br>習慣を6つ全部やりきるか、友達にお菓子🍬をもらえば元に戻れるよ！`;
+
+  ov.classList.remove('screen-flash'); void ov.offsetWidth;
+  ov.classList.add('show', 'screen-flash');
+  setTimeout(() => line.classList.add('show'), 500);
+  setTimeout(() => icon.classList.add('go'), 1700);
+  setTimeout(() => result.classList.add('show'), 2600);
+  setTimeout(() => help.classList.add('show'), 3400);
+  setTimeout(() => skip.classList.add('show'), 4300);
+}
+function closeEnemyAttack() {
+  document.getElementById('attack-overlay').classList.remove('show', 'screen-flash');
+}
+
+function studentNameById(id) {
+  const st = STUDENTS.find(s => String(s.id) === String(id));
+  return st ? (st.nickname || st.name) : (STATUS_MAP[String(id)]?.nickname || String(id));
+}
+function statusTagById(id) {
+  const m = STATUS_MAP[String(id)];
+  const def = m && m.status ? STATUS_DEFS[m.status] : null;
+  return def ? `<span class="st-tag" title="${def.name}">${def.icon}</span>` : '';
+}
+function statusTagByNick(nick) {
+  const st = STUDENTS.find(s => (s.nickname || s.name) === nick || s.name === nick);
+  return st ? statusTagById(st.id) : '';
+}
+
+function renderRescue() {
+  const sec = document.getElementById('rescue-section');
+  const list = document.getElementById('rescue-list');
+  const note = document.getElementById('rescue-note');
+  if (!sec || !list) return;
+  const activeIds = new Set(STUDENTS.map(s => String(s.id)));
+  const victims = Object.keys(STATUS_MAP)
+    .filter(id => STATUS_MAP[id] && STATUS_MAP[id].status && STATUS_DEFS[STATUS_MAP[id].status] && activeIds.has(id));
+  if (victims.length === 0) { sec.style.display = 'none'; return; }
+  sec.style.display = 'block';
+  const myId = currentStudent ? String(currentStudent.id) : null;
+  const myCandies = MY_STATUS ? (Number(MY_STATUS.candies) || 0) : 0;
+  list.innerHTML = victims.map(id => {
+    const m = STATUS_MAP[id];
+    const def = STATUS_DEFS[m.status];
+    const until = def.todayOnly ? '今日だけ' : `${mdLabel(m.end)}まで`;
+    let btn = '';
+    if (myId && id !== myId) {
+      btn = `<button class="candy-btn" ${myCandies > 0 ? '' : 'disabled'} onclick="giveCandyTo('${id}', this)">🍬 あげる</button>`;
+    } else if (myId && id === myId) {
+      btn = `<span style="font-size:10px;color:#8888bb;">助けを待とう</span>`;
+    }
+    return `<div class="rescue-item">
+      <div class="rescue-icon">${def.icon}</div>
+      <div class="rescue-body">
+        <div class="rescue-name">${studentNameById(id)}</div>
+        <div class="rescue-sub">${def.name}（${def.short}）・${until}</div>
+      </div>
+      ${btn}
+    </div>`;
+  }).join('');
+  if (note) {
+    note.innerHTML = myId
+      ? `あなたのお菓子：🍬 × ${myCandies}　（お菓子は友達にだけあげられるよ。助けるとEXP+50！）`
+      : 'ログインすると、お菓子🍬をあげて仲間を助けられるよ';
+  }
+}
+
+async function giveCandyTo(toId, btnEl) {
+  if (!currentStudent) return;
+  document.querySelectorAll('.candy-btn').forEach(b => b.disabled = true);
+  const res = await api('giveCandy', {
+    fromId: currentStudent.id,
+    fromNickname: currentStudent.nickname || currentStudent.name,
+    toId,
+  });
+  if (res && res.ok) {
+    setMyStatus({ candies: res.candies });
+    if (STATUS_MAP[String(toId)]) STATUS_MAP[String(toId)] = { ...STATUS_MAP[String(toId)], status: '', end: '' };
+    showToast(`🍬 ${res.rescued || studentNameById(toId)}を助けた！ EXP+${res.exp || 50}`);
+    api('getExpBonus', {}).then(r => { if (r.ok) EXP_BONUSES = r.bonuses || {}; });
+  } else {
+    showToast('⚠ ' + ((res && res.error) || 'うまくいかなかったよ。もう一度ためしてね'));
+    await loadStatuses();
+  }
+  renderBossView();
 }
 
 function showToast(msg){
@@ -2316,6 +2617,8 @@ async function loadBossData() {
     const bossRes = await api('getBoss', {});
     if (bossRes.ok && bossRes.boss) {
       BOSS_DATA = bossRes.boss;
+      // 現在HPが空欄なら最大HPとして扱う
+      if (BOSS_DATA.currentHp === '' || BOSS_DATA.currentHp === null || BOSS_DATA.currentHp === undefined) BOSS_DATA.currentHp = BOSS_DATA.hp;
       previousDefeat = bossRes.previousDefeat || null;
     } else {
       const now = new Date();
@@ -2328,6 +2631,8 @@ async function loadBossData() {
       };
     }
   } catch(e) {}
+
+  await loadStatuses();
 
   try {
     const logRes = await api('getDamageLog', { days: 30 });
@@ -2349,7 +2654,7 @@ async function loadBossData() {
       if (!localStorage.getItem(seenKey)) {
         localStorage.setItem(seenKey, '1');
         defeatScheduled = true;
-        setTimeout(() => showBossDefeated(BOSS_DATA.hero, BOSS_DATA.treasure), 800);
+        setTimeout(() => showBossDefeated(BOSS_DATA.hero, BOSS_DATA.treasure, BOSS_DATA.name), 800);
         // フラグは消さない（各端末のローカルストレージで管理）
       }
     } catch(e) {}
@@ -2362,7 +2667,7 @@ async function loadBossData() {
       if (!localStorage.getItem(seenKey)) {
         localStorage.setItem(seenKey, '1');
         defeatScheduled = true;
-        setTimeout(() => showBossDefeated(previousDefeat.hero, previousDefeat.treasure), 800);
+        setTimeout(() => showBossDefeated(previousDefeat.hero, previousDefeat.treasure, previousDefeat.name), 800);
       }
     } catch(e) {}
   }
@@ -2432,7 +2737,7 @@ function showAttackEffect(dmg, isCrit, name, opts) {
     setTimeout(() => spriteWrap.classList.remove('shake'), 350); // 揺れ終了後、浮遊アニメーションを再開させる
   }
   if (applyDamage && BOSS_DATA) {
-    BOSS_DATA.currentHp = Math.max(0, (BOSS_DATA.currentHp || BOSS_DATA.hp) - dmg);
+    BOSS_DATA.currentHp = Math.max(0, (BOSS_DATA.currentHp ?? BOSS_DATA.hp) - dmg);
     const log = document.getElementById('damage-log');
     if (log) {
       const msg = isCrit
@@ -2541,7 +2846,7 @@ function renderBossView() {
         const crit = l.isCrit === true || l.isCrit === 'true' || l.isCrit === 'YES';
         // マル単からのダメージは「魔法」として表示
         const isMagic = /\(マル単\)$/.test(rawNick) || l.habitsDone === 'マル単';
-        const nick = rawNick.replace(/\(マル単\)$/, '');
+        const nick = rawNick.replace(/\(マル単\)$/, '') + statusTagByNick(rawNick.replace(/\(マル単\)$/, ''));
         // 日付表示（例：8/6）
         const dateStr = l.date ? (() => {
           const d = new Date(l.date);
@@ -2595,6 +2900,8 @@ function renderBossView() {
   const acEl = document.getElementById('active-count');
   if (acEl) acEl.textContent = submitted;
 
+  renderRescue();
+
   const rankList = document.getElementById('rank-list');
   if (!rankList) return;
   rankList.innerHTML = sorted.slice(0,15).map((s,i) => {
@@ -2609,7 +2916,7 @@ function renderBossView() {
       <div class="rank-num ${numClass}">${numText}</div>
       <div class="rank-avatar">⚔</div>
       <div class="rank-body">
-        <div class="rank-name">${displayName}</div>
+        <div class="rank-name">${displayName}${statusTagById(s.id)}</div>
         <div class="rank-sub" style="color:#8888bb;font-size:10px;">${title}</div>
         <div class="dmg-bar-wrap">
           <div class="dmg-bar-track"><div class="dmg-bar-fill" style="width:${pct}%"></div></div>
