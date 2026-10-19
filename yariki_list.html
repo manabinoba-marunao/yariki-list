@@ -1178,6 +1178,13 @@ async function api(action, body={}) {
   }
 }
 
+
+/* ==== MAL QUEST 共通ログイン(やりきリスト・マル単で1回だけ) ==== */
+const MQ_KEY = 'mq_login';
+function mqGet(){ try{ const v = JSON.parse(localStorage.getItem(MQ_KEY) || 'null'); return v && v.nickname ? v : null; }catch(e){ return null; } }
+function mqSet(o){ try{ localStorage.setItem(MQ_KEY, JSON.stringify(Object.assign({at: Date.now()}, o))); }catch(e){} }
+function mqClear(){ try{ localStorage.removeItem(MQ_KEY); }catch(e){} }
+
 let STUDENTS = [];
 let ALL_RECORDS = {}; // {studentId: {date: [0/1/null x6]}}
 let currentStudent = null;
@@ -1229,6 +1236,21 @@ async function loadAllData() {
 
   renderNameGrid();
   document.getElementById('loading').style.display = 'none';
+  mqAutoLogin();
+}
+
+// やりきリストかマル単で一度ログインしていれば、名前と暗証番号を飛ばしてそのまま入る
+function mqAutoLogin() {
+  if (currentStudent) return;
+  if (document.getElementById('screen-name').style.display === 'none') return;
+  const m = mqGet();
+  if (!m || m.kind !== 'student' || m.id == null) return;
+  const st = STUDENTS.find(s => String(s.id) === String(m.id));
+  if (!st) return;
+  currentStudent = st;
+  document.getElementById('screen-name').style.display = 'none';
+  showInputScreen();
+  checkEnemyAttack();
 }
 
 
@@ -1274,6 +1296,7 @@ function updatePinDots() {
 async function verifyPin() {
   const res = await api('verifyPin', { studentId: currentStudent.id, pin: pinBuffer });
   if (res.ok && res.valid) {
+    mqSet({ kind: 'student', id: currentStudent.id, nickname: currentStudent.nickname || currentStudent.name });
     showInputScreen();
     checkEnemyAttack();
   } else {
@@ -1455,6 +1478,7 @@ async function submitRecord() {
 }
 
 function backToNames() {
+  mqClear();
   currentStudent = null; pinBuffer = '';
   MY_STATUS = null;
   const sb = document.getElementById('s-status-box');
@@ -2083,8 +2107,12 @@ function toggleExpand(id){
 
 function showView(v,btn){
   if(v==='teacher'||v==='monthly'){
-    const pw=prompt('先生用パスワードを入力してください');
-    if(pw!=='6462'){ showToast('パスワードが違います'); return; }
+    let ok=false; try{ ok = localStorage.getItem('yariki_teacher_ok')==='1'; }catch(e){}
+    if(!ok){
+      const pw=prompt('先生用パスワードを入力してください');
+      if(pw!=='6462'){ showToast('パスワードが違います'); return; }
+      try{ localStorage.setItem('yariki_teacher_ok','1'); }catch(e){}
+    }
   }
   document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
