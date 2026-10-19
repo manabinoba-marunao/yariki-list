@@ -3416,7 +3416,8 @@ function mqsBolt(x0,y0,x1,y1,delay,dur,width){
   });
 }
 // 魔法陣
-function mqsCircle(x, y, r, color, delay, dur){
+function mqsCircle(x, y, r, color, delay, dur, lv){
+  lv = lv || 1;
   mqsFx(delay, dur||900, (ctx, t) => {
     const a = t<.2 ? t/.2 : (t>.8 ? (1-t)/.2 : 1), rot = t*2.2, R = r*MQS.dpr*(.6+.4*mqsEase.out(Math.min(1,t*3)));
     ctx.save(); ctx.translate(x, y); ctx.scale(1, .38); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = a;
@@ -3425,6 +3426,11 @@ function mqsCircle(x, y, r, color, delay, dur){
     ctx.lineWidth = 1.5*MQS.dpr; ctx.beginPath(); ctx.arc(0,0,R*.78,0,Math.PI*2); ctx.stroke();
     ctx.rotate(rot); ctx.beginPath(); for(let i=0;i<=5;i++){ const ang=-Math.PI/2+i*4*Math.PI/5; const X=Math.cos(ang)*R*.78, Y=Math.sin(ang)*R*.78; i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);} ctx.stroke();
     for(let i=0;i<24;i++){ const ang=i/24*Math.PI*2-rot*2; ctx.beginPath(); ctx.moveTo(Math.cos(ang)*R*.86,Math.sin(ang)*R*.86); ctx.lineTo(Math.cos(ang)*R*.96,Math.sin(ang)*R*.96); ctx.stroke(); }
+    if(lv >= 4){ ctx.rotate(-rot*2.2); ctx.lineWidth = 2*MQS.dpr; ctx.beginPath(); ctx.arc(0,0,R*1.22,0,Math.PI*2); ctx.stroke();
+      for(let i=0;i<12;i++){ const ang=i/12*Math.PI*2; ctx.save(); ctx.translate(Math.cos(ang)*R*1.1,Math.sin(ang)*R*1.1); ctx.rotate(ang); ctx.strokeRect(-4*MQS.dpr,-4*MQS.dpr,8*MQS.dpr,8*MQS.dpr); ctx.restore(); } }
+    if(lv >= 7){ ctx.rotate(rot*3); ctx.lineWidth = 1.5*MQS.dpr; for(let k=0;k<2;k++){ ctx.beginPath(); for(let i=0;i<=3;i++){ const ang=k*Math.PI/3+i*2*Math.PI/3-Math.PI/2; const X=Math.cos(ang)*R*.55, Y=Math.sin(ang)*R*.55; i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);} ctx.stroke(); }
+      ctx.beginPath(); ctx.arc(0,0,R*1.42,0,Math.PI*2); ctx.stroke(); }
+    if(lv >= 10){ ctx.globalAlpha = a*.5; ctx.fillStyle = color; ctx.beginPath(); ctx.arc(0,0,R*.3*(1+.15*Math.sin(t*20)),0,Math.PI*2); ctx.fill(); }
     ctx.restore(); ctx.shadowBlur = 0; ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
   });
 }
@@ -3534,8 +3540,10 @@ function mqsPlay(o, B, H){
 
   // ---- 魔法 ----
   const E = MQS_ELEMENTS[o.element] || { color:o.color||'#b48cff', light:'#efe6ff', word:'', w1:'#efe6ff', w2:'#7a4dff' };
-  mqsCircle(H.x, H.y + 34*d, 70, E.color, 250, 1100);
-  for(let i=0;i<34;i++) mqsAt(260 + i*16, () => { const a=Math.random()*Math.PI*2, r=mqsRand(50,110)*d; mqsPart({ x:H.x+Math.cos(a)*r, y:H.y+Math.sin(a)*r, vx:-Math.cos(a)*r/16, vy:-Math.sin(a)*r/16, drag:1, max:16, size:mqsRand(5,9)*d, color:E.color, type:'glow' }); });
+  const LV = Math.max(1, Math.min(10, o.mlv || 1));
+  mqsCircle(H.x, H.y + 34*d, 56 + LV*6, E.color, 250, 1100, LV);
+  if(LV >= 5) mqsCircle(bx, by + bw*.75, 50 + LV*8, E.color, 700, 900, LV);   // 魔力が高いとボスの足元にも魔法陣
+  for(let i=0;i<20+LV*4;i++) mqsAt(260 + i*16, () => { const a=Math.random()*Math.PI*2, r=mqsRand(50,110)*d; mqsPart({ x:H.x+Math.cos(a)*r, y:H.y+Math.sin(a)*r, vx:-Math.cos(a)*r/16, vy:-Math.sin(a)*r/16, drag:1, max:16, size:mqsRand(5,9)*d, color:E.color, type:'glow' }); });
   const hit = () => { mqsHitBoss(o); word('', E.word, E.w1, E.w2); };
   if(o.element === 'thunder'){
     mqsAt(T - 380, () => { document.getElementById('mqs-bg').classList.add('dim'); });
@@ -3563,7 +3571,7 @@ function mqsPlay(o, B, H){
     });
   } else {
     const color = E.color;
-    mqsAt(T - 520, () => mqsProjectile(H.x+16*d, H.y-20*d, bx, by, color, 0, 520, 24));
+    mqsAt(T - 520, () => mqsProjectile(H.x+16*d, H.y-20*d, bx, by, color, 0, 520, 18 + LV*2.5));
     mqsAt(T, () => {
       mqsFlash(.5, 220); mqsShake(16); mqsRing(bx, by, bw*.95, color, 0, 480, 12); mqsSpeedLines(bx, by, 0, 300); mqsFlare(bx, by, 300, E.light, 0, 450);
       if(o.element === 'fire'){
@@ -3629,7 +3637,7 @@ function mqStrike(o){
   const wpn = magic ? `<span class="mqs-wpn fist">${E ? E.icon : '🔮'}</span>`
     : (o.weaponHtml && o.weaponHtml.indexOf('<svg') === 0 ? `<span class="mqs-wpn">${o.weaponHtml}</span>` : `<span class="mqs-wpn fist">${o.weaponHtml || '👊'}</span>`);
   const digits = Array.from((Number(o.dmg)||0).toLocaleString()).map((c,i) => `<span style="animation-delay:${i*45}ms">${c}</span>`).join('');
-  const label = magic ? (E ? `${E.icon} MAGIC ATTACK` : '🔮 MAGIC ATTACK') : punch ? '👊 PUNCH' : '⚔ ATTACK';
+  const label = magic ? (E ? `${E.icon} MAGIC ATTACK${o.mlv ? ' ・ 魔力Lv' + o.mlv : ''}` : '🔮 MAGIC ATTACK') : punch ? '👊 PUNCH' : '⚔ ATTACK';
   const msg = magic ? `${mqsEsc(o.spell || 'マル単の魔法')}！` : punch ? 'こぶしでパンチ！' : `${mqsEsc(o.weaponName || '')}で攻撃！`;
   st.innerHTML = `
     <div class="mqs-title">${label}</div>
@@ -3674,8 +3682,10 @@ function mqStrike(o){
   box.appendChild(title);
   WEAPONS.slice().reverse().forEach(w => box.appendChild(btn(w.cls === 'w1' ? '👊 素手' : w.name, () => mqStrike({ kind: w.cls === 'w1' ? 'punch' : 'slash', dmg: 1234, crit: false, hero: 'テスト', weaponHtml: weaponIcon(w, {held:true}), weaponName: w.name, tier: w.cls, boss: boss() }))));
   box.appendChild(btn('⚡ 会心', () => { const w = WEAPONS[0]; mqStrike({ kind:'slash', dmg: 5678, crit: true, hero: 'テスト', weaponHtml: weaponIcon(w, {held:true}), weaponName: w.name, tier: w.cls, boss: boss() }); }));
+  let demoLv = 1; const lvBtn = btn('魔力Lv1', () => { demoLv = demoLv === 1 ? 5 : demoLv === 5 ? 10 : 1; lvBtn.textContent = '魔力Lv' + demoLv; });
   [['英語・風','wind'],['数学・雷','thunder'],['国語・水','water'],['理科・炎','fire'],['社会・大地','earth']].forEach(([n,el]) =>
-    box.appendChild(btn('🔮 ' + n, () => mqStrike({ kind:'magic', dmg: 240, crit:false, hero:'テスト', spell: n.split('・')[1] + 'の魔法', element: el, boss: boss() }))));
+    box.appendChild(btn('🔮 ' + n, () => mqStrike({ kind:'magic', dmg: 240, crit:false, hero:'テスト', spell: n.split('・')[1] + 'の魔法', element: el, mlv: demoLv, boss: boss() }))));
+  box.appendChild(lvBtn);
   box.appendChild(btn('✕ 閉じる', () => box.remove()));
   window.addEventListener('load', () => document.body.appendChild(box));
   if (document.readyState === 'complete') document.body.appendChild(box);
