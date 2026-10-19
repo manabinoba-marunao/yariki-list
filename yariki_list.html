@@ -380,27 +380,34 @@ td.td-name { padding-left: 16px; text-align: left; }
 .party-title { font-family:var(--font-game); font-size:12px; color:var(--gold); letter-spacing:.08em; margin-bottom:8px; text-align:center; }
 .party { display:flex; flex-wrap:wrap; justify-content:center; gap:10px 8px; }
 .party-empty { font-size:12px; color:#8888bb; text-align:center; padding:8px 0; }
-.pm { position:relative; width:64px; background:none; border:none; padding:18px 0 0; cursor:pointer; color:#e8e6ff; font-family:var(--font-game); -webkit-tap-highlight-color:transparent; }
+.pm { position:relative; width:72px; background:none; border:none; padding:30px 0 0; cursor:pointer; color:#e8e6ff; font-family:var(--font-game); -webkit-tap-highlight-color:transparent; }
 .pm:active { transform:scale(.95); }
 .pm-body { position:relative; width:46px; height:46px; margin:0 auto; border-radius:50%;
   background:radial-gradient(circle at 35% 30%,#3a3a6a,#1c1c38); border:2px solid #4a4a7a;
   display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; }
 .pm.me .pm-body { border-color:var(--gold); box-shadow:0 0 10px rgba(255,215,0,.5); }
 .pm-face { line-height:1; }
-.pm-wpn { position:absolute; right:-10px; bottom:-4px; font-size:20px; filter:drop-shadow(0 1px 2px #000); transform:rotate(-10deg); }
+.pm-wpn { position:absolute; right:-13px; bottom:-8px; line-height:0; filter:drop-shadow(0 1px 2px #000); transform:rotate(32deg); transform-origin:50% 85%; }
+.pm-wpn.w1 { right:-10px; bottom:-4px; font-size:20px; line-height:1; transform:rotate(-10deg); }
+.pm-wpn svg { display:block; height:44px; width:auto; }
+.wpn-inline { display:inline-block; vertical-align:-4px; line-height:0; transform:rotate(30deg); margin:0 2px; }
+.wpn-inline svg { height:20px; width:auto; }
+.rank-avatar .wpn-inline svg { height:28px; }
 .pm-wpn.w5 { filter:drop-shadow(0 0 6px #ffd700) drop-shadow(0 0 2px #fff); animation:wpn-glow 1.8s ease-in-out infinite; }
 .pm-wpn.w4 { filter:drop-shadow(0 0 4px #9fd3ff); }
-@keyframes wpn-glow { 0%,100%{transform:rotate(-10deg) scale(1)} 50%{transform:rotate(-10deg) scale(1.15)} }
-.pm-fx { position:absolute; top:0; left:50%; transform:translateX(-50%); font-size:18px; pointer-events:none; }
+@keyframes wpn-glow { 0%,100%{transform:rotate(32deg) scale(1)} 50%{transform:rotate(32deg) scale(1.1)} }
+.pm-fx { position:absolute; top:26px; left:-4px; font-size:17px; pointer-events:none; }
 .pm.st-bat .pm-fx { animation:fx-bat 1.2s ease-in-out infinite; }
 .pm.st-flinch .pm-fx { animation:fx-spin 1.6s linear infinite; }
 .pm.st-curse .pm-body { box-shadow:0 0 12px 2px rgba(170,68,255,.8); }
-.pm.st-cat .pm-fx { left:auto; right:-2px; top:30px; transform:none; font-size:16px; }
+.pm.st-cat .pm-fx { left:-6px; top:44px; font-size:16px; }
 .pm.st-pumpkin .pm-body { background:radial-gradient(circle,#4a2a00,#1c1c38); }
 .pm.st-pumpkin .pm-face { font-size:30px; }
-@keyframes fx-bat { 0%,100%{transform:translate(-60%,0) rotate(-8deg)} 50%{transform:translate(-40%,-6px) rotate(8deg)} }
-@keyframes fx-spin { 0%{transform:translateX(-50%) rotate(0)} 100%{transform:translateX(-50%) rotate(360deg)} }
-.pm-help { display:inline-block; margin-top:2px; background:var(--rpg-red); color:#fff; font-size:9px; border-radius:6px; padding:1px 5px; }
+@keyframes fx-bat { 0%,100%{transform:translate(0,0) rotate(-10deg)} 50%{transform:translate(4px,-6px) rotate(10deg)} }
+@keyframes fx-spin { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
+.pm-bubble { position:absolute; top:0; left:50%; transform:translateX(-50%); background:#fff; color:#d0283c; font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; white-space:nowrap; box-shadow:0 2px 6px rgba(0,0,0,.4); animation:bubble-bob 1.4s ease-in-out infinite; z-index:2; }
+.pm-bubble::after { content:''; position:absolute; bottom:-5px; left:50%; margin-left:-5px; border-left:5px solid transparent; border-right:5px solid transparent; border-top:6px solid #fff; }
+@keyframes bubble-bob { 0%,100%{transform:translate(-50%,0)} 50%{transform:translate(-50%,-3px)} }
 .pm-name { font-size:11px; margin-top:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .pm-dmg { font-family:var(--mono); font-size:10px; color:var(--gold); }
 .pm-dmg.zero { color:#666688; }
@@ -2443,6 +2450,19 @@ const WEAPONS = [
   { lv:0,  icon:'👊', name:'素手',           cls:'w1', verb:'打撃' },
 ];
 function esc(t) { return String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+const FIST = '<circle cx="10" cy="55" r="3.8" fill="#f1c27d" stroke="#b9854f" stroke-width=".7"/>';
+const WEAPON_SVG = {
+  w2: `<svg viewBox="0 0 20 64" xmlns="http://www.w3.org/2000/svg"><polygon points="10,1 6.8,12 13.2,12" fill="#e9c79f"/><polygon points="10,1 8.9,5 11.1,5" fill="#333"/><rect x="6.8" y="12" width="6.4" height="32" fill="#f6c443"/><rect x="9.3" y="12" width="1.4" height="32" fill="#dca52b"/><rect x="6.8" y="43" width="6.4" height="3.4" fill="#c9c9c9"/><rect x="3" y="46.5" width="14" height="3" rx="1.5" fill="#8b5a2b"/><rect x="8.6" y="49.5" width="2.8" height="11" fill="#6b4226"/><circle cx="10" cy="61.3" r="1.8" fill="#8b5a2b"/>%F</svg>`,
+  w3: `<svg viewBox="0 0 20 64" xmlns="http://www.w3.org/2000/svg"><rect x="9.6" y="0" width=".8" height="4.5" fill="#666"/><polygon points="10,3.5 8.4,9 11.6,9" fill="#d5dde8"/><rect x="8.4" y="9" width="3.2" height="35" fill="#4f86d4"/><rect x="8.4" y="31" width="3.2" height="11" fill="#243a66"/><rect x="11.4" y="12" width=".9" height="10" fill="#c7d2e2"/><path d="M3,46 Q10,53 17,46" stroke="#dfe6ef" stroke-width="1.8" fill="none"/><rect x="4" y="44.6" width="12" height="2" rx="1" fill="#dfe6ef"/><rect x="8.7" y="47" width="2.6" height="13" fill="#3a3a52"/><circle cx="10" cy="61" r="1.7" fill="#dfe6ef"/>%F</svg>`,
+  w4: `<svg viewBox="0 0 20 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="wg4" x1="0" x2="1"><stop offset="0" stop-color="#8d9bb0"/><stop offset=".45" stop-color="#f3f6fa"/><stop offset="1" stop-color="#7d8aa0"/></linearGradient></defs><polygon points="10,1 6.3,12 13.7,12" fill="#e4eaf2"/><circle cx="10" cy="1.8" r="1" fill="#222"/><rect x="6.3" y="12" width="7.4" height="33" rx="1" fill="url(#wg4)"/><rect x="12.4" y="15" width="1.7" height="15" rx=".8" fill="#5d6b80"/><rect x="1.5" y="45" width="17" height="3.8" rx="1.9" fill="#b9c5d4"/><circle cx="10" cy="46.9" r="2.1" fill="#3d7bff" stroke="#fff" stroke-width=".5"/><rect x="8.5" y="48.8" width="3" height="11.5" fill="#2f3b52"/><circle cx="10" cy="61.2" r="2" fill="#b9c5d4"/>%F</svg>`,
+  w5: `<svg viewBox="0 0 20 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="wg5" x1="0" x2="1"><stop offset="0" stop-color="#b8860b"/><stop offset=".5" stop-color="#fff2a8"/><stop offset="1" stop-color="#c9971a"/></linearGradient></defs><path d="M10,0 L14,10 L14,14 L6,14 L6,10 Z" fill="url(#wg5)"/><line x1="10" y1="2.5" x2="10" y2="10.5" stroke="#6b4c00" stroke-width=".8"/><circle cx="10" cy="11" r=".9" fill="#6b4c00"/><rect x="6" y="14" width="8" height="4" fill="#222"/><rect x="5.5" y="18" width="9" height="1.6" fill="#e8c25a"/><rect x="6" y="19.6" width="8" height="25" rx="1" fill="#1b1838"/><rect x="5.5" y="39" width="9" height="2" fill="#e8c25a"/><path d="M0.5,46.5 Q5,42 10,46 Q15,42 19.5,46.5 L19.5,49.5 Q10,47.5 0.5,49.5 Z" fill="url(#wg5)"/><circle cx="10" cy="48" r="1.9" fill="#ff3b6b" stroke="#fff" stroke-width=".5"/><rect x="8.5" y="49.5" width="3" height="11" fill="#1b1838"/><circle cx="10" cy="61.3" r="2.1" fill="url(#wg5)"/>%F</svg>`,
+};
+function weaponIcon(w, opts) {
+  const o = opts || {};
+  if (w.cls === 'w1') return o.held ? '👊' : '<span class="wpn-inline" style="transform:none">👊</span>';
+  const svg = WEAPON_SVG[w.cls].replace('%F', o.held ? FIST : '');
+  return o.held ? svg : `<span class="wpn-inline">${svg}</span>`;
+}
 function weaponFor(lv) { return WEAPONS.find(w => lv >= w.lv) || WEAPONS[WEAPONS.length-1]; }
 function studentByNick(nick) { return STUDENTS.find(s => (s.nickname || s.name) === nick || s.name === nick); }
 function levelOf(id) { return getLevelInfo(calcExpFromRecords(id) + (Number(EXP_BONUSES[id]) || 0)).lv; }
@@ -2484,11 +2504,10 @@ function renderParty() {
     const face = def && sm.status === 'pumpkin' ? '🎃' : esc(Array.from(name)[0] || '？');
     const fx = def && sm.status !== 'pumpkin' ? `<div class="pm-fx">${def.icon}</div>` : '';
     return `<button class="pm ${def ? 'st-' + sm.status : ''} ${p.id === myId ? 'me' : ''}" onclick="openMember('${p.id}')">
-      ${fx}
-      <div class="pm-body"><span class="pm-face">${face}</span><span class="pm-wpn ${w.cls}">${w.icon}</span></div>
+      ${def ? '<span class="pm-bubble">たすけて！</span>' : ''}${fx}
+      <div class="pm-body"><span class="pm-face">${face}</span><span class="pm-wpn ${w.cls}">${weaponIcon(w, {held:true})}</span></div>
       <div class="pm-name">${esc(name)}</div>
       <div class="pm-dmg ${total ? '' : 'zero'}">${total ? total.toLocaleString() : '—'}</div>
-      ${def ? '<span class="pm-help">たすけて</span>' : ''}
     </button>`;
   }).join('');
   const note = document.getElementById('party-note');
@@ -2515,7 +2534,7 @@ function openMember(id) {
   document.getElementById('pm-sheet-body').innerHTML = `
     <h3>${esc(studentNameById(p.id))}</h3>
     <div class="sub">Lv${lv}・${getTitle(lv)}</div>
-    <div class="pm-row"><span>武器</span><span>${w.icon} ${w.name}</span></div>
+    <div class="pm-row"><span>武器</span><span>${weaponIcon(w)} ${w.name}</span></div>
     <div class="pm-row"><span>⚔ 今日の${w.verb === '打撃' ? '打撃' : '斬撃'}(やりきリスト)</span><b>${p.hit.toLocaleString()}</b></div>
     <div class="pm-row"><span>🔮 今日の魔法(マル単)</span><b>${p.magic.toLocaleString()}</b></div>
     <div class="pm-row"><span>今月の合計</span><b>${calcMonthDmg(p.id).toLocaleString()}</b></div>
@@ -3037,8 +3056,8 @@ function renderBossView() {
           ? `🔮 [${dateStr}] <b>${nick}</b> の大魔法！<span class="log-magic-crit">✨${dmg.toLocaleString()}の魔法ダメージ</span>`
           : `🔮 [${dateStr}] <b>${nick}</b> の魔法！<span class="log-magic">${dmg.toLocaleString()}の魔法ダメージ</span>`;
         else line = crit
-          ? `${w.icon} [${dateStr}] <b>${nick}</b> の${w.verb}！<span class="log-crit">⚡会心の一撃！${dmg.toLocaleString()}ダメージ</span>`
-          : `${w.icon} [${dateStr}] <b>${nick}</b> の${w.verb}！<span class="log-dmg">${dmg.toLocaleString()}ダメージ</span>`;
+          ? `${weaponIcon(w)} [${dateStr}] <b>${nick}</b> の${w.verb}！<span class="log-crit">⚡会心の一撃！${dmg.toLocaleString()}ダメージ</span>`
+          : `${weaponIcon(w)} [${dateStr}] <b>${nick}</b> の${w.verb}！<span class="log-dmg">${dmg.toLocaleString()}ダメージ</span>`;
         return `<div class="log-line ${isToday ? 'log-today' : ''}">${line}</div>`;
       }).join('');
     } else {
@@ -3105,7 +3124,7 @@ function renderBossView() {
     const title = getTitle(info.lv);
     return `<div class="rank-item ${rankClass}">
       <div class="rank-num ${numClass}">${numText}</div>
-      <div class="rank-avatar">${weaponFor(info.lv).icon}</div>
+      <div class="rank-avatar">${weaponIcon(weaponFor(info.lv))}</div>
       <div class="rank-body">
         <div class="rank-name">${displayName}${statusTagById(s.id)}</div>
         <div class="rank-sub" style="color:#8888bb;font-size:10px;">${title}</div>
