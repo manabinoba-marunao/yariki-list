@@ -361,10 +361,58 @@ td.td-name { padding-left: 16px; text-align: left; }
 .hp-track { height:14px; background:rgba(255,68,102,.15); border:1px solid rgba(255,68,102,.3); border-radius:3px; overflow:hidden; }
 .hp-fill { height:100%; background:linear-gradient(90deg,#ff2244,#ff6688); border-radius:2px; transition:width 1s cubic-bezier(.4,0,.2,1); }
 .damage-log {
-  background:rgba(0,0,0,.4); border:1px solid var(--rpg-border); border-radius:6px;
-  padding:10px 12px; font-family:var(--font-game); font-size:11px; color:#8888bb;
-  line-height:1.9; max-height:75px; overflow-y:auto; margin-bottom:14px;
+  background:rgba(0,0,0,.4); border:1px solid var(--rpg-border); border-radius:8px;
+  padding:10px 12px; font-family:var(--font-game); font-size:13px; color:#b8b8e0;
+  line-height:1.8; max-height:230px; overflow-y:auto; margin-bottom:14px;
 }
+.damage-log .log-line { padding:3px 0; border-bottom:1px dashed rgba(255,255,255,.06); }
+.damage-log .log-line:last-child { border-bottom:none; }
+.damage-log .log-today { color:#fff; }
+.damage-log .log-today b { color:var(--gold); }
+.damage-log .log-new { animation:log-flash 1.6s ease-out 1; border-radius:4px; }
+@keyframes log-flash { 0%{background:rgba(255,215,0,.35)} 100%{background:transparent} }
+.log-title { font-family:var(--font-game); font-size:11px; color:var(--gold); letter-spacing:.1em; margin:4px 0 6px; }
+
+/* 今日戦った仲間(パーティ) */
+.party-wrap { margin:4px 0 12px; }
+.party-title { font-family:var(--font-game); font-size:12px; color:var(--gold); letter-spacing:.08em; margin-bottom:8px; text-align:center; }
+.party { display:flex; flex-wrap:wrap; justify-content:center; gap:10px 8px; }
+.party-empty { font-size:12px; color:#8888bb; text-align:center; padding:8px 0; }
+.pm { position:relative; width:64px; background:none; border:none; padding:18px 0 0; cursor:pointer; color:#e8e6ff; font-family:var(--font-game); -webkit-tap-highlight-color:transparent; }
+.pm:active { transform:scale(.95); }
+.pm-body { position:relative; width:46px; height:46px; margin:0 auto; border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#3a3a6a,#1c1c38); border:2px solid #4a4a7a;
+  display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; }
+.pm.me .pm-body { border-color:var(--gold); box-shadow:0 0 10px rgba(255,215,0,.5); }
+.pm-face { line-height:1; }
+.pm-wpn { position:absolute; right:-10px; bottom:-4px; font-size:20px; filter:drop-shadow(0 1px 2px #000); transform:rotate(-10deg); }
+.pm-wpn.w5 { filter:drop-shadow(0 0 6px #ffd700) drop-shadow(0 0 2px #fff); animation:wpn-glow 1.8s ease-in-out infinite; }
+.pm-wpn.w4 { filter:drop-shadow(0 0 4px #9fd3ff); }
+@keyframes wpn-glow { 0%,100%{transform:rotate(-10deg) scale(1)} 50%{transform:rotate(-10deg) scale(1.15)} }
+.pm-fx { position:absolute; top:0; left:50%; transform:translateX(-50%); font-size:18px; pointer-events:none; }
+.pm.st-bat .pm-fx { animation:fx-bat 1.2s ease-in-out infinite; }
+.pm.st-flinch .pm-fx { animation:fx-spin 1.6s linear infinite; }
+.pm.st-curse .pm-body { box-shadow:0 0 12px 2px rgba(170,68,255,.8); }
+.pm.st-cat .pm-fx { left:auto; right:-2px; top:30px; transform:none; font-size:16px; }
+.pm.st-pumpkin .pm-body { background:radial-gradient(circle,#4a2a00,#1c1c38); }
+.pm.st-pumpkin .pm-face { font-size:30px; }
+@keyframes fx-bat { 0%,100%{transform:translate(-60%,0) rotate(-8deg)} 50%{transform:translate(-40%,-6px) rotate(8deg)} }
+@keyframes fx-spin { 0%{transform:translateX(-50%) rotate(0)} 100%{transform:translateX(-50%) rotate(360deg)} }
+.pm-help { display:inline-block; margin-top:2px; background:var(--rpg-red); color:#fff; font-size:9px; border-radius:6px; padding:1px 5px; }
+.pm-name { font-size:11px; margin-top:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pm-dmg { font-family:var(--mono); font-size:10px; color:var(--gold); }
+.pm-dmg.zero { color:#666688; }
+.pm-sheet-bg { position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:flex-end; justify-content:center; z-index:300; }
+.pm-sheet-bg.show { display:flex; }
+.pm-sheet { width:100%; max-width:480px; background:var(--rpg-surface); border:1px solid #4a4a7a; border-bottom:none; border-radius:18px 18px 0 0; padding:18px 18px 28px; color:#e8e6ff; }
+.pm-sheet h3 { margin:0 0 2px; font-family:var(--font-game); font-size:18px; color:#fff; }
+.pm-sheet .sub { font-size:11px; color:#8888bb; margin-bottom:12px; }
+.pm-row { display:flex; justify-content:space-between; padding:8px 0; border-top:1px solid var(--rpg-border); font-size:13px; }
+.pm-row b { color:var(--gold); font-family:var(--mono); }
+.pm-st { margin-top:10px; padding:10px 12px; border-radius:10px; background:rgba(170,68,255,.12); border:1px solid #6b4bb3; font-size:12px; line-height:1.7; }
+.pm-close { margin-top:14px; width:100%; padding:11px; border:1px solid #4a4a7a; background:transparent; color:#e8e6ff; border-radius:10px; font-family:var(--font-game); }
+.rank-more { width:100%; margin-top:8px; padding:9px; border:1px dashed #4a4a7a; background:transparent; color:#b8b8e0; border-radius:8px; font-family:var(--font-game); font-size:12px; cursor:pointer; }
+.rank-section .rank-item { padding:7px 10px; }
 .log-dmg { color:var(--gold); }
 .log-crit { color:var(--rpg-red); }
 .log-magic { color:#B9A2FF; text-shadow:0 0 6px #8B6BFF; }
@@ -978,6 +1026,12 @@ td.td-name { padding-left: 16px; text-align: left; }
         text-align:center;">
         ⚔ 今月の英雄：<span id="hero-name"></span>が大魔王にトドメを刺した！
       </div>
+      <div class="party-wrap">
+        <div class="party-title">⚔ 今日いっしょに戦った仲間</div>
+        <div class="party" id="party"></div>
+        <div class="rescue-note" id="party-note" style="text-align:center"></div>
+      </div>
+      <div class="log-title">📜 バトルログ</div>
       <div class="damage-log" id="damage-log">▶ ボスが現れた！みんなで習慣を続けて倒せ！</div>
       <div class="total-damage">
         <div class="dmg-card"><div class="dmg-val" id="today-dmg">0</div><div class="dmg-lbl">今日の総ダメージ</div></div>
@@ -993,6 +1047,7 @@ td.td-name { padding-left: 16px; text-align: left; }
     <div class="rank-section">
       <div class="rpg-section-title">⚔ 今月のダメージランキング</div>
       <div class="rank-list" id="rank-list"></div>
+      <button class="rank-more" id="rank-more" onclick="toggleRank()" style="display:none"></button>
     </div>
   </div>
 </div>
@@ -1160,6 +1215,7 @@ td.td-name { padding-left: 16px; text-align: left; }
 <div id="print-area" style="display:none;padding:0;"></div>
 
 <div class="toast" id="toast"></div>
+<div class="pm-sheet-bg" id="pm-sheet" onclick="if(event.target===this)closeMember()"><div class="pm-sheet" id="pm-sheet-body"></div></div>
 
 <script>
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxim2lkno5C1Q72f_OEAebTOMWMD53JVINDnL6vOgvoaSuz-l_F4tcBs6wSXZtgUubc3Q/exec';
@@ -2376,6 +2432,97 @@ function statusTagByNick(nick) {
   return st ? statusTagById(st.id) : '';
 }
 
+/* ==== MAL QUEST:ペンの剣(レベルで進化)と、今日戦った仲間 ==== */
+const WEAPONS = [
+  { lv:40, icon:'🖋️', name:'万年筆の聖剣',   cls:'w5', verb:'聖剣の一閃' },
+  { lv:20, icon:'🖊️', name:'ボールペンの鋼剣', cls:'w4', verb:'斬撃' },
+  { lv:10, icon:'🗡️', name:'シャープの細剣',   cls:'w3', verb:'斬撃' },
+  { lv:5,  icon:'✏️', name:'鉛筆の木剣',     cls:'w2', verb:'斬撃' },
+  { lv:0,  icon:'👊', name:'素手',           cls:'w1', verb:'打撃' },
+];
+function esc(t) { return String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function weaponFor(lv) { return WEAPONS.find(w => lv >= w.lv) || WEAPONS[WEAPONS.length-1]; }
+function studentByNick(nick) { return STUDENTS.find(s => (s.nickname || s.name) === nick || s.name === nick); }
+function levelOf(id) { return getLevelInfo(calcExpFromRecords(id) + (Number(EXP_BONUSES[id]) || 0)).lv; }
+let RANK_OPEN = false;
+function toggleRank() { RANK_OPEN = !RANK_OPEN; renderBossView(); }
+
+function todayParty() {
+  const map = {};
+  const get = id => (map[id] ||= { id, hit:0, magic:0, crit:false });
+  (DAMAGE_LOG || []).forEach(l => {
+    if (String(l.date).slice(0,10) !== TODAY) return;
+    const raw = l.nickname || l.name || '';
+    const magic = /\(マル単\)$/.test(raw) || l.habitsDone === 'マル単';
+    const st = studentByNick(raw.replace(/\(マル単\)$/, ''));
+    if (!st) return;
+    const m = get(String(st.id)); const d = Number(l.damage) || 0;
+    if (magic) m.magic += d; else m.hit += d;
+    if (l.isCrit === true || l.isCrit === 'true' || l.isCrit === 'YES') m.crit = true;
+  });
+  STUDENTS.forEach(s => { if (ALL_RECORDS[s.id]?.[TODAY]) get(String(s.id)); });
+  const activeIds = new Set(STUDENTS.map(s => String(s.id)));
+  Object.keys(STATUS_MAP).forEach(id => {
+    const m = STATUS_MAP[id];
+    if (activeIds.has(id) && m && m.status && STATUS_DEFS[m.status]) get(id);
+  });
+  return Object.values(map).sort((a,b) => (b.hit+b.magic) - (a.hit+a.magic));
+}
+
+function renderParty() {
+  const box = document.getElementById('party'); if (!box) return;
+  const list = todayParty();
+  const myId = currentStudent ? String(currentStudent.id) : null;
+  if (!list.length) { box.innerHTML = '<div class="party-empty">まだ今日の参戦者はいないよ。一番乗りしよう！</div>'; }
+  else box.innerHTML = list.map(p => {
+    const name = studentNameById(p.id);
+    const w = weaponFor(levelOf(p.id));
+    const sm = STATUS_MAP[p.id]; const def = sm && sm.status ? STATUS_DEFS[sm.status] : null;
+    const total = p.hit + p.magic;
+    const face = def && sm.status === 'pumpkin' ? '🎃' : esc(Array.from(name)[0] || '？');
+    const fx = def && sm.status !== 'pumpkin' ? `<div class="pm-fx">${def.icon}</div>` : '';
+    return `<button class="pm ${def ? 'st-' + sm.status : ''} ${p.id === myId ? 'me' : ''}" onclick="openMember('${p.id}')">
+      ${fx}
+      <div class="pm-body"><span class="pm-face">${face}</span><span class="pm-wpn ${w.cls}">${w.icon}</span></div>
+      <div class="pm-name">${esc(name)}</div>
+      <div class="pm-dmg ${total ? '' : 'zero'}">${total ? total.toLocaleString() : '—'}</div>
+      ${def ? '<span class="pm-help">たすけて</span>' : ''}
+    </button>`;
+  }).join('');
+  const note = document.getElementById('party-note');
+  if (note) {
+    const myCandies = MY_STATUS ? (Number(MY_STATUS.candies) || 0) : 0;
+    note.innerHTML = myId ? `タップすると、ダメージや状態が見られるよ　あなたのお菓子：🍬 × ${myCandies}` : 'タップすると、ダメージや状態が見られるよ';
+  }
+}
+
+function openMember(id) {
+  const p = todayParty().find(x => x.id === String(id)) || { id:String(id), hit:0, magic:0 };
+  const lv = levelOf(p.id); const w = weaponFor(lv);
+  const sm = STATUS_MAP[p.id]; const def = sm && sm.status ? STATUS_DEFS[sm.status] : null;
+  const myId = currentStudent ? String(currentStudent.id) : null;
+  const myCandies = MY_STATUS ? (Number(MY_STATUS.candies) || 0) : 0;
+  let stHtml = '';
+  if (def) {
+    const until = def.todayOnly ? '今日だけ' : `${mdLabel(sm.end)}まで`;
+    let btn = '';
+    if (myId && p.id !== myId) btn = `<div style="margin-top:8px"><button class="candy-btn" ${myCandies > 0 ? '' : 'disabled'} onclick="closeMember();giveCandyTo('${p.id}', this)">🍬 お菓子をあげて助ける(のこり${myCandies})</button></div>`;
+    else if (myId && p.id === myId) btn = '<div style="margin-top:6px;color:#8888bb">仲間の助けを待とう</div>';
+    stHtml = `<div class="pm-st">${def.icon} <b>${def.name}</b>(${until})<br>${def.desc}${btn}</div>`;
+  }
+  document.getElementById('pm-sheet-body').innerHTML = `
+    <h3>${esc(studentNameById(p.id))}</h3>
+    <div class="sub">Lv${lv}・${getTitle(lv)}</div>
+    <div class="pm-row"><span>武器</span><span>${w.icon} ${w.name}</span></div>
+    <div class="pm-row"><span>⚔ 今日の${w.verb === '打撃' ? '打撃' : '斬撃'}(やりきリスト)</span><b>${p.hit.toLocaleString()}</b></div>
+    <div class="pm-row"><span>🔮 今日の魔法(マル単)</span><b>${p.magic.toLocaleString()}</b></div>
+    <div class="pm-row"><span>今月の合計</span><b>${calcMonthDmg(p.id).toLocaleString()}</b></div>
+    ${stHtml}
+    <button class="pm-close" onclick="closeMember()">とじる</button>`;
+  document.getElementById('pm-sheet').classList.add('show');
+}
+function closeMember() { document.getElementById('pm-sheet').classList.remove('show'); }
+
 function renderRescue() {
   const sec = document.getElementById('rescue-section');
   const list = document.getElementById('rescue-list');
@@ -2880,13 +3027,18 @@ function renderBossView() {
           const d = new Date(l.date);
           return isNaN(d.getTime()) ? String(l.date).slice(5,10).replace('-','/') : `${d.getMonth()+1}/${d.getDate()}`;
         })() : '--';
-        if (isMagic) return crit
+        const isToday = String(l.date).slice(0,10) === TODAY;
+        const st = studentByNick(rawNick.replace(/\(マル単\)$/, ''));
+        const w = st ? weaponFor(levelOf(st.id)) : WEAPONS[WEAPONS.length-1];
+        let line;
+        if (isMagic) line = crit
           ? `🔮 [${dateStr}] <b>${nick}</b> の大魔法！<span class="log-magic-crit">✨${dmg.toLocaleString()}の魔法ダメージ</span>`
           : `🔮 [${dateStr}] <b>${nick}</b> の魔法！<span class="log-magic">${dmg.toLocaleString()}の魔法ダメージ</span>`;
-        return crit
-          ? `▶ [${dateStr}] <b>${nick}</b> <span class="log-crit">⚡会心の一撃！${dmg.toLocaleString()}ダメージ</span>`
-          : `▶ [${dateStr}] <b>${nick}</b> <span class="log-dmg">${dmg.toLocaleString()}ダメージ</span>を与えた！`;
-      }).join('<br>');
+        else line = crit
+          ? `${w.icon} [${dateStr}] <b>${nick}</b> の${w.verb}！<span class="log-crit">⚡会心の一撃！${dmg.toLocaleString()}ダメージ</span>`
+          : `${w.icon} [${dateStr}] <b>${nick}</b> の${w.verb}！<span class="log-dmg">${dmg.toLocaleString()}ダメージ</span>`;
+        return `<div class="log-line ${isToday ? 'log-today' : ''}">${line}</div>`;
+      }).join('');
     } else {
       log.innerHTML = '▶ ボスが現れた！みんなで習慣を続けて倒せ！';
     }
@@ -2929,10 +3081,19 @@ function renderBossView() {
   if (acEl) acEl.textContent = submitted;
 
   renderRescue();
+  const oldRescue = document.getElementById('rescue-section');
+  if (oldRescue) oldRescue.style.display = 'none';   // 「今日戦った仲間」に統合
+  renderParty();
 
   const rankList = document.getElementById('rank-list');
   if (!rankList) return;
-  rankList.innerHTML = sorted.slice(0,15).map((s,i) => {
+  const rankMore = document.getElementById('rank-more');
+  if (rankMore) {
+    const n = Math.min(sorted.length, 15);
+    rankMore.style.display = n > 3 ? 'block' : 'none';
+    rankMore.textContent = RANK_OPEN ? '▲ トップ3だけにする' : `▼ 全員を見る(${n}人)`;
+  }
+  rankList.innerHTML = sorted.slice(0, RANK_OPEN ? 15 : 3).map((s,i) => {
     const info = getLevelInfo(s.exp);
     const rankClass = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
     const numText = i===0?'🥇':i===1?'🥈':i===2?'🥉':`${i+1}`;
@@ -2942,7 +3103,7 @@ function renderBossView() {
     const title = getTitle(info.lv);
     return `<div class="rank-item ${rankClass}">
       <div class="rank-num ${numClass}">${numText}</div>
-      <div class="rank-avatar">⚔</div>
+      <div class="rank-avatar">${weaponFor(info.lv).icon}</div>
       <div class="rank-body">
         <div class="rank-name">${displayName}${statusTagById(s.id)}</div>
         <div class="rank-sub" style="color:#8888bb;font-size:10px;">${title}</div>
