@@ -3762,6 +3762,64 @@ function mqStrike(o){
 .sv-login{text-align:center;padding:40px 10px}
 .sv-login p{font-size:14px;color:var(--ink2);margin-bottom:14px;line-height:1.7}
 .go-study{display:block;width:100%;margin-top:10px;padding:13px;border:2px solid var(--accent);background:var(--accent-light);color:var(--accent);border-radius:var(--radius);font:900 14px var(--font);cursor:pointer}
+/* 全員ミッション */
+.ms-team{background:#fff;border-radius:10px;padding:10px 12px;margin-top:10px}
+.ms-count{display:flex;align-items:baseline;gap:6px}
+.ms-count b{font:900 34px var(--mono);color:var(--danger);line-height:1}
+.ms-count span{font-size:13px;font-weight:700;color:var(--ink2)}
+.ms-dots{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0}
+.ms-dots i{width:14px;height:14px;border-radius:50%;background:var(--border);display:block}
+.ms-dots i.on{background:var(--warn);box-shadow:0 0 0 2px #fde68a}
+.ms-msg{font-size:13px;font-weight:700}
+.ms-msg b{color:var(--danger);font-size:16px}
+.ms-names{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.ms-names span{font-size:11px;font-weight:700;background:var(--warn-light);border-radius:999px;padding:2px 8px}
+.ms-me{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin-top:10px;font-size:12px;font-weight:700;color:var(--ink2)}
+.ms-me span{width:100%}
+.ms-me button{font:700 12px var(--font);padding:6px 10px;border-radius:999px;border:1.5px solid var(--border);background:#fff;cursor:pointer}
+.ms-me button[aria-pressed=true]{background:var(--warn);border-color:var(--warn);color:#fff}
+/* 克己登竜門 */
+.gate{border:2px solid #1c1a16;background:linear-gradient(180deg,#fffdf7,#fff)}
+.gate-title{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.gate-title .kanji{font:900 24px var(--font);background:#1c1a16;color:#f6c453;padding:6px 10px;border-radius:8px;letter-spacing:.08em;line-height:1.1;flex:none}
+.gate-title b{display:block;font-size:22px;font-weight:900;letter-spacing:.12em}
+.gate-title small{font-size:11px;color:var(--ink2);font-weight:700}
+.gate-title .td{margin-left:auto;text-align:right;font-size:11px;font-weight:700;color:var(--ink2);line-height:1.4}
+.gates{display:grid;grid-template-columns:1fr 1fr 1fr 38px;gap:4px;margin:6px 0 12px}
+.gates div{position:relative;text-align:center;font-size:11px;line-height:1.35;font-weight:900;padding:14px 2px 7px;border-radius:8px;background:var(--surface2);color:var(--ink3);border:1.5px solid var(--border)}
+.gates div.now{background:#7f1d1d;color:#fff;border-color:#7f1d1d}
+.gates div.ok{background:var(--accent-light);color:var(--accent);border-color:var(--accent)}
+.gates div:last-child{padding:12px 0 0;font-size:16px}
+.gates div.dragon{font-size:22px;padding-top:8px}
+.gates .koi{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:18px}
+.gates div.now .koi{animation:koi 1.2s ease-in-out infinite}
+@keyframes koi{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-5px) rotate(-12deg)}}
+.cz{border-radius:12px;padding:12px 14px;margin-bottom:10px;font-size:13px;line-height:1.6}
+.cz-h{font-size:16px;font-weight:900;margin-bottom:4px}
+.cz b{font-family:var(--mono);font-size:18px}
+.cz-cd{font-size:12px;font-weight:700;opacity:.9;margin:6px 0}
+.cz-cd span{font:700 26px var(--mono);letter-spacing:.03em}
+.cz-bar{height:8px;border-radius:4px;background:rgba(255,255,255,.3);overflow:hidden;margin:6px 0}
+.cz-bar i{display:block;height:100%;background:#fff}
+.cz.green{background:var(--accent-light);color:var(--accent)}
+.cz.green .cz-bar{background:#cfe6da}.cz.green .cz-bar i{background:var(--accent)}
+.cz.yellow{background:#fef3c7;color:#92400e;border:2px solid #f59e0b}
+.cz.yellow .cz-bar{background:#fde68a}.cz.yellow .cz-bar i{background:#d97706}
+.cz.red{background:#b91c1c;color:#fff;animation:czpulse 1.4s ease-in-out infinite}
+.cz.over{background:#111;color:#fecaca;border:2px solid #dc2626;animation:czpulse 1s ease-in-out infinite}
+.cz.over .cz-h{color:#fff}
+.cz.clear{background:var(--accent-light);color:var(--accent)}
+@keyframes czpulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.55)}50%{box-shadow:0 0 0 8px rgba(220,38,38,0)}}
+.gate-team{font-size:12px;font-weight:700;color:var(--ink2);margin-bottom:6px}
+.gate-team b{color:var(--danger);font-family:var(--mono);font-size:15px}
+.pbar{position:relative}
+.pbar .exp{position:absolute;top:-3px;bottom:-3px;width:3px;background:#1c1a16;border-radius:2px;transform:translateX(-1px)}
+.late-tag{font-size:11px;font-weight:900;color:#fff;background:#dc2626;border-radius:999px;padding:2px 8px}
+.st-alert{display:block;width:100%;text-align:left;border:none;border-radius:var(--radius);padding:12px 14px;margin:0 0 14px;font:700 13px var(--font);line-height:1.5;cursor:pointer}
+.st-alert b{font-size:15px}
+.st-alert.red{background:#b91c1c;color:#fff;animation:czpulse 1.4s ease-in-out infinite}
+.st-alert.over{background:#111;color:#fecaca;border:2px solid #dc2626}
+.st-alert.yellow{background:#fef3c7;color:#92400e;border:2px solid #f59e0b}
 .sv-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;display:none;align-items:flex-end;justify-content:center}
 .sv-modal-bg.on{display:flex}
 .sv-modal{background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:560px;padding:18px 16px 26px;max-height:88vh;overflow:auto}
@@ -3779,7 +3837,7 @@ const STUDY_TESTS = [   // 期末テストの日程(学校ごと)
   {id:'t1117', label:'11/17(火)〜18(水)の学校', start:'2026-11-17'}
 ];
 const STUDY_MISSIONS = [ // 先生が決める大きな目標。grade は「中3」「中」「小」「高」「全」のように書く
-  {grade:'中3', text:'入試テキスト(Sロード・シリウス)で、中学の学習内容をぜんぶ終える', due:'2026-11-30'}
+  {id:'m3-nyushi', grade:'中3', text:'入試テキスト(Sロード・シリウス)で、中学の学習内容をぜんぶ終える', due:'2026-11-30'}
 ];
 const WORK_LEAD_DAYS = 14;  // 学校ワーク1周目の締め切り = テスト初日の何日前か
 const TIMER_MAX_MIN = 180;  // 止め忘れ対策:1回の記録は最大3時間
@@ -3791,9 +3849,9 @@ function studyMaterials(st){
   const s = stageOf(st);
   if(s==='小') return ['学校の宿題・ドリル','塾のテキスト','その他'];
   if(s==='高') return ['学校の課題','問題集・参考書','単語帳','塾のテキスト','その他'];
-  return ['学校ワーク','アイワーク','アイワークプラス','新ワーク','Sロード','シリウス','その他'];
+  return ['学校ワーク','iワーク','iワーク＋','新ワーク','Sロード','シリウス','その他'];
 }
-function jukuTexts(subj){ return (subj==='英語'||subj==='数学') ? ['アイワーク','アイワークプラス','その他'] : ['新ワーク','その他']; }
+function jukuTexts(subj){ return (subj==='英語'||subj==='数学') ? ['iワーク','iワーク＋','その他'] : ['新ワーク','その他']; }
 
 /* ---------- 日付まわり ---------- */
 function sdKey(d){ const x=new Date(d); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); }
@@ -3806,8 +3864,8 @@ function sdSunday(){ const d=new Date(); d.setDate(d.getDate()+((7-d.getDay())%7
 function fmtMin(m){ m=Math.round(m); return m>=60 ? Math.floor(m/60)+'時間'+(m%60?(m%60)+'分':'') : m+'分'; }
 
 /* ---------- 保存と同期 ---------- */
-let SD = null, sdSid = null, sdSyncState = 'local', sdSaveTimer = null, sdTick = null, sdForm = null, sdSetSubj = null;
-function sdBlank(){ return {v:1, timer:{subj:null, start:null}, sessions:[], test:{id:null, date:null, subj:{}}, goals:[], badges:[], updated:0}; }
+let TEAM = {}, SD = null, sdSid = null, sdSyncState = 'local', sdSaveTimer = null, sdTick = null, sdForm = null, sdSetSubj = null;
+function sdBlank(){ return {v:1, timer:{subj:null, start:null}, sessions:[], test:{id:null, date:null, subj:{}}, goals:[], badges:[], missions:{}, updated:0}; }
 function sdKeyName(id){ return 'mq_study_'+id; }
 function sdLoadLocal(id){ try{ const v=JSON.parse(localStorage.getItem(sdKeyName(id))||'null'); return v&&v.v?Object.assign(sdBlank(),v):null; }catch(e){ return null; } }
 function sdSave(){
@@ -3835,6 +3893,7 @@ async function sdOpen(st){
     sdSyncState = 'cloud';
     if(r.data){ try{ const remote = JSON.parse(r.data); if(remote && (remote.updated||0) > (SD.updated||0)){ SD = Object.assign(sdBlank(), remote); try{ localStorage.setItem(sdKeyName(st.id), JSON.stringify(SD)); }catch(e){} } }catch(e){} }
   } else sdSyncState = 'off';
+  if(sdSyncState==='cloud'){ const a = await api('getAllStudy', {}); if(a&&a.ok&&a.data){ TEAM={}; Object.entries(a.data).forEach(([k,v])=>{ try{ TEAM[k]=JSON.parse(v); }catch(e){} }); } }
   if(currentStudent && currentStudent.id===st.id) renderStudy();
 }
 
@@ -3912,24 +3971,54 @@ function sdTimerStop(){
 function sdTimerUndo(){ if(!SD.sessions.length) return; if(!confirm('直前の記録を取り消しますか？')) return; SD.sessions.pop(); sdSave(); renderStudy(); }
 function sdStartTick(){
   clearInterval(sdTick);
-  if(!SD || !SD.timer.start) return;
-  const upd = ()=>{ const el=document.getElementById('tm-clock'); if(!el||!SD.timer.start){ clearInterval(sdTick); return; }
+  sdCountdown();
+  if(!SD) return;
+  if(!SD.timer.start){ if(document.getElementById('cz-count')) sdTick=setInterval(sdCountdown,1000); return; }
+  const upd = ()=>{ const el=document.getElementById('tm-clock'); if(!el||!SD.timer.start) return;
     const s = Math.floor((Date.now()-SD.timer.start)/1000);
     el.textContent = [Math.floor(s/3600), Math.floor(s/60)%60, s%60].map(n=>String(n).padStart(2,'0')).join(':'); };
-  upd(); sdTick = setInterval(upd, 1000);
+  upd(); sdTick = setInterval(()=>{ upd(); sdCountdown(); }, 1000);
 }
 
-/* ---------- ミッション(先生が決める) ---------- */
+/* ---------- 全員ミッション(先生が決める) ---------- */
 function missionsFor(st){
   const g = String(st.grade||''), s = stageOf(st);
   return STUDY_MISSIONS.filter(m=>m.grade==='全'||m.grade===g||m.grade===s);
 }
+function inGrade(m, st){ const g=String(st.grade||''); return m.grade==='全'||m.grade===g||m.grade===stageOf(st); }
+function teamData(id){ return String(id)===String(sdSid) ? SD : (TEAM[String(id)]||null); }
+function missionStats(m){
+  const members = STUDENTS.filter(s=>inGrade(m,s));
+  const rows = members.map(s=>{ const d=teamData(s.id); const r=d&&d.missions&&d.missions[m.id]; return {s, p: r?(r.p||0):0, done: !!(r&&r.done)}; });
+  const done = rows.filter(r=>r.done);
+  const avg = rows.length ? Math.round(rows.reduce((a,r)=>a+r.p,0)/rows.length) : 0;
+  return {n: rows.length, done, avg};
+}
 function missionCard(st){
   const ms = missionsFor(st); if(!ms.length) return '';
   const today = sdToday();
-  return `<div class="sv-card"><h3>🚩 ミッション<span class="sub">先生からの大きな目標</span></h3>
-    ${ms.map(m=>{ const left = m.due ? sdDiff(m.due, today) : null; return `<div class="ms"><div class="t">${esc_(m.text)}</div>${m.due?`<div class="d">期限 ${sdLabel(m.due)}　あと <b>${Math.max(0,left)}</b> 日</div>`:''}</div>`; }).join('')}
-    <p class="sv-note">ミッションに向けて、下の「今週の目標」を自分で決めよう。</p></div>`;
+  return `<div class="sv-card"><h3>🚩 全員ミッション<span class="sub">みんなで達成しよう</span></h3>
+    ${ms.map(m=>{
+      const left = m.due ? sdDiff(m.due, today) : null;
+      const me = (SD.missions[m.id]||{p:0}), st_ = missionStats(m);
+      const rest = st_.n - st_.done.length;
+      return `<div class="ms">
+        <div class="t">${esc_(m.text)}</div>
+        ${m.due?`<div class="d">期限 ${sdLabel(m.due)}　あと <b>${Math.max(0,left)}</b> 日</div>`:''}
+        <div class="ms-team">
+          <div class="ms-count"><b>${st_.done.length}</b><span>/ ${st_.n} 名 達成</span></div>
+          <div class="ms-dots">${Array.from({length:st_.n},(_,i)=>`<i class="${i<st_.done.length?'on':''}"></i>`).join('')}</div>
+          <div class="ms-msg">${rest<=0&&st_.n?'🎉 全員達成！ みんなで殻をやぶった！':`あと <b>${rest}</b> 名で全員達成！${st_.n?` みんなの平均 ${st_.avg}%`:''}`}</div>
+          ${st_.done.length?`<div class="ms-names">${st_.done.slice(0,30).map(r=>`<span>🎉 ${esc_(r.s.nickname||r.s.name)}</span>`).join('')}</div>`:''}
+        </div>
+        <div class="ms-me"><span>わたしの進み具合</span>${[0,25,50,75,100].map(p=>`<button aria-pressed="${(me.p||0)===p}" onclick="sdMission('${m.id}',${p})">${p===100?'達成！':p+'%'}</button>`).join('')}</div>
+      </div>`; }).join('')}
+    ${sdSyncState!=='cloud'?'<p class="sv-note">※塾への保存がつながると、みんなの達成数が出ます。</p>':''}</div>`;
+}
+function sdMission(id, p){
+  SD.missions[id] = {p, done: p>=100, at: sdToday()};
+  sdSave(); renderStudy();
+  if(p>=100) showToast('🎉 ミッション達成！ みんなにも知らせよう');
 }
 
 /* ---------- 今週の目標(生徒が決める) ---------- */
@@ -3972,7 +4061,7 @@ function sdGoalAdd(){
 function sdGoalToggle(id, on){ const g=SD.goals.find(x=>x.id===id); if(!g) return; g.done=on; g.doneAt = on?sdToday():null; sdSave(); renderStudy(); if(on) showToast('🎉 目標たっせい！'); }
 function sdGoalDel(id){ if(!confirm('この目標を消しますか？')) return; SD.goals = SD.goals.filter(x=>x.id!==id); sdSave(); renderStudy(); }
 
-/* ---------- 期末の階段 ---------- */
+/* ---------- 期末テスト 克己登竜門 ---------- */
 function testDate(){ const t = STUDY_TESTS.find(x=>x.id===SD.test.id); return t ? t.start : SD.test.date; }
 function lapProg(r, i){ // i周目の進み具合 0〜1
   if(!r || r.from==null) return 0;
@@ -3980,6 +4069,35 @@ function lapProg(r, i){ // i周目の進み具合 0〜1
   return p>=r.to ? 1 : p<r.from ? 0 : (p - r.from + 1)/n;
 }
 function curLap(r){ for(let i=0;i<3;i++) if(lapProg(r,i)<1) return i; return 3; }
+function pagesDone1(r){ const p=(r.laps||[])[0]||0; return Math.max(0, Math.min(r.to, p) - r.from + 1); }
+/* 学校ワーク1周目の危機レベル */
+function crisisOf(data, td){
+  const subs = Object.entries((data.test||{}).subj||{}).filter(([,r])=>r&&r.from!=null);
+  if(!td || !subs.length) return null;
+  const today = sdToday(), dl = sdAdd(td, -WORK_LEAD_DAYS), toDl = sdDiff(dl, today);
+  let total=0, done=0, expect=0;
+  subs.forEach(([,r])=>{
+    const n = r.to - r.from + 1; total += n; done += pagesDone1(r);
+    const s = r.setAt || today, span = Math.max(1, sdDiff(dl, s)), el = Math.min(span, Math.max(0, sdDiff(today, s)));
+    expect += n * el / span;
+  });
+  const left = total - done;
+  if(left<=0) return {level:'clear', total, done, left:0, toDl, dl, behind:0, pace:0};
+  const pace = toDl>0 ? Math.ceil(left/toDl) : left;
+  const behind = Math.max(0, Math.round(expect - done));
+  let level = 'green';
+  if(toDl < 0) level = 'over';
+  else if(pace >= 10 || (toDl <= 3 && left > 0) || behind >= 10) level = 'red';
+  else if(pace >= 5 || behind > 0) level = 'yellow';
+  return {level, total, done, left, toDl, dl, behind, pace};
+}
+function gateStats(){
+  const tid = SD.test.id; if(!tid) return null;
+  const rows = STUDENTS.map(s=>teamData(s.id)).filter(d=>d&&d.test&&d.test.id===tid);
+  const cleared = rows.filter(d=>{ const c=crisisOf(d, testDate()); return c&&c.level==='clear'; }).length;
+  return {n: rows.length, cleared};
+}
+const GATES = ['一ノ門<br>ワーク完遂','二ノ門<br>ワーク三周','三ノ門<br>塾テキスト'];
 function testCard(st){
   const today = sdToday(), td = testDate();
   const subs = studySubjects(st);
@@ -3988,24 +4106,35 @@ function testCard(st){
       <option value="">選んでね</option>
       ${opts.map(t=>`<option value="${t.id}" ${SD.test.id===t.id?'selected':''}>${t.label}</option>`).join('')}
       <option value="custom" ${!SD.test.id&&SD.test.date!=null?'selected':''}>ほかの日付</option></select>
-      ${!SD.test.id&&SD.test.date!==null&&SD.test.date!==undefined?`<input type="date" value="${SD.test.date||''}" onchange="SD.test.date=this.value;sdSave();renderStudy()" style="font:700 13px var(--font);padding:6px;border:1.5px solid var(--border);border-radius:8px">`:''}</div>`;
-  if(!td) return `<div class="sv-card"><h3>📝 定期テストの階段</h3>${head}<p class="sv-note">テストの日を選ぶと、学校ワークの締め切り(テスト2週間前)が出ます。</p></div>`;
-  const dl = sdAdd(td, -WORK_LEAD_DAYS), toDl = sdDiff(dl, today), toTest = sdDiff(td, today);
+      ${!SD.test.id&&SD.test.date!=null?`<input type="date" value="${SD.test.date||''}" onchange="SD.test.date=this.value;sdSave();renderStudy()" style="font:700 13px var(--font);padding:6px;border:1.5px solid var(--border);border-radius:8px">`:''}</div>`;
+  const title = `<div class="gate-title"><span class="kanji">克己</span><div><b>登竜門</b><small>期末テストの関門をやぶれ</small></div>${td?`<span class="td">テスト<br>${sdLabel(td)}</span>`:''}</div>`;
+  if(!td) return `<div class="sv-card gate">${title}${head}<p class="sv-note">テストの日を選ぶと、一ノ門「学校ワーク完遂」の締め切り(テスト2週間前)が出ます。</p></div>`;
   const rows = subs.map(s=>({s, r: SD.test.subj[s] || {}}));
   const setRows = rows.filter(x=>x.r.from!=null);
-  // ステップ判定:全教科の1周目 → 2・3周目 → 塾テキスト
   const all1 = setRows.length && setRows.every(x=>lapProg(x.r,0)>=1);
   const all3 = setRows.length && setRows.every(x=>curLap(x.r)>=3);
-  const step = !all1 ? 0 : !all3 ? 1 : 2;
-  let left1 = 0; setRows.forEach(x=>{ const r=x.r; const p=(r.laps||[])[0]||0; left1 += Math.max(0, r.to - Math.max(p, r.from-1)); });
-  const pace = toDl>0 ? Math.ceil(left1/toDl) : left1;
-  const dlBox = step===0
-    ? (setRows.length ? `<div class="dl">学校ワーク1周目の締め切り <b>${sdLabel(dl)}</b>(あと <b>${Math.max(0,toDl)}</b> 日)<br>のこり <b>${left1}</b> ページ → 1日 <b>${pace}</b> ページ${toDl<0?'　<span style="color:var(--danger);font-weight:900">締め切りをすぎています！今日から一気に！</span>':''}</div>`
-                      : `<div class="dl">学校ワーク1周目の締め切りは <b>${sdLabel(dl)}</b>(テスト2週間前)。まず各教科のワークの範囲を入れよう。</div>`)
-    : `<div class="dl ok">学校ワーク1周目クリア！ テストまであと <b>${Math.max(0,toTest)}</b> 日。${step===1?'ワークを3周しよう。':'塾テキストで仕上げよう。'}</div>`;
-  return `<div class="sv-card"><h3>📝 定期テストの階段<span class="sub">テスト ${sdLabel(td)}</span></h3>${head}
-    <div class="stairs"><div class="${step>0?'ok':'now'}">① ワーク1周</div><div class="${step>1?'ok':step===1?'now':''}">② ワーク3周</div><div class="${step===2?'now':''}">③ 塾テキスト</div></div>
-    ${dlBox}
+  const allJ = all3 && setRows.every(x=>!x.r.juku || (x.r.juku.done||0)>=x.r.juku.to);
+  const step = !all1 ? 0 : !all3 ? 1 : !allJ ? 2 : 3;
+  const c = crisisOf(SD, td), toTest = sdDiff(td, today), gs = gateStats();
+  let box;
+  if(step===0 && !setRows.length) box = `<div class="cz yellow"><div class="cz-h">⚠ まず範囲を入れよう</div>一ノ門「学校ワーク完遂」の締め切りは <b>${sdLabel(sdAdd(td,-WORK_LEAD_DAYS))}</b>。各教科のワークの範囲を入れてね。</div>`;
+  else if(step===0){
+    const msg = {
+      over:  ['⛔ 締め切りをすぎた！','まだ <b>'+c.left+'</b> ページ残っている。今日と明日で終わらせる覚悟で！ 先生にも相談しよう。'],
+      red:   ['🚨 危険！ このままでは間に合わない','1日 <b>'+c.pace+'</b> ページやらないと終わらない。'+(c.behind?'予定より <b>'+c.behind+'</b> ページ遅れ。':'')+'今日から一気に巻き返そう！'],
+      yellow:['⚠ 注意！ ペースが足りない',(c.behind?'予定より <b>'+c.behind+'</b> ページ遅れ。':'')+'1日 <b>'+c.pace+'</b> ページで間に合う。今日の分を必ずやろう。'],
+      green: ['✅ 順調！ この調子','1日 <b>'+c.pace+'</b> ページで間に合う。早く終わらせて二ノ門へ！']
+    }[c.level];
+    box = `<div class="cz ${c.level}"><div class="cz-h">${msg[0]}</div>
+      <div class="cz-cd">一ノ門の締め切り ${sdLabel(c.dl)} まで<br><span id="cz-count" data-dl="${c.dl}"></span></div>
+      <div class="cz-bar"><i style="width:${Math.round(c.done/c.total*100)}%"></i></div>
+      <div class="cz-m">のこり <b>${c.left}</b> / ${c.total} ページ　${msg[1]}</div></div>`;
+  } else if(step===3) box = `<div class="cz clear"><div class="cz-h">🐉 登竜成就！</div>すべての門をやぶった。テストまであと <b>${Math.max(0,toTest)}</b> 日、自信をもって挑もう！</div>`;
+  else box = `<div class="cz clear"><div class="cz-h">⛩ 一ノ門 突破！</div>テストまであと <b>${Math.max(0,toTest)}</b> 日。${step===1?'二ノ門:ワークを3周して完璧に。':'三ノ門:塾テキストで仕上げよう。'}</div>`;
+  return `<div class="sv-card gate">${title}${head}
+    <div class="gates">${GATES.map((g,i)=>`<div class="${step>i?'ok':step===i?'now':''}">${step===i?'<span class="koi">🐟</span>':step>i?'<span class="koi">⛩</span>':''}${g}</div>`).join('')}<div class="${step===3?'ok dragon':''}">${step===3?'🐉':'竜'}</div></div>
+    ${box}
+    ${gs&&gs.n?`<div class="gate-team">一ノ門 突破:<b>${gs.cleared}</b> / ${gs.n} 名${gs.cleared<gs.n?'　まだの人は急げ！':'　全員突破！'}</div>`:''}
     ${rows.map(({s,r})=>subjRow(s,r,step)).join('')}
     ${SD.badges.length?`<div class="badge-row">${SD.badges.slice(-8).map(b=>`<span>🏅 ${esc_(b.t)}</span>`).join('')}</div>`:''}
   </div>`;
@@ -4013,11 +4142,21 @@ function testCard(st){
 function subjRow(s, r, step){
   if(r.from==null) return `<div class="sr"><div class="h">${s}<span class="rg"><button class="set" onclick="sdOpenRange('${s}')">ワークの範囲を入れる</button></span></div></div>`;
   const lap = curLap(r);
-  const showJuku = step===2 || lap>=3;
+  const showJuku = step>=2 || lap>=3;
   const i = Math.min(lap,2), pr = lapProg(r,i), p = (r.laps||[])[i] || 0;
   const lapLabel = lap>=3 ? 'ワーク3周クリア' : `ワーク${lap+1}周目`;
-  let html = `<div class="sr"><div class="h">${s}<span class="lap ${lap===0?'l1':lap>=3?'done':''}">${lapLabel}</span><span class="rg">p.${r.from}〜${r.to} <button class="set" onclick="sdOpenRange('${s}')">変更</button></span></div>`;
-  if(lap<3) html += `<div class="pbar ${lap===0?'l1':''}"><i style="width:${Math.round(pr*100)}%"></i></div>
+  // 1周目:今日までに終わっていたいライン
+  let mark = '', lateTag = '';
+  const td = testDate();
+  if(lap===0 && td){
+    const dl = sdAdd(td,-WORK_LEAD_DAYS), s0 = r.setAt || sdToday(), span = Math.max(1, sdDiff(dl, s0)), el = Math.min(span, Math.max(0, sdDiff(sdToday(), s0)));
+    const exp = el/span, n = r.to-r.from+1, beh = Math.round((exp - pr)*n);
+    mark = `<b class="exp" style="left:${Math.round(exp*100)}%" title="今日までの目標"></b>`;
+    if(sdDiff(dl, sdToday())<0) lateTag = `<span class="late-tag">締め切りすぎ</span>`;
+    else if(beh>0) lateTag = `<span class="late-tag">🔥 ${beh}p 遅れ</span>`;
+  }
+  let html = `<div class="sr"><div class="h">${s}<span class="lap ${lap===0?'l1':lap>=3?'done':''}">${lapLabel}</span>${lateTag}<span class="rg">p.${r.from}〜${r.to} <button class="set" onclick="sdOpenRange('${s}')">変更</button></span></div>`;
+  if(lap<3) html += `<div class="pbar ${lap===0?'l1':''}"><i style="width:${Math.round(pr*100)}%"></i>${mark}</div>
     <div class="ctl">p.<input type="number" inputmode="numeric" value="${p>=r.from?p:''}" placeholder="${r.from}" onchange="sdSetPage('${s}',${i},this.value)"> まで終わった　<button class="all" onclick="sdSetPage('${s}',${i},${r.to})">${lap+1}周目ぜんぶ終わった</button></div>`;
   if(showJuku){
     const j = r.juku || {};
@@ -4026,6 +4165,12 @@ function subjRow(s, r, step){
       <div class="ctl">p.<input type="number" inputmode="numeric" value="${j.done>=j.from?j.done:''}" placeholder="${j.from}" onchange="sdSetJuku('${s}',this.value)"> まで終わった <button class="all" onclick="sdSetJuku('${s}',${j.to})">ぜんぶ終わった</button></div>`; }
   }
   return html + '</div>';
+}
+function sdCountdown(){
+  const el = document.getElementById('cz-count'); if(!el) return;
+  const end = sdParse(el.dataset.dl).getTime() + 864e5; // 締め切り日の終わりまで
+  let s = Math.max(0, Math.floor((end - Date.now())/1000));
+  el.textContent = `${Math.floor(s/86400)}日 ${String(Math.floor(s/3600)%24).padStart(2,'0')}:${String(Math.floor(s/60)%60).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
 }
 function sdSetTest(v){
   if(v==='custom'){ SD.test.id=null; SD.test.date=''; }
@@ -4073,18 +4218,37 @@ function sdSaveRange(){
   const from=n('rg-from'), to=n('rg-to');
   if(from==null||to==null||to<from){ showToast('学校ワークのページを正しく入れてね'); return; }
   const s = sdSetSubj, old = SD.test.subj[s] || {};
-  const r = {from, to, laps: old.laps || [0,0,0]};
+  const r = {from, to, laps: old.laps || [0,0,0], setAt: old.setAt || sdToday()};
   const jf=n('rg-jfrom'), jto=n('rg-jto');
   if(jf!=null && jto!=null && jto>=jf) r.juku = {name: document.getElementById('rg-jname').value, from: jf, to: jto, done: (old.juku&&old.juku.done)||0};
   SD.test.subj[s] = r; sdCloseModal(); sdSave(); renderStudy();
 }
 function sdClearRange(){ delete SD.test.subj[sdSetSubj]; sdCloseModal(); sdSave(); renderStudy(); }
 
+/* ---------- 生徒タブにも危機を出す ---------- */
+function studyAlert(){
+  const host = document.getElementById('screen-input'); if(!host||!currentStudent) return;
+  let el = document.getElementById('st-alert');
+  const d = (sdSid===currentStudent.id && SD) ? SD : sdLoadLocal(currentStudent.id);
+  const t = d && STUDY_TESTS.find(x=>x.id===(d.test||{}).id);
+  const td = t ? t.start : d && d.test && d.test.date;
+  const c = d && td ? crisisOf(d, td) : null;
+  if(!c || c.level==='green' || c.level==='clear'){ if(el) el.remove(); return; }
+  if(!el){ el = document.createElement('button'); el.id='st-alert'; const after = document.querySelector('#screen-input .student-header'); after.after(el); }
+  el.className = 'st-alert '+c.level;
+  el.onclick = ()=>showView('study', document.querySelectorAll('.top-nav .nav-btn')[1]);
+  el.innerHTML = c.level==='over' ? `⛔ <b>学校ワークの締め切りをすぎた！</b><br>のこり ${c.left} ページ。学習タブで確認 →`
+    : c.level==='red' ? `🚨 <b>学校ワークが間に合わない！</b><br>締め切りまで ${c.toDl} 日・1日 ${c.pace} ページ必要 →`
+    : `⚠ <b>学校ワークのペースが足りない</b><br>締め切りまで ${c.toDl} 日・のこり ${c.left} ページ →`;
+}
+
 /* ---------- 画面切り替えに組み込む ---------- */
 (function(){
   ensureStudyView();
   const orig = showView;
-  showView = function(v, btn){ orig(v, btn); if(v==='study') renderStudy(); };
+  showView = function(v, btn){ orig(v, btn); if(v==='study') renderStudy(); if(v==='student') studyAlert(); };
+  const origIn = showInputScreen;
+  showInputScreen = function(){ origIn.apply(this, arguments); studyAlert(); if(currentStudent && sdSid!==currentStudent.id) sdOpen(currentStudent).then(studyAlert); };
   window.addEventListener('focus', ()=>{ if(document.getElementById('view-study')?.classList.contains('active')) renderStudy(); });
 })();
 </script>
