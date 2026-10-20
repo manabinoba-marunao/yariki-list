@@ -3857,6 +3857,15 @@ function mqStrike(o){
 .sd-goals div{font-size:12px;padding:2px 0}
 .sd-goals .late{color:#b91c1c;font-weight:700}
 .sd-goals .done{color:var(--ink3)}
+.room{background:#eef3fc;border-radius:12px;padding:10px 12px;margin-bottom:14px}
+.room-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px;margin-bottom:6px}
+.room-h b{font-size:14px;color:#143070}
+.room-h span{font-size:12px;font-weight:700}
+.room-list{display:flex;flex-wrap:wrap;gap:6px}
+.room-list span{background:#fff;border:1.5px solid #d7deec;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700}
+.room-list span.in{border-color:#1f8a5b;background:#e8f5ef}
+.room-list small{font-weight:500;color:var(--ink2)}
+.room-now{font-size:11px;font-weight:900;color:#1f8a5b;background:#e8f5ef;border-radius:999px;padding:2px 8px}
 .sv-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;display:none;align-items:flex-end;justify-content:center}
 .sv-modal-bg.on{display:flex}
 .sv-modal{background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:560px;padding:18px 16px 26px;max-height:88vh;overflow:auto}
@@ -4282,19 +4291,33 @@ function studyAlert(){
 
 /* ---------- 先生用:みんなの学習の状況 ---------- */
 let DASH = {filter:'all', open:null, loading:false, at:0};
+const JISHU_URL = 'https://script.google.com/macros/s/AKfycbwJf4vp5K0-Q6nl3PVMhB7ahApnnBjmq_wbfHIaodTFvbSUU5uqXo8isxs7Fp7q6PXm/exec';
+let VISITS = null;
+const nName = s => String(s||'').replace(/\s+/g,'').toLowerCase().normalize('NFKC').replace(/[\u30a1-\u30f6]/g, c=>String.fromCharCode(c.charCodeAt(0)-0x60));
+function visitsOf(st){
+  if(!VISITS) return [];
+  const keys = [st.nickname, st.name].filter(Boolean).map(nName);
+  return VISITS.visits.filter(v=>keys.includes(nName(v.name)));
+}
+async function loadVisits(){
+  try{ const r = await fetch(JISHU_URL, {method:'POST', body: JSON.stringify({action:'getVisits', days:14})}).then(x=>x.json()); if(r && r.ok) VISITS = r; }catch(e){}
+}
 function dTestDate(d){ const t = STUDY_TESTS.find(x=>x.id===(d.test||{}).id); return t ? t.start : (d.test||{}).date || null; }
 function dMinutes(d, from, to){ return (d.sessions||[]).filter(x=>{ const k=sdKey(x.a); return k>=from && k<=to; }).reduce((a,x)=>a+(x.b-x.a)/6e4,0); }
 function dRow(st){
   const d = TEAM[String(st.id)] || null;
   const today = sdToday();
-  if(!d) return {st, d:null, level:'none', rank:5};
+  const vs = visitsOf(st), wk = sdAdd(today,-6);
+  const vWeek = vs.filter(v=>v.date>=wk), vNow = vs.some(v=>v.date===today && !v.out), vToday = vs.some(v=>v.date===today);
+  const visit = {n: new Set(vWeek.map(v=>v.date)).size, min: vWeek.reduce((a,v)=>a+(v.min||0),0), now: vNow, today: vToday};
+  if(!d) return {st, d:null, level:'none', rank:5, visit};
   const td = dTestDate(d), c = td ? crisisOf(d, td) : null;
   const level = c ? c.level : (td ? 'norange' : 'notest');
   const rank = {over:0, red:1, yellow:2, norange:3, notest:3, green:4, clear:6}[level] ?? 5;
   const goals = (d.goals||[]), late = goals.filter(g=>!g.done && g.due<today).length, act = goals.filter(g=>!g.done).length;
   const ms = Object.values(d.missions||{})[0];
   return {st, d, td, c, level, rank, todayMin: dMinutes(d, today, today), weekMin: dMinutes(d, sdAdd(today,-6), today), late, act,
-    goalsDone: goals.filter(g=>g.done && sdDiff(today, g.doneAt||today) < 7).length, mission: ms ? (ms.p||0) : null};
+    goalsDone: goals.filter(g=>g.done && sdDiff(today, g.doneAt||today) < 7).length, mission: ms ? (ms.p||0) : null, visit};
 }
 const LV = {over:['⛔ 締切すぎ','#111','#fecaca'], red:['🚨 危険','#b91c1c','#fff'], yellow:['⚠ 注意','#f59e0b','#fff'], green:['✅ 順調','#2a6b4e','#fff'],
   clear:['⛩ 一ノ門突破','#2a6b4e','#fff'], norange:['範囲 未入力','#e5e1d8','#6b6760'], notest:['テスト未選択','#e5e1d8','#6b6760'], none:['まだ使っていない','#f4f2ed','#b0ada6']};
@@ -4302,7 +4325,7 @@ async function loadDash(force){
   if(DASH.loading) return;
   if(!force && Date.now()-DASH.at < 60000 && Object.keys(TEAM).length) return renderStudyDash();
   DASH.loading = true; renderStudyDash();
-  const a = await api('getAllStudy', {});
+  const [a] = await Promise.all([api('getAllStudy', {}), loadVisits()]);
   DASH.loading = false;
   if(a && a.ok && a.data){ TEAM = {}; Object.entries(a.data).forEach(([k,v])=>{ try{ TEAM[k]=JSON.parse(v); }catch(e){} }); DASH.at = Date.now(); DASH.err = null; }
   else DASH.err = '読み込めませんでした';
@@ -4331,6 +4354,7 @@ function renderStudyDash(){
       <div class="k"><b>${fmtMin(tWeek)}</b><span>7日間(全員)</span></div>
       ${mRows.length?`<div class="k"><b>${mDone} / ${mRows.length}</b><span>🚩 ミッション達成</span></div>`:''}
     </div>
+    ${roomBlock()}
     <div class="sd-list">${list.map(r=>sdCard(r)).join('') || '<p class="sv-empty">生徒がいません</p>'}</div>
     <p class="sv-note">並び順:危険な人が上。カードを押すと教科ごとの進み具合が見られます。</p>
   </div>`;
@@ -4351,12 +4375,22 @@ function sdCard(r){
     </div>`;
   }
   return `<div class="sd-card ${open?'open':''}" onclick="DASH.open=DASH.open===${JSON.stringify(r.st.id)}?null:${JSON.stringify(r.st.id)};renderStudyDash()">
-    <div class="r1"><b>${esc_(r.st.name)}</b><small>${esc_(r.st.grade||'')}</small><span class="lv" style="background:${bg};color:${fg}">${lab}</span></div>
+    <div class="r1"><b>${esc_(r.st.name)}</b><small>${esc_(r.st.grade||'')}</small>${r.visit&&r.visit.now?'<span class="room-now">🚪 自習室にいる</span>':''}<span class="lv" style="background:${bg};color:${fg}">${lab}</span></div>
     ${r.d?`<div class="r2">${c?`<i class="bar"><i style="width:${pct}%;background:${{red:"#dc2626",over:"#dc2626",yellow:"#f59e0b"}[r.level]||"#2a6b4e"}"></i></i><span class="pc">ワーク1周 ${pct}%</span>`:''}</div>
     <div class="r3">${c&&c.level!=='clear'?`<span>のこり <b>${c.left}</b>p</span>${c.behind?`<span class="bad">遅れ <b>${c.behind}</b>p</span>`:''}<span>1日 ${c.pace}p</span>`:''}
       <span>今日 <b>${fmtMin(r.todayMin)}</b></span><span>7日 <b>${fmtMin(r.weekMin)}</b></span>
       <span>目標 ${r.act}件${r.late?`<em class="bad">(期限すぎ${r.late})</em>`:''}</span>${r.mission!=null?`<span>🚩 ${r.mission}%</span>`:''}</div>`:''}
+    ${r.visit&&r.visit.n?`<div class="r3"><span>🚪 自習室 7日で <b>${r.visit.n}</b>回・<b>${fmtMin(r.visit.min)}</b></span></div>`:''}
     ${det}
+  </div>`;
+}
+function roomBlock(){
+  if(!VISITS) return `<div class="room"><b>🚪 自習室</b><span class="sv-note">来室記録を読み込めませんでした(自習室アプリの更新が必要かも)</span></div>`;
+  const t = VISITS.today, list = VISITS.visits.filter(v=>v.date===t).sort((a,b)=>a.inMs-b.inMs);
+  const wk = sdAdd(t,-6), week = VISITS.visits.filter(v=>v.date>=wk);
+  const ppl = new Set(week.map(v=>nName(v.name))).size, wmin = week.reduce((a,v)=>a+(v.min||0),0);
+  return `<div class="room"><div class="room-h"><b>🚪 今日の自習室</b><span>${list.length}人(いま ${list.filter(v=>!v.out).length}人)</span><span class="sv-note">この7日:のべ${new Set(week.map(v=>v.date+nName(v.name))).size}回・${ppl}人・${fmtMin(wmin)}</span></div>
+    ${list.length?`<div class="room-list">${list.map(v=>`<span class="${v.out?'':'in'}">${esc_(v.name)} <small>${esc_(v.grade||'')} ${v.in}〜${v.out||'在室'}${v.min!=null?`(${fmtMin(v.min)})`:''}${v.rsv&&v.rsv.startsWith('なし')?' 予約なし':''}</small></span>`).join('')}</div>`:'<div class="sv-note">今日はまだだれも来ていません</div>'}
   </div>`;
 }
 
