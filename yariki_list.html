@@ -3820,6 +3820,43 @@ function mqStrike(o){
 .st-alert.red{background:#b91c1c;color:#fff;animation:czpulse 1.4s ease-in-out infinite}
 .st-alert.over{background:#111;color:#fecaca;border:2px solid #dc2626}
 .st-alert.yellow{background:#fef3c7;color:#92400e;border:2px solid #f59e0b}
+.sd-wrap{background:var(--surface);border:2px solid var(--ink);border-radius:var(--radius);padding:16px;margin-bottom:20px}
+.sd-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.sd-head h2{font-size:17px;font-weight:900}
+.sd-head button{margin-left:auto;font:700 12px var(--font);padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer}
+.sd-err{color:var(--danger);font-size:12px;font-weight:700}
+.sd-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.sd-chips button{font:700 12px var(--font);padding:5px 12px;border-radius:999px;border:1.5px solid var(--border);background:#fff;cursor:pointer}
+.sd-chips button[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.sd-sum{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-bottom:14px}
+.sd-sum .k{background:var(--surface2);border-radius:10px;padding:8px 10px}
+.sd-sum .k b{display:block;font:900 20px var(--mono)}
+.sd-sum .k span{font-size:11px;color:var(--ink2);font-weight:700}
+.sd-sum .k.red{background:#fde8e6}.sd-sum .k.red b{color:#b91c1c}
+.sd-sum .k.yel{background:#fef3c7}.sd-sum .k.yel b{color:#b45309}
+.sd-sum .k.ok{background:var(--accent-light)}.sd-sum .k.ok b{color:var(--accent)}
+.sd-list{display:flex;flex-direction:column;gap:8px}
+.sd-card{border:1.5px solid var(--border);border-radius:12px;padding:10px 12px;cursor:pointer;background:#fff}
+.sd-card.open{border-color:var(--ink)}
+.sd-card .r1{display:flex;align-items:center;gap:8px}
+.sd-card .r1 b{font-size:15px}
+.sd-card .r1 small{font-size:11px;color:var(--ink2)}
+.sd-card .lv{margin-left:auto;font-size:11px;font-weight:900;border-radius:999px;padding:3px 9px;white-space:nowrap}
+.sd-card .r2{display:flex;align-items:center;gap:8px;margin-top:6px}
+.sd-card .bar{display:block;flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.sd-card .bar i{display:block;height:100%;background:#dc2626;border-radius:4px}
+.sd-card .pc{font-size:11px;font-weight:700;color:var(--ink2);white-space:nowrap}
+.sd-card .r3{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--ink2);margin-top:6px}
+.sd-card .r3 b{color:var(--ink);font-family:var(--mono)}
+.sd-card .bad,.sd-card .bad b{color:#b91c1c;font-style:normal;font-weight:700}
+.sd-det{margin-top:10px;border-top:1px dashed var(--border);padding-top:8px}
+.sd-sub{display:grid;grid-template-columns:40px 64px 1fr auto;align-items:center;gap:8px;font-size:12px;margin-bottom:5px}
+.sd-sub .tag{font-size:10px;font-weight:700;background:var(--surface2);border-radius:999px;padding:1px 6px;text-align:center}
+.sd-sub .n{font-family:var(--mono);font-size:11px;color:var(--ink2)}
+.sd-time{font-size:12px;margin:8px 0 4px;font-weight:700}
+.sd-goals div{font-size:12px;padding:2px 0}
+.sd-goals .late{color:#b91c1c;font-weight:700}
+.sd-goals .done{color:var(--ink3)}
 .sv-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;display:none;align-items:flex-end;justify-content:center}
 .sv-modal-bg.on{display:flex}
 .sv-modal{background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:560px;padding:18px 16px 26px;max-height:88vh;overflow:auto}
@@ -4242,11 +4279,92 @@ function studyAlert(){
     : `⚠ <b>学校ワークのペースが足りない</b><br>締め切りまで ${c.toDl} 日・のこり ${c.left} ページ →`;
 }
 
+
+/* ---------- 先生用:みんなの学習の状況 ---------- */
+let DASH = {filter:'all', open:null, loading:false, at:0};
+function dTestDate(d){ const t = STUDY_TESTS.find(x=>x.id===(d.test||{}).id); return t ? t.start : (d.test||{}).date || null; }
+function dMinutes(d, from, to){ return (d.sessions||[]).filter(x=>{ const k=sdKey(x.a); return k>=from && k<=to; }).reduce((a,x)=>a+(x.b-x.a)/6e4,0); }
+function dRow(st){
+  const d = TEAM[String(st.id)] || null;
+  const today = sdToday();
+  if(!d) return {st, d:null, level:'none', rank:5};
+  const td = dTestDate(d), c = td ? crisisOf(d, td) : null;
+  const level = c ? c.level : (td ? 'norange' : 'notest');
+  const rank = {over:0, red:1, yellow:2, norange:3, notest:3, green:4, clear:6}[level] ?? 5;
+  const goals = (d.goals||[]), late = goals.filter(g=>!g.done && g.due<today).length, act = goals.filter(g=>!g.done).length;
+  const ms = Object.values(d.missions||{})[0];
+  return {st, d, td, c, level, rank, todayMin: dMinutes(d, today, today), weekMin: dMinutes(d, sdAdd(today,-6), today), late, act,
+    goalsDone: goals.filter(g=>g.done && sdDiff(today, g.doneAt||today) < 7).length, mission: ms ? (ms.p||0) : null};
+}
+const LV = {over:['⛔ 締切すぎ','#111','#fecaca'], red:['🚨 危険','#b91c1c','#fff'], yellow:['⚠ 注意','#f59e0b','#fff'], green:['✅ 順調','#2a6b4e','#fff'],
+  clear:['⛩ 一ノ門突破','#2a6b4e','#fff'], norange:['範囲 未入力','#e5e1d8','#6b6760'], notest:['テスト未選択','#e5e1d8','#6b6760'], none:['まだ使っていない','#f4f2ed','#b0ada6']};
+async function loadDash(force){
+  if(DASH.loading) return;
+  if(!force && Date.now()-DASH.at < 60000 && Object.keys(TEAM).length) return renderStudyDash();
+  DASH.loading = true; renderStudyDash();
+  const a = await api('getAllStudy', {});
+  DASH.loading = false;
+  if(a && a.ok && a.data){ TEAM = {}; Object.entries(a.data).forEach(([k,v])=>{ try{ TEAM[k]=JSON.parse(v); }catch(e){} }); DASH.at = Date.now(); DASH.err = null; }
+  else DASH.err = '読み込めませんでした';
+  renderStudyDash();
+}
+function renderStudyDash(){
+  let host = document.getElementById('study-dash');
+  if(!host){ const h = document.querySelector('#view-teacher .teacher-header'); if(!h) return; host = document.createElement('div'); host.id='study-dash'; h.after(host); }
+  const grades = [...new Set(STUDENTS.map(s=>s.grade).filter(Boolean))].sort();
+  const list = STUDENTS.filter(s=>DASH.filter==='all' || s.grade===DASH.filter).map(dRow).sort((a,b)=>a.rank-b.rank || (b.c&&b.c.behind||0)-(a.c&&a.c.behind||0));
+  const cnt = k=>list.filter(r=>r.level===k).length;
+  const used = list.filter(r=>r.d).length;
+  const tToday = list.reduce((a,r)=>a+(r.todayMin||0),0), tWeek = list.reduce((a,r)=>a+(r.weekMin||0),0);
+  const mRows = list.filter(r=>r.mission!=null || missionsFor(r.st).length);
+  const mDone = list.filter(r=>r.mission===100).length;
+  host.innerHTML = `<div class="sd-wrap">
+    <div class="sd-head"><h2>📚 みんなの学習の状況</h2><button onclick="loadDash(true)">${DASH.loading?'読み込み中…':'↻ 更新'}</button></div>
+    ${DASH.err?`<p class="sd-err">${DASH.err}</p>`:''}
+    <div class="sd-chips"><button aria-pressed="${DASH.filter==='all'}" onclick="DASH.filter='all';renderStudyDash()">全員</button>${grades.map(g=>`<button aria-pressed="${DASH.filter===g}" onclick="DASH.filter='${g}';renderStudyDash()">${esc_(g)}</button>`).join('')}</div>
+    <div class="sd-sum">
+      <div class="k red"><b>${cnt('red')+cnt('over')}</b><span>🚨 危険・締切すぎ</span></div>
+      <div class="k yel"><b>${cnt('yellow')}</b><span>⚠ 注意</span></div>
+      <div class="k ok"><b>${cnt('clear')}</b><span>⛩ 一ノ門突破</span></div>
+      <div class="k"><b>${list.length-used}</b><span>まだ使っていない</span></div>
+      <div class="k"><b>${fmtMin(tToday)}</b><span>今日の勉強(全員)</span></div>
+      <div class="k"><b>${fmtMin(tWeek)}</b><span>7日間(全員)</span></div>
+      ${mRows.length?`<div class="k"><b>${mDone} / ${mRows.length}</b><span>🚩 ミッション達成</span></div>`:''}
+    </div>
+    <div class="sd-list">${list.map(r=>sdCard(r)).join('') || '<p class="sv-empty">生徒がいません</p>'}</div>
+    <p class="sv-note">並び順:危険な人が上。カードを押すと教科ごとの進み具合が見られます。</p>
+  </div>`;
+}
+function sdCard(r){
+  const [lab,bg,fg] = LV[r.level] || LV.none, c = r.c, open = DASH.open===r.st.id;
+  const pct = c && c.total ? Math.round(c.done/c.total*100) : (r.level==='clear'?100:0);
+  let det = '';
+  if(open && r.d){
+    const d = r.d, subs = Object.entries((d.test||{}).subj||{}).filter(([,x])=>x&&x.from!=null);
+    const today = sdToday(), per = {};
+    (d.sessions||[]).filter(x=>sdKey(x.a)>=sdAdd(today,-6)).forEach(x=>{ per[x.s]=(per[x.s]||0)+(x.b-x.a)/6e4; });
+    const goals = (d.goals||[]).filter(g=>!g.done || sdDiff(today, g.doneAt||today) < 7);
+    det = `<div class="sd-det">
+      ${subs.length?subs.map(([s,x])=>{ const lap=curLap(x), i=Math.min(lap,2), p=Math.round(lapProg(x,i)*100); return `<div class="sd-sub"><span>${s}</span><span class="tag">${lap>=3?'3周クリア':(lap+1)+'周目'}</span><i class="bar"><i style="width:${lap>=3?100:p}%;background:${lap===0?'#dc2626':'#2a6b4e'}"></i></i><span class="n">p.${x.from}〜${x.to}${lap<3?` / ${(x.laps||[])[i]||'-'}まで`:''}</span></div>`; }).join(''):'<p class="sv-note">テスト範囲はまだ入っていません</p>'}
+      <div class="sd-time">7日間の教科別:${Object.keys(per).length?Object.entries(per).sort((a,b)=>b[1]-a[1]).map(([s,m])=>`<span style="color:${SUBJ_COLOR[s]||'#555'}">${s} ${fmtMin(m)}</span>`).join('　'):'記録なし'}</div>
+      ${goals.length?`<div class="sd-goals">${goals.map(g=>`<div class="${g.done?'done':g.due<today?'late':''}">${g.done?'✅':g.due<today?'⚠':'□'} ${esc_(g.subj)}｜${esc_(g.mat)} ${goalRange(g)} 〜${sdLabel(g.due)}</div>`).join('')}</div>`:'<div class="sd-goals"><div>今週の目標:なし</div></div>'}
+    </div>`;
+  }
+  return `<div class="sd-card ${open?'open':''}" onclick="DASH.open=DASH.open===${JSON.stringify(r.st.id)}?null:${JSON.stringify(r.st.id)};renderStudyDash()">
+    <div class="r1"><b>${esc_(r.st.name)}</b><small>${esc_(r.st.grade||'')}</small><span class="lv" style="background:${bg};color:${fg}">${lab}</span></div>
+    ${r.d?`<div class="r2">${c?`<i class="bar"><i style="width:${pct}%;background:${{red:"#dc2626",over:"#dc2626",yellow:"#f59e0b"}[r.level]||"#2a6b4e"}"></i></i><span class="pc">ワーク1周 ${pct}%</span>`:''}</div>
+    <div class="r3">${c&&c.level!=='clear'?`<span>のこり <b>${c.left}</b>p</span>${c.behind?`<span class="bad">遅れ <b>${c.behind}</b>p</span>`:''}<span>1日 ${c.pace}p</span>`:''}
+      <span>今日 <b>${fmtMin(r.todayMin)}</b></span><span>7日 <b>${fmtMin(r.weekMin)}</b></span>
+      <span>目標 ${r.act}件${r.late?`<em class="bad">(期限すぎ${r.late})</em>`:''}</span>${r.mission!=null?`<span>🚩 ${r.mission}%</span>`:''}</div>`:''}
+    ${det}
+  </div>`;
+}
+
 /* ---------- 画面切り替えに組み込む ---------- */
 (function(){
   ensureStudyView();
   const orig = showView;
-  showView = function(v, btn){ orig(v, btn); if(v==='study') renderStudy(); if(v==='student') studyAlert(); };
+  showView = function(v, btn){ orig(v, btn); if(v==='study') renderStudy(); if(v==='student') studyAlert(); if(v==='teacher' && document.getElementById('view-teacher').classList.contains('active')) loadDash(); };
   const origIn = showInputScreen;
   showInputScreen = function(){ origIn.apply(this, arguments); studyAlert(); if(currentStudent && sdSid!==currentStudent.id) sdOpen(currentStudent).then(studyAlert); };
   window.addEventListener('focus', ()=>{ if(document.getElementById('view-study')?.classList.contains('active')) renderStudy(); });
