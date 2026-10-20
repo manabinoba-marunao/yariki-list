@@ -3865,6 +3865,10 @@ function mqStrike(o){
 .room-list span{background:#fff;border:1.5px solid #d7deec;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700}
 .room-list span.in{border-color:#1f8a5b;background:#e8f5ef}
 .room-list small{font-weight:500;color:var(--ink2)}
+.room-list button{margin-left:6px;font:700 11px var(--font);padding:2px 8px;border-radius:999px;border:1.5px solid #c0392b;color:#c0392b;background:#fff;cursor:pointer}
+.room-add{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px;font-size:12px;font-weight:700}
+.room-add select{font:600 13px var(--font);padding:6px;border:1.5px solid #d7deec;border-radius:8px;max-width:100%}
+.room-add button{font:700 12px var(--font);padding:7px 12px;border-radius:8px;border:none;background:#143070;color:#fff;cursor:pointer}
 .room-now{font-size:11px;font-weight:900;color:#1f8a5b;background:#e8f5ef;border-radius:999px;padding:2px 8px}
 .sv-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;display:none;align-items:flex-end;justify-content:center}
 .sv-modal-bg.on{display:flex}
@@ -4296,8 +4300,22 @@ let VISITS = null;
 const nName = s => String(s||'').replace(/\s+/g,'').toLowerCase().normalize('NFKC').replace(/[\u30a1-\u30f6]/g, c=>String.fromCharCode(c.charCodeAt(0)-0x60));
 function visitsOf(st){
   if(!VISITS) return [];
-  const keys = [st.nickname, st.name].filter(Boolean).map(nName);
-  return VISITS.visits.filter(v=>keys.includes(nName(v.name)));
+  return VISITS.visits.filter(v=>nameMatch(st, v.name));
+}
+/* 自習室の名前とやりきリストの生徒を結びつける(フルネーム・ニックネーム・ひらがな/カタカナ・空白のちがいを吸収) */
+function nameMatch(st, raw){
+  const v = nName(raw); if(!v) return false;
+  const keys = [st.nickname, st.name, String(st.name||'').split(/\s+/).pop()].filter(Boolean).map(nName).filter(k=>k.length>=2 || k===v);
+  return keys.some(k => k===v || (k.length>=2 && v.includes(k)) || (v.length>=2 && k.includes(v)));
+}
+async function roomAct(action, name, grade){
+  if(!name) return;
+  if(action==='teacherCheckOut' && !confirm(name+' さんを退室にしますか？')) return;
+  showToast('記録しています…');
+  try{ const r = await fetch(JISHU_URL, {method:'POST', body: JSON.stringify({action, name, grade})}).then(x=>x.json());
+    if(!r.ok) throw new Error(r.error||'');
+    await loadVisits(); renderStudyDash(); showToast(action==='teacherCheckIn' ? name+' さん 入室しました' : name+' さん 退室しました');
+  }catch(e){ showToast('記録できませんでした:'+(e.message||'自習室アプリの更新が必要かも')); }
 }
 async function loadVisits(){
   try{ const r = await fetch(JISHU_URL, {method:'POST', body: JSON.stringify({action:'getVisits', days:14})}).then(x=>x.json()); if(r && r.ok) VISITS = r; }catch(e){}
@@ -4390,7 +4408,8 @@ function roomBlock(){
   const wk = sdAdd(t,-6), week = VISITS.visits.filter(v=>v.date>=wk);
   const ppl = new Set(week.map(v=>nName(v.name))).size, wmin = week.reduce((a,v)=>a+(v.min||0),0);
   return `<div class="room"><div class="room-h"><b>🚪 今日の自習室</b><span>${list.length}人(いま ${list.filter(v=>!v.out).length}人)</span><span class="sv-note">この7日:のべ${new Set(week.map(v=>v.date+nName(v.name))).size}回・${ppl}人・${fmtMin(wmin)}</span></div>
-    ${list.length?`<div class="room-list">${list.map(v=>`<span class="${v.out?'':'in'}">${esc_(v.name)} <small>${esc_(v.grade||'')} ${v.in}〜${v.out||'在室'}${v.min!=null?`(${fmtMin(v.min)})`:''}${v.rsv&&v.rsv.startsWith('なし')?' 予約なし':''}</small></span>`).join('')}</div>`:'<div class="sv-note">今日はまだだれも来ていません</div>'}
+    ${list.length?`<div class="room-list">${list.map(v=>`<span class="${v.out?'':'in'}">${esc_(v.name)} <small>${esc_(v.grade||'')} ${v.in}〜${v.out||'在室'}${v.min!=null?`(${fmtMin(v.min)})`:''}${v.rsv&&v.rsv.startsWith('なし')?' 予約なし':''}</small>${v.out?'':`<button onclick="event.stopPropagation();roomAct('teacherCheckOut', ${esc_(JSON.stringify(v.name))})">退室</button>`}</span>`).join('')}</div>`:'<div class="sv-note">今日はまだだれも来ていません</div>'}
+    <div class="room-add"><span>📱スマホがない子:</span><select id="room-who"><option value="">生徒を選ぶ</option>${STUDENTS.filter(s=>!list.some(v=>!v.out&&nameMatch(s,v.name))).map(s=>`<option value="${esc_(s.nickname||s.name)}" data-g="${esc_(s.grade||'')}">${esc_(s.name)}${s.nickname&&s.nickname!==s.name?'('+esc_(s.nickname)+')':''} ${esc_(s.grade||'')}</option>`).join('')}</select><button onclick="const o=document.getElementById('room-who').selectedOptions[0];roomAct('teacherCheckIn', o.value, o.dataset.g)">入室を記録</button></div>
   </div>`;
 }
 
