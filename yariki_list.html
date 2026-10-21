@@ -1633,6 +1633,22 @@ async function submitRecord() {
           } catch(e) {}
           showBossDefeated(nickname, hpRes.treasure || BOSS_DATA.treasure, killedName);
         }
+
+        // 大魔王の反撃！（1回の攻撃で何人かがねらわれる）
+        const counters = hpRes.ok ? (hpRes.counters || (hpRes.counter ? [hpRes.counter] : [])) : [];
+        if (counters.length) {
+          counters.forEach(c => {
+            STATUS_MAP[String(c.targetId)] = { ...(STATUS_MAP[String(c.targetId)] || {}), status: c.status, end: c.end, enemy: c.enemy };
+            if (String(c.targetId) === String(currentStudent.id)) setMyStatus({ status: c.status, end: c.end, enemy: c.enemy });
+          });
+          const c0 = counters[0];
+          setTimeout(() => showEnemyAttack({
+            status: c0.status, end: c0.end, enemy: c0.enemy, enemyType: 'boss',
+            counterNow: true, victims: counters.map(c => ({
+              name: c.targetName, status: c.status, isMe: String(c.targetId) === String(currentStudent.id),
+            })),
+          }), 2600);
+        }
       }
 
       // リアルタイムでダメージログ更新
@@ -2419,6 +2435,7 @@ const STATUS_DEFS = {
   flinch:  { icon:'💫', name:'ひるみ',             short:'ダメージ0.8倍',          desc:'ひるんで力が出ない！今日のダメージが0.8倍', mult:() => 0.8, todayOnly:true },
   pumpkin: { icon:'🎃', name:'ジャック・オ・ランタン', short:'ダメージ半分',           desc:'頭がカボチャで前が見えない！ダメージが半分', mult:() => 0.5 },
   bat:     { icon:'🦇', name:'コウモリ',           short:'ダメージ0.1〜2倍',       desc:'フラフラ飛んで、ダメージが0.1〜2倍のどれかになる（大当たりもある！）', mult:() => 0.1 + Math.random() * 1.9 },
+  ghost:   { icon:'👻', name:'おばけ',             short:'0.6倍・お菓子2倍',       desc:'からだがスケスケで攻撃が当たりにくい！ダメージ0.6倍。でもお菓子を見つけやすい（2倍）', mult:() => 0.6 },
   cat:     { icon:'🐈‍⬛', name:'黒猫',             short:'0.8倍・会心が出やすい', desc:'気まぐれ。ダメージは0.8倍だけど、会心の一撃が出やすい（6つ全部やりきったとき）', mult:() => 0.8, critRate:0.6 },
   curse:   { icon:'😵', name:'呪い',               short:'ダメージ0.7倍',          desc:'呪いで体が重い。ダメージが0.7倍', mult:() => 0.7 },
 };
@@ -2433,6 +2450,7 @@ const STATUS_RESULT_LINES = {
   pumpkin: 'ジャック・オ・ランタンにされてしまった！',
   bat:     'コウモリにされてしまった！',
   cat:     '黒猫にされてしまった！',
+  ghost:   'おばけにされてしまった！',
   curse:   '呪われてしまった！',
 };
 
@@ -2526,7 +2544,11 @@ function showEnemyAttack(res) {
   icon.classList.remove('go');
 
   const type = String(res.enemyType || '');
-  if (type.indexOf('mob') === 0) {
+  if (res.counterNow) {
+    line.textContent = `${res.enemy}の反撃！ ねらわれたのは……`;
+  } else if (res.counter) {
+    line.textContent = `${res.by}の攻撃に怒った${res.enemy}が反撃してきた！ あなたがねらわれた！`;
+  } else if (type.indexOf('mob') === 0) {
     line.textContent = ENEMY_ATTACK_LINES[type] || `${res.enemy}がおそいかかってきた！`;
   } else if (res.status === 'curse') {
     line.textContent = `${res.enemy}が呪いの言葉をとなえた！`;
@@ -2534,9 +2556,18 @@ function showEnemyAttack(res) {
     line.textContent = `${res.enemy}が「トリック・オア・トリート！」と魔法をとなえた！`;
   }
   icon.textContent = def.icon;
-  result.textContent = STATUS_RESULT_LINES[res.status] || `${def.name}になってしまった！`;
   const until = def.todayOnly ? '今日だけ' : `${mdLabel(res.end)}まで`;
-  help.innerHTML = `${def.desc}（${until}）<br>習慣を6つ全部やりきるか、友達にお菓子🍬をもらえば元に戻れるよ！`;
+  if (res.counterNow && res.victims) {
+    icon.textContent = res.victims.map(v => STATUS_DEFS[v.status]?.icon || '').join(' ');
+    result.innerHTML = res.victims.map(v =>
+      `${v.isMe ? 'あなた' : v.name}が${STATUS_RESULT_LINES[v.status] || 'ばけさせられた！'}`).join('<br>');
+    const anyMe = res.victims.some(v => v.isMe);
+    help.innerHTML = (anyMe ? '習慣を6つ全部やりきるか、友達にお菓子🍬をもらえば元に戻れるよ！<br>' : '')
+      + 'お菓子🍬を持っていたら「ボス討伐」画面から仲間を助けてあげよう！' + `<br>（${until}）`;
+  } else {
+    result.textContent = STATUS_RESULT_LINES[res.status] || `${def.name}になってしまった！`;
+    help.innerHTML = `${def.desc}（${until}）<br>習慣を6つ全部やりきるか、友達にお菓子🍬をもらえば元に戻れるよ！`;
+  }
 
   ov.classList.remove('screen-flash'); void ov.offsetWidth;
   ov.classList.add('show', 'screen-flash');
