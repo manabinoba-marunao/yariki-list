@@ -123,6 +123,24 @@ body { font-family: var(--font); background: var(--bg); color: var(--ink); min-h
 .recent-names .rn-chip{display:inline-flex;align-items:center;border:2px solid var(--border);border-radius:999px;background:var(--surface);overflow:hidden}
 .recent-names .rn-pick{border:0;background:none;font-family:var(--font);font-size:15px;font-weight:700;color:var(--ink);padding:9px 6px 9px 14px;cursor:pointer}
 .recent-names .rn-x{border:0;background:none;color:var(--ink2);font-size:14px;padding:9px 12px 9px 6px;cursor:pointer}
+/* ガチャ券 */
+.gacha-card{border:2px solid #E8B93A;background:linear-gradient(135deg,#FFF8E1,#FFFDF5);border-radius:var(--radius);padding:12px 14px;margin:10px 0}
+.gacha-card .gc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.gacha-card .gc-title{font-weight:900;font-size:14px}
+.gacha-card .gc-num{font-size:13px;font-weight:700}
+.gacha-card .gc-num b{font-size:24px;font-family:var(--mono);color:#C2410C}
+.gacha-card .gc-row{font-size:12px;margin-top:6px}
+.gacha-card .gc-row b{font-family:var(--mono)}
+.gacha-card .gc-bar{height:8px;background:#F3E3B5;border-radius:99px;overflow:hidden;margin-top:3px}
+.gacha-card .gc-bar i{display:block;height:100%;background:linear-gradient(90deg,#F59E0B,#EF4444);border-radius:99px}
+.gacha-card .gc-note{font-size:11px;color:var(--ink2);margin-top:8px;line-height:1.5}
+.t-gacha{background:var(--surface2);border:1.5px solid #E8B93A;border-radius:var(--radius);padding:14px 16px;margin-bottom:20px}
+.t-gacha table{width:100%;font-size:12px}
+.t-gacha td,.t-gacha th{padding:6px 4px;text-align:left;border-bottom:1px solid var(--border)}
+.t-gacha .tg-n{font-size:18px;font-weight:900;font-family:var(--mono);color:#C2410C}
+.t-gacha button{font-family:var(--font);font-size:12px;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);cursor:pointer}
+.t-gacha button.use{background:#C2410C;color:#fff;border-color:#C2410C}
+.t-gacha button:disabled{opacity:.4;cursor:default}
 .back-btn {
   font-size: 12px; color: var(--ink2); background: none; border: none;
   cursor: pointer; font-family: var(--font); padding: 0;
@@ -932,6 +950,7 @@ td.td-name { padding-left: 16px; text-align: left; }
         </div>
       </div>
       <div class="status-box" id="s-status-box"></div>
+      <div id="s-gacha"></div>
       <div class="streak-bar">
         <div>
           <div class="streak-num" id="s-streak">0</div>
@@ -1163,6 +1182,7 @@ td.td-name { padding-left: 16px; text-align: left; }
         <div id="manual-result" style="margin-top:8px;font-size:12px;color:var(--accent);text-align:center;min-height:18px;"></div>
       </div>
     </div>
+    <div class="t-gacha" id="t-gacha"><div style="font-size:13px;font-weight:700;">🎰 ガチャ券(ガチャの日用)</div><div class="t-gacha-body" style="font-size:12px;color:var(--ink2);margin-top:6px;">読み込み中…</div></div>
     <div class="period-row">
       <button class="period-tab active" onclick="setPeriod('today',this)">今日</button>
       <button class="period-tab" onclick="setPeriod('week',this)">今週</button>
@@ -1405,9 +1425,68 @@ async function verifyPin() {
   }
 }
 
+/* ==== ガチャ券(11/1スタート)====
+   累計ダメージ2万ごとに1枚・ボスにとどめで1枚・1か月に15日以上やったら1枚。
+   券はアプリでためて、教室の「ガチャの日」に本物のガチャを回す。数えるのはGAS側(getTickets) */
+async function loadGacha() {
+  const box = document.getElementById('s-gacha');
+  if (!box || !currentStudent || isTester(currentStudent)) { if (box) box.innerHTML = ''; return; }
+  const sid = currentStudent.id;
+  const res = await api('getTickets', { studentId: sid });
+  if (!res.ok || !currentStudent || currentStudent.id !== sid) return;
+  const per = res.perDmg || 20000, need = res.needDays || 15;
+  const t = (res.tickets || {})[String(sid)] || { available: 0, toNext: per, monthDays: 0 };
+  const md = (res.start || '2026-11-01').slice(5).replace(/^0/, '').replace('-', '/').replace('/0', '/');
+  if (res.today < res.start) {
+    box.innerHTML = `<div class="gacha-card"><div class="gc-top"><span class="gc-title">🎰 ガチャ券</span><span class="gc-num">${md} スタート!</span></div>
+      <div class="gc-note">ダメージ${per.toLocaleString()}ごとに1枚、ボスにとどめを刺したら1枚、1か月に${need}日以上やったら1枚。<br>たまった券は、教室の「ガチャの日」に本物のガチャで使えるよ!</div></div>`;
+    return;
+  }
+  const got = per - t.toNext, pct = Math.round(got / per * 100), dpct = Math.min(100, Math.round(t.monthDays / need * 100));
+  box.innerHTML = `<div class="gacha-card"><div class="gc-top"><span class="gc-title">🎰 ガチャ券</span><span class="gc-num">×<b>${t.available}</b> 枚</span></div>
+    <div class="gc-row">次の1枚まで あと <b>${t.toNext.toLocaleString()}</b> ダメージ<div class="gc-bar"><i style="width:${pct}%"></i></div></div>
+    <div class="gc-row">今月やった日 <b>${t.monthDays}</b> / ${need}日 ${t.monthDays >= need ? '✓ 今月の1枚ゲット!' : ''}<div class="gc-bar"><i style="width:${dpct}%"></i></div></div>
+    <div class="gc-note">ボスにとどめを刺した英雄にも1枚!券は教室の「ガチャの日」に使えるよ。</div></div>`;
+}
+
+let GACHA_T = null;
+async function loadGachaTeacher() {
+  const box = document.querySelector('#t-gacha .t-gacha-body');
+  if (!box) return;
+  const res = await api('getTickets', {});
+  if (!res.ok) { box.textContent = '読み込めませんでした'; return; }
+  GACHA_T = res;
+  renderGachaTeacher();
+}
+function renderGachaTeacher() {
+  const box = document.querySelector('#t-gacha .t-gacha-body');
+  const res = GACHA_T; if (!box || !res) return;
+  const T = res.tickets || {};
+  const rows = rosterStudents().map(s => ({ s, t: T[String(s.id)] || { available: 0, dmgTickets: 0, hero: 0, dayTickets: 0, used: 0, monthDays: 0, toNext: res.perDmg } }))
+    .sort((a, b) => b.t.available - a.t.available);
+  const note = res.today < res.start ? `<div style="margin-bottom:6px;">${res.start} から数え始めます。それまでは全員0枚です。</div>` : '';
+  box.innerHTML = note + `<div style="margin-bottom:6px;">ガチャの日に回した分だけ「使う」を押してください(1回のガチャの日は1人4回まで)。</div>
+    <table><thead><tr><th>名前</th><th>券</th><th>内訳(ダメージ/とどめ/日数)</th><th>今月</th><th></th></tr></thead><tbody>` +
+    rows.map(({ s, t }) => `<tr><td>${esc_(s.nickname || s.name)}</td><td class="tg-n">${t.available}</td>
+      <td>${t.dmgTickets} / ${t.hero} / ${t.dayTickets}${t.used ? `<br><span style="color:var(--ink2)">使用済み ${t.used}</span>` : ''}</td>
+      <td>${t.monthDays}日</td>
+      <td style="white-space:nowrap"><button class="use" data-g-use="${s.id}" ${t.available > 0 ? '' : 'disabled'}>使う</button> <button data-g-undo="${s.id}" ${t.used > 0 ? '' : 'disabled'} title="押しまちがいを1枚もどす">↩</button></td></tr>`).join('') +
+    `</tbody></table>`;
+  box.querySelectorAll('[data-g-use]').forEach(b => b.onclick = () => gachaUse(b.dataset.gUse, 1));
+  box.querySelectorAll('[data-g-undo]').forEach(b => b.onclick = () => gachaUse(b.dataset.gUndo, -1));
+}
+async function gachaUse(id, n) {
+  const st = STUDENTS.find(s => String(s.id) === String(id));
+  const res = await api('useTickets', { studentId: id, nickname: st ? (st.nickname || st.name) : '', count: n });
+  if (!res.ok) { alert(res.error || '記録できませんでした'); }
+  await loadGachaTeacher();
+}
+
 function showInputScreen() {
   document.getElementById('screen-pin').style.display = 'none';
   document.getElementById('screen-input').style.display = 'block';
+  const gb = document.getElementById('s-gacha'); if (gb) gb.innerHTML = '';
+  loadGacha();
 
   const d = new Date();
   document.getElementById('s-name-title').textContent = currentStudent.name;
@@ -1542,6 +1621,7 @@ async function submitRecord() {
       if (BOSS_DATA) {
         BOSS_DATA.currentHp = Math.max(0, (BOSS_DATA.currentHp ?? BOSS_DATA.hp) - dmg);
         const hpRes = await api('updateBossHp', { damage: dmg, heroName: nickname, heroId: currentStudent.id });
+        setTimeout(loadGacha, 1500);
         if (hpRes.ok && typeof hpRes.currentHp === 'number') BOSS_DATA.currentHp = hpRes.currentHp;
 
         // ボス討伐！（トドメを刺した本人）
@@ -2225,7 +2305,7 @@ function showView(v,btn){
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('view-'+v).classList.add('active');
   if(btn) btn.classList.add('active');
-  if(v==='teacher') { renderTeacher(); initManualForm(); }
+  if(v==='teacher') { renderTeacher(); initManualForm(); loadGachaTeacher(); }
   if(v==='boss') { loadBossData(); renderBossView(); }
   if(v==='monthly') { renderMonthly(); }
 }
