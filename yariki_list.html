@@ -3736,6 +3736,24 @@ function mqStrike(o){
 .gform .full{grid-column:1/-1}
 .gform .rng{display:flex;align-items:center;gap:6px}
 .gform .rng input{text-align:center}
+.rules{background:#141a33;color:#fff;border-radius:var(--radius);padding:14px 16px 12px;margin-bottom:14px;border-top:4px solid #e8b931}
+.rules .rh{display:flex;align-items:baseline;gap:8px;font-weight:900;font-size:17px;margin-bottom:6px}
+.rules .rh em{font-style:normal;color:#e8b931}
+.rules .rh small{margin-left:auto;font-size:9px;letter-spacing:.15em;color:#9aa0b8}
+.rules ol{list-style:none;margin:0;padding:0}
+.rules li{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.rules li:last-child{border-bottom:none}
+.rules li .n{font:900 24px/1 var(--mono);color:#e8b931;flex:none;width:18px}
+.rules li b{font-size:13px;line-height:1.5}
+.rules li b mark{background:#e8b931;color:#141a33;padding:0 3px;border-radius:2px}
+.rules li small{display:block;font-size:11px;color:#b9bdd0;margin-top:2px}
+.rules .motto{font-size:11px;color:#d9dbe6;margin-top:8px;text-align:center;line-height:1.6}
+.gtabs{display:flex;gap:6px;overflow-x:auto;margin:-4px 0 12px;padding-bottom:2px}
+.gtabs button{flex:none;font:700 12px var(--font);padding:7px 11px;border-radius:999px;border:1.5px solid var(--border);background:#fff;color:var(--ink2);cursor:pointer;white-space:nowrap}
+.gtabs button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+.gtabs button.add{border-style:dashed;color:var(--accent)}
+.gl .ed{background:none;border:none;color:var(--accent);font:700 12px var(--font);cursor:pointer;padding:2px 4px}
+.gl .lk{display:inline-block;font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-light);border-radius:999px;padding:0 6px;margin-left:4px;text-decoration:none}
 .sv-add{width:100%;padding:12px;border:2px dashed var(--border);background:none;border-radius:10px;font:900 14px var(--font);color:var(--accent);cursor:pointer;margin-top:8px}
 .sv-btn{padding:11px 14px;border:none;border-radius:10px;font:900 14px var(--font);background:var(--accent);color:#fff;cursor:pointer}
 .sv-btn.ghost{background:none;color:var(--ink2);border:1.5px solid var(--border)}
@@ -3897,6 +3915,21 @@ const STUDY_TESTS = [   // 期末テストの日程(学校ごと)
 const STUDY_MISSIONS = [ // 先生が決める大きな目標。grade は「中3」「中」「小」「高」「全」のように書く
   {id:'m3-nyushi', grade:'中3', text:'入試テキスト(Sロード・シリウス)で、中学の学習内容をぜんぶ終える', due:'2026-11-30'}
 ];
+const STUDY_RULES = { // 学習管理のいちばん上に出す「期末対策 3か条」
+  title: '期末対策', sub: 'FINAL EXAM RULES',
+  items: [
+    {t:'課題は<mark>試験日2週間前</mark>までに終わらせるべし！', s:'予想出題範囲を先取り学習'},
+    {t:'範囲のテキストや過去問で<mark>弱点を知る</mark>べし！', s:'相手と自分を知らずして、完全勝利はない'},
+    {t:'弱点は<mark>克服するまで</mark>復習・演習すべし！', s:'ミスした問題は最低3回やりなおす'}
+  ],
+  motto: '準備は、最良の友。<br>準備とは、言い訳を一つでもなくすこと。'
+};
+function rulesCard(){
+  const R = STUDY_RULES; if(!R || !R.items.length) return '';
+  return `<div class="rules"><div class="rh">${R.title} <em>${R.items.length}か条</em><small>${R.sub}</small></div>
+    <ol>${R.items.map((x,i)=>`<li><span class="n">${i+1}</span><b>${x.t}<small>→ ${x.s}</small></b></li>`).join('')}</ol>
+    ${R.motto?`<div class="motto">${R.motto}</div>`:''}</div>`;
+}
 const WORK_LEAD_DAYS = 14;  // 学校ワーク1周目の締め切り = テスト初日の何日前か
 const TIMER_MAX_MIN = 180;  // 止め忘れ対策:1回の記録は最大3時間
 
@@ -3923,7 +3956,7 @@ function fmtMin(m){ m=Math.round(m); return m>=60 ? Math.floor(m/60)+'時間'+(m
 
 /* ---------- 保存と同期 ---------- */
 let TEAM = {}, SD = null, sdSid = null, sdSyncState = 'local', sdSaveTimer = null, sdTick = null, sdForm = null, sdSetSubj = null;
-function sdBlank(){ return {v:1, timer:{subj:null, start:null}, sessions:[], test:{id:null, date:null, subj:{}}, goals:[], badges:[], missions:{}, updated:0}; }
+function sdBlank(){ return {v:1, timer:{subj:null, start:null}, sessions:[], test:{id:null, date:null, subj:{}}, targets:[], gateTab:'term', goals:[], badges:[], missions:{}, updated:0}; }
 function sdKeyName(id){ return 'mq_study_'+id; }
 function sdLoadLocal(id){ try{ const v=JSON.parse(localStorage.getItem(sdKeyName(id))||'null'); return v&&v.v?Object.assign(sdBlank(),v):null; }catch(e){ return null; } }
 function sdSave(){
@@ -3979,10 +4012,11 @@ function renderStudy(){
   if(sdSid!==st.id){ sdOpen(st); return; }
   root.innerHTML = `
     <div class="sv-head"><h2>📚 学習管理</h2><span class="who">${esc_(st.name)}(${esc_(st.grade||'')})</span><span class="sv-sync" id="sv-sync">${sdSyncLabel()}</span></div>
+    ${rulesCard()}
     ${timerCard(st)}
     ${missionCard(st)}
     ${goalCard(st)}
-    ${testCard(st)}`;
+    ${gateCard(st)}`;
   sdStartTick();
 }
 function esc_(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -4085,27 +4119,67 @@ function goalCard(st){
   const active = SD.goals.filter(g=>!g.done || sdDiff(today, g.doneAt||today) < 7);
   active.sort((a,b)=>(a.done-b.done)||a.due.localeCompare(b.due));
   return `<div class="sv-card"><h3>🎯 今週の目標<span class="sub">何を・どこまで・いつまで</span></h3>
-    ${active.length?active.map(g=>{ const late = !g.done && g.due < today; return `<div class="gl ${g.done?'done':''}">
+    ${active.length?active.map(g=>{ const late = !g.done && g.due < today; const src = g.src ? srcLabel(g.src) : ''; return `<div class="gl ${g.done?'done':''}">
       <input type="checkbox" ${g.done?'checked':''} onchange="sdGoalToggle('${g.id}',this.checked)">
-      <div class="m"><b>${esc_(g.subj)}</b>｜${esc_(g.mat)}　${goalRange(g)}<small class="${late?'late':''}">${late?'⚠ 期限すぎ ':''}〜${sdLabel(g.due)}</small></div>
+      <div class="m"><b>${esc_(g.subj)}</b>｜${esc_(g.mat)}　${goalRange(g)}${src?`<span class="lk">⛩ ${esc_(src)}</span>`:''}<small class="${late?'late':''}">${late?'⚠ 期限すぎ ':''}〜${sdLabel(g.due)}</small></div>
+      ${g.done?'':`<button class="ed" onclick="sdGoalEdit('${g.id}')">直す</button>`}
       <button class="x" aria-label="消す" onclick="sdGoalDel('${g.id}')">✕</button></div>`; }).join(''):'<div class="sv-empty">まだ目標がありません</div>'}
     ${sdForm?goalForm(st):`<button class="sv-add" onclick="sdForm={};renderStudy()">＋ 目標を追加</button>`}
   </div>`;
 }
 function goalRange(g){ const u=g.unit; return u==='p' ? `p.${g.from}〜p.${g.to}` : u==='章' ? `第${g.from}章〜第${g.to}章` : `${g.from}〜${g.to}${u}`; }
+/* 登竜門で決めた範囲のうち、まだ終わっていないもの(今週の目標の候補) */
+function goalSources(){
+  const out = [];
+  const termName = '期末テスト';
+  if(testDate()) Object.entries(SD.test.subj||{}).forEach(([s,r])=>{
+    if(!r || r.from==null) return;
+    const lap = curLap(r);
+    if(lap<3){ const p=(r.laps||[])[lap]||0; out.push({key:`term:${s}:w${lap}`, group:termName, subj:s, mat:`学校ワーク${lap+1}周目`, unit:'p', from:Math.max(r.from,p+1), to:r.to}); }
+    const j = r.juku; if(j && j.from!=null && (j.done||0)<j.to) out.push({key:`term:${s}:j`, group:termName, subj:s, mat:j.name||'塾テキスト', unit:'p', from:Math.max(j.from,(j.done||0)+1), to:j.to});
+  });
+  (SD.targets||[]).forEach(t=>(t.items||[]).forEach(it=>{
+    if((it.done||0) >= it.to) return;
+    out.push({key:`tg:${t.id}:${it.id}`, group:t.name, subj:it.subj, mat:it.mat, unit:it.unit||'p', from:Math.max(it.from,(it.done||0)+1), to:it.to});
+  }));
+  return out;
+}
+function srcLabel(key){
+  const k = String(key).split(':');
+  if(k[0]==='term') return '期末テスト';
+  const t = (SD.targets||[]).find(x=>x.id===k[1]); return t ? t.name : '';
+}
 function goalForm(st){
   const f = sdForm;
   const subs=[...studySubjects(st),'その他'], mats=studyMaterials(st);
+  const srcs = goalSources();
+  const matIn = f.mat!=null && !mats.includes(f.mat);
+  const units = [['p','ページ'],['章','章'],['回','回'],['問','問']];
   return `<div class="gform">
+    ${f.edit?'<div class="full" style="font-size:13px;font-weight:900;color:var(--ink)">✏ 目標を直す</div>':''}
+    ${srcs.length||f.src?`<label class="full">⛩ 登竜門の範囲から選ぶ<select id="gf-src" onchange="sdPickSrc(this.value)">
+      <option value="">選ばずに自分で入れる</option>
+      ${srcs.map(x=>`<option value="${x.key}" ${f.src===x.key?'selected':''}>${esc_(x.group)}｜${esc_(x.subj)} ${esc_(x.mat)} ${goalRange(x)}</option>`).join('')}
+      ${f.src&&!srcs.some(x=>x.key===f.src)?`<option value="${f.src}" selected>${esc_(srcLabel(f.src))}(終わった範囲)</option>`:''}
+    </select></label>`:''}
     <label>教科<select id="gf-subj">${subs.map(s=>`<option ${f.subj===s?'selected':''}>${s}</option>`).join('')}</select></label>
-    <label>教材<select id="gf-mat" onchange="document.getElementById('gf-other').style.display=this.value==='その他'?'':'none'">${mats.map(s=>`<option ${f.mat===s?'selected':''}>${s}</option>`).join('')}</select></label>
-    <label class="full" id="gf-other" style="display:none">教材の名前<input id="gf-oname" placeholder="例:学校のプリント"></label>
-    <label>単位<select id="gf-unit"><option value="p">ページ</option><option value="章">章</option><option value="回">回</option><option value="問">問</option></select></label>
-    <label>どこからどこまで<span class="rng"><input id="gf-from" type="number" inputmode="numeric" min="0"><span>〜</span><input id="gf-to" type="number" inputmode="numeric" min="0"></span></label>
-    <label class="full">いつまでに<input id="gf-due" type="date" value="${sdSunday()}"></label>
-    <div class="full" style="display:flex;gap:8px;justify-content:flex-end"><button class="sv-btn ghost" onclick="sdForm=null;renderStudy()">やめる</button><button class="sv-btn" onclick="sdGoalAdd()">追加する</button></div>
+    <label>教材<select id="gf-mat" onchange="document.getElementById('gf-other').style.display=this.value==='その他'?'':'none'">${mats.map(s=>`<option ${(matIn?'その他':f.mat)===s?'selected':''}>${s}</option>`).join('')}</select></label>
+    <label class="full" id="gf-other" style="display:${matIn?'':'none'}">教材の名前<input id="gf-oname" placeholder="例:学校のプリント" value="${matIn?esc_(f.mat):''}"></label>
+    <label>単位<select id="gf-unit">${units.map(([v,l])=>`<option value="${v}" ${f.unit===v?'selected':''}>${l}</option>`).join('')}</select></label>
+    <label>どこからどこまで<span class="rng"><input id="gf-from" type="number" inputmode="numeric" min="0" value="${f.from??''}"><span>〜</span><input id="gf-to" type="number" inputmode="numeric" min="0" value="${f.to??''}"></span></label>
+    <label class="full">いつまでに<input id="gf-due" type="date" value="${f.due||sdSunday()}"></label>
+    ${f.src?'<p class="sv-note full" style="margin:0">✔ この目標にチェックすると、登竜門の進み具合も「ここまで終わった」に進みます。</p>':''}
+    <div class="full" style="display:flex;gap:8px;justify-content:flex-end"><button class="sv-btn ghost" onclick="sdForm=null;renderStudy()">やめる</button><button class="sv-btn" onclick="sdGoalAdd()">${f.edit?'直す':'追加する'}</button></div>
   </div>`;
 }
+function sdPickSrc(key){
+  const keep = {edit: sdForm && sdForm.edit, due: sdForm && sdForm.due};
+  if(!key){ sdForm = Object.assign({}, keep, {src:null}); renderStudy(); return; }
+  const x = goalSources().find(y=>y.key===key); if(!x) return;
+  sdForm = Object.assign({}, keep, {src:key, subj:x.subj, mat:x.mat, unit:x.unit, from:x.from, to:x.to});
+  renderStudy();
+}
+function sdGoalEdit(id){ const g=SD.goals.find(x=>x.id===id); if(!g) return; sdForm = Object.assign({}, g, {edit:id}); renderStudy(); }
 function sdGoalAdd(){
   const v = id=>document.getElementById(id).value.trim();
   let mat = v('gf-mat'); if(mat==='その他') mat = v('gf-oname') || 'その他';
@@ -4113,10 +4187,38 @@ function sdGoalAdd(){
   if(isNaN(from)||isNaN(to)){ showToast('「どこからどこまで」を数字で入れてね'); return; }
   if(to < from){ showToast('おわりの数字が、はじめより小さいよ'); return; }
   if(!due){ showToast('いつまでにやるか決めてね'); return; }
-  SD.goals.push({id: Date.now().toString(36), subj:v('gf-subj'), mat, unit:v('gf-unit'), from, to, due, done:false, created:sdToday()});
-  sdForm = null; sdSave(); renderStudy(); showToast('目標を追加しました！');
+  const srcEl = document.getElementById('gf-src');
+  const data = {subj:v('gf-subj'), mat, unit:v('gf-unit'), from, to, due, src: (srcEl && srcEl.value) || null};
+  if(sdForm.edit){
+    const g = SD.goals.find(x=>x.id===sdForm.edit);
+    if(g) Object.assign(g, data);
+    sdForm = null; sdSave(); renderStudy(); showToast('目標を直しました！');
+  } else {
+    SD.goals.push(Object.assign({id: Date.now().toString(36), done:false, created:sdToday()}, data));
+    sdForm = null; sdSave(); renderStudy(); showToast('目標を追加しました！');
+  }
 }
-function sdGoalToggle(id, on){ const g=SD.goals.find(x=>x.id===id); if(!g) return; g.done=on; g.doneAt = on?sdToday():null; sdSave(); renderStudy(); if(on) showToast('🎉 目標たっせい！'); }
+/* 今週の目標を達成 → 登竜門の進み具合にも反映 */
+function sdApplyGoal(g){
+  if(!g.src) return '';
+  const k = String(g.src).split(':');
+  if(k[0]==='term'){
+    const r = SD.test.subj[k[1]]; if(!r) return '';
+    if(k[2]==='j'){ if(!r.juku) return ''; r.juku.done = Math.min(r.juku.to, Math.max(r.juku.done||0, g.to)); if(r.juku.done>=r.juku.to) sdBadge(`${k[1]} 塾テキスト`); }
+    else { const i = Number(k[2].slice(1)); r.laps = r.laps||[0,0,0]; r.laps[i] = Math.min(r.to, Math.max(r.laps[i]||0, g.to)); if(r.laps[i]>=r.to) sdBadge(`${k[1]} ワーク${i+1}周`); }
+    return '期末テスト';
+  }
+  const t = (SD.targets||[]).find(x=>x.id===k[1]); const it = t && (t.items||[]).find(x=>x.id===k[2]); if(!it) return '';
+  it.done = Math.min(it.to, Math.max(it.done||0, g.to));
+  return t.name;
+}
+function sdGoalToggle(id, on){
+  const g=SD.goals.find(x=>x.id===id); if(!g) return;
+  g.done=on; g.doneAt = on?sdToday():null;
+  const where = on ? sdApplyGoal(g) : '';
+  sdSave(); renderStudy();
+  if(on) showToast(where ? `🎉 目標たっせい！ ⛩ ${where}の進み具合も進めたよ` : '🎉 目標たっせい！');
+}
 function sdGoalDel(id){ if(!confirm('この目標を消しますか？')) return; SD.goals = SD.goals.filter(x=>x.id!==id); sdSave(); renderStudy(); }
 
 /* ---------- 期末テスト 克己登竜門 ---------- */
@@ -4282,6 +4384,113 @@ function sdSaveRange(){
   SD.test.subj[s] = r; sdCloseModal(); sdSave(); renderStudy();
 }
 function sdClearRange(){ delete SD.test.subj[sdSetSubj]; sdCloseModal(); sdSave(); renderStudy(); }
+
+/* ---------- 登竜門:期末テスト以外の目標(単元テスト・入試など) ---------- */
+const TARGET_KINDS = ['単元テスト','実力テスト','模試','入試','検定','その他'];
+function gateTabs(){
+  const tab = SD.gateTab || 'term', ts = SD.targets || [];
+  return `<div class="gtabs"><button aria-pressed="${tab==='term'}" onclick="sdGateTab('term')">期末テスト</button>
+    ${ts.map(t=>`<button aria-pressed="${tab===t.id}" onclick="sdGateTab('${t.id}')">${esc_(t.name)}</button>`).join('')}
+    <button class="add" onclick="sdOpenTarget()">＋ 目標を足す</button></div>`;
+}
+function sdGateTab(id){ SD.gateTab = id; sdSave(); renderStudy(); }
+function gateCard(st){
+  const t = (SD.targets||[]).find(x=>x.id===SD.gateTab);
+  if(!t) return testCard(st).replace('<div class="sv-card gate">', '<div class="sv-card gate">'+gateTabs());
+  return `<div class="sv-card gate">${gateTabs()}${targetBody(t)}</div>`;
+}
+function itemProg(it){ const n = it.to-it.from+1, d = Math.max(0, Math.min(it.to, it.done||0) - it.from + 1); return {n, d, p: n>0 ? d/n : 0}; }
+function targetBody(t){
+  const today = sdToday(), items = t.items||[];
+  const left = t.date ? sdDiff(t.date, today) : null;
+  let n=0, d=0; items.forEach(it=>{ const x=itemProg(it); n+=x.n; d+=x.d; });
+  const rest = n-d;
+  const pace = left!=null && left>0 && rest>0 ? Math.ceil(rest/left) : null;
+  const title = `<div class="gate-title"><span class="kanji">克己</span><div><b>登竜門</b><small>${esc_(t.kind)}：${esc_(t.name)}</small></div>${t.date?`<span class="td">${esc_(t.kind)}<br>${sdLabel(t.date)}</span>`:''}</div>`;
+  let box;
+  if(!items.length) box = `<div class="cz yellow"><div class="cz-h">⚠ まず範囲を入れよう</div>下の「＋ 教材と範囲を足す」から、やる教材と範囲を入れてね。</div>`;
+  else if(rest<=0) box = `<div class="cz clear"><div class="cz-h">🐉 登竜成就！</div>ぜんぶの範囲を終えた。${left!=null&&left>=0?`本番まであと <b>${left}</b> 日、弱点を克服しよう！`:''}</div>`;
+  else if(left!=null && left<0) box = `<div class="cz over"><div class="cz-h">⛔ 日にちをすぎた</div>のこり <b>${rest}</b>。先生と相談して、次の目標を決めよう。</div>`;
+  else box = `<div class="cz ${pace!=null&&pace>=10?'red':'green'}"><div class="cz-h">${left!=null?`本番まであと ${left} 日`:'日にち未定'}</div>
+      <div class="cz-bar"><i style="width:${n?Math.round(d/n*100):0}%"></i></div>
+      <div class="cz-m">のこり <b>${rest}</b> / ${n}${pace?`　1日 <b>${pace}</b> ずつで間に合う`:''}</div></div>`;
+  const rows = items.map(it=>{ const x = itemProg(it), u = it.unit||'p';
+    return `<div class="sr"><div class="h">${esc_(it.subj)}<span class="lap ${x.p>=1?'done':''}">${esc_(it.mat)}</span><span class="rg">${goalRange(it)} <button class="set" onclick="sdOpenItem('${t.id}','${it.id}')">変更</button></span></div>
+      <div class="pbar"><i style="width:${Math.round(x.p*100)}%"></i></div>
+      ${x.p<1?`<div class="ctl">${u==='p'?'p.':''}<input type="number" inputmode="numeric" value="${(it.done||0)>=it.from?it.done:''}" placeholder="${it.from}" onchange="sdSetItem('${t.id}','${it.id}',this.value)"> ${u==='p'?'':u}まで終わった　<button class="all" onclick="sdSetItem('${t.id}','${it.id}',${it.to})">ぜんぶ終わった</button></div>`:'<div class="ctl">✅ 終わった！</div>'}</div>`; }).join('');
+  return `${title}${box}${rows}
+    <button class="sv-add" onclick="sdOpenItem('${t.id}')">＋ 教材と範囲を足す</button>
+    <div style="text-align:right;margin-top:8px"><button style="font:700 12px var(--font);color:var(--accent);background:none;border:none;text-decoration:underline;cursor:pointer;padding:0" onclick="sdOpenTarget('${t.id}')">この目標(名前・日にち)を直す</button></div>`;
+}
+function sdSetItem(tid, iid, v){
+  const t = (SD.targets||[]).find(x=>x.id===tid), it = t && t.items.find(x=>x.id===iid); if(!it) return;
+  const n = parseInt(v,10); it.done = isNaN(n) ? 0 : Math.min(it.to, Math.max(0, n));
+  if(it.done>=it.to) showToast(`🏅 ${it.subj} ${it.mat} クリア！`);
+  sdSave(); renderStudy();
+}
+let sdEditT = null, sdEditI = null;
+function sdOpenTarget(id){
+  const t = id ? (SD.targets||[]).find(x=>x.id===id) : null; sdEditT = id || null;
+  document.getElementById('sv-modal-body').innerHTML = `<h4>${t?'目標を直す':'登竜門に目標を足す'}</h4>
+    <p class="sv-note">単元テスト・入試・模試・検定など。期末テストとは別に、いくつでも足せます。</p>
+    <div class="gform">
+      <label>種類<select id="tg-kind">${TARGET_KINDS.map(k=>`<option ${t&&t.kind===k?'selected':''}>${k}</option>`).join('')}</select></label>
+      <label>本番の日<input id="tg-date" type="date" value="${t&&t.date||''}"></label>
+      <label class="full">名前<input id="tg-name" placeholder="例:数学 二次関数の単元テスト / 高校入試" value="${t?esc_(t.name):''}"></label>
+      <div class="full" style="display:flex;gap:8px;justify-content:space-between">
+        ${t?`<button class="sv-btn ghost" onclick="sdDelTarget()">この目標を消す</button>`:'<span></span>'}
+        <span style="display:flex;gap:8px"><button class="sv-btn ghost" onclick="sdCloseModal()">やめる</button><button class="sv-btn" onclick="sdSaveTarget()">保存</button></span></div>
+    </div>`;
+  document.getElementById('sv-modal').classList.add('on');
+}
+function sdSaveTarget(){
+  const kind = document.getElementById('tg-kind').value, date = document.getElementById('tg-date').value || null;
+  const name = document.getElementById('tg-name').value.trim() || kind;
+  SD.targets = SD.targets || [];
+  if(sdEditT){ const t = SD.targets.find(x=>x.id===sdEditT); if(t) Object.assign(t, {kind, name, date}); }
+  else { const id = 'g'+Date.now().toString(36); SD.targets.push({id, kind, name, date, items:[]}); SD.gateTab = id; }
+  sdCloseModal(); sdSave(); renderStudy();
+}
+function sdDelTarget(){
+  if(!confirm('この目標と、入れた範囲をぜんぶ消しますか？')) return;
+  SD.targets = (SD.targets||[]).filter(x=>x.id!==sdEditT);
+  SD.goals.forEach(g=>{ if(g.src && String(g.src).startsWith('tg:'+sdEditT+':')) g.src = null; });
+  SD.gateTab = 'term'; sdCloseModal(); sdSave(); renderStudy();
+}
+function sdOpenItem(tid, iid){
+  const t = (SD.targets||[]).find(x=>x.id===tid); if(!t) return;
+  const it = iid ? t.items.find(x=>x.id===iid) : null; sdEditT = tid; sdEditI = iid || null;
+  const st = currentStudent, subs=[...studySubjects(st),'その他'];
+  const units = [['p','ページ'],['章','章'],['回','回'],['問','問']];
+  document.getElementById('sv-modal-body').innerHTML = `<h4>${esc_(t.name)}：教材と範囲</h4>
+    <div class="gform">
+      <label>教科<select id="ti-subj">${subs.map(s=>`<option ${it&&it.subj===s?'selected':''}>${s}</option>`).join('')}</select></label>
+      <label>単位<select id="ti-unit">${units.map(([v,l])=>`<option value="${v}" ${it&&it.unit===v?'selected':''}>${l}</option>`).join('')}</select></label>
+      <label class="full">教材<input id="ti-mat" list="ti-mats" placeholder="例:Sロード / 過去問" value="${it?esc_(it.mat):''}"><datalist id="ti-mats">${studyMaterials(st).filter(m=>m!=='その他').map(m=>`<option value="${m}">`).join('')}<option value="過去問"></datalist></label>
+      <label class="full">どこからどこまで<span class="rng"><input id="ti-from" type="number" inputmode="numeric" value="${it?it.from:''}"><span>〜</span><input id="ti-to" type="number" inputmode="numeric" value="${it?it.to:''}"></span></label>
+      <div class="full" style="display:flex;gap:8px;justify-content:space-between">
+        ${it?`<button class="sv-btn ghost" onclick="sdDelItem()">消す</button>`:'<span></span>'}
+        <span style="display:flex;gap:8px"><button class="sv-btn ghost" onclick="sdCloseModal()">やめる</button><button class="sv-btn" onclick="sdSaveItem()">保存</button></span></div>
+    </div>`;
+  document.getElementById('sv-modal').classList.add('on');
+}
+function sdSaveItem(){
+  const t = (SD.targets||[]).find(x=>x.id===sdEditT); if(!t) return;
+  const g = id=>document.getElementById(id).value.trim();
+  const from = parseInt(g('ti-from'),10), to = parseInt(g('ti-to'),10);
+  if(isNaN(from)||isNaN(to)||to<from){ showToast('範囲を数字で正しく入れてね'); return; }
+  const data = {subj:g('ti-subj'), unit:g('ti-unit'), mat:g('ti-mat')||'教材', from, to};
+  if(sdEditI){ const it = t.items.find(x=>x.id===sdEditI); if(it) Object.assign(it, data); }
+  else t.items.push(Object.assign({id:'i'+Date.now().toString(36), done:0}, data));
+  sdCloseModal(); sdSave(); renderStudy();
+}
+function sdDelItem(){
+  const t = (SD.targets||[]).find(x=>x.id===sdEditT); if(!t) return;
+  if(!confirm('この教材を消しますか？')) return;
+  t.items = t.items.filter(x=>x.id!==sdEditI);
+  SD.goals.forEach(g=>{ if(g.src==='tg:'+sdEditT+':'+sdEditI) g.src = null; });
+  sdCloseModal(); sdSave(); renderStudy();
+}
 
 /* ---------- 生徒タブにも危機を出す ---------- */
 function studyAlert(){
