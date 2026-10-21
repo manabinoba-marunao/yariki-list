@@ -117,6 +117,12 @@ body { font-family: var(--font); background: var(--bg); color: var(--ink); min-h
 
 /* 入力画面 */
 .input-screen { animation: fadeUp .3s ease; }
+.recent-names{margin:-8px 0 14px}
+.recent-names .rn-label{font-size:12px;color:var(--ink2);margin-bottom:6px}
+.recent-names .rn-list{display:flex;flex-wrap:wrap;gap:8px}
+.recent-names .rn-chip{display:inline-flex;align-items:center;border:2px solid var(--border);border-radius:999px;background:var(--surface);overflow:hidden}
+.recent-names .rn-pick{border:0;background:none;font-family:var(--font);font-size:15px;font-weight:700;color:var(--ink);padding:9px 6px 9px 14px;cursor:pointer}
+.recent-names .rn-x{border:0;background:none;color:var(--ink2);font-size:14px;padding:9px 12px 9px 6px;cursor:pointer}
 .back-btn {
   font-size: 12px; color: var(--ink2); background: none; border: none;
   cursor: pointer; font-family: var(--font); padding: 0;
@@ -860,10 +866,12 @@ td.td-name { padding-left: 16px; text-align: left; }
       <div class="screen-eyebrow">🌱 ６つの習慣やりきリスト</div>
       <h2>理想の自分になろう！</h2>
       <p style="font-size:13px;color:var(--ink2);margin-bottom:20px;">ニックネームを入力してね</p>
+      <div id="recent-names" class="recent-names"></div>
       <input id="nickname-input" type="text" placeholder="例：さくら、たろう"
         style="width:100%;padding:14px 16px;border:2px solid var(--border);border-radius:var(--radius);
         font-size:16px;font-family:var(--font);outline:none;background:var(--surface);color:var(--ink);margin-bottom:12px;"
         oninput="document.getElementById('nickname-input').style.borderColor='var(--accent)'"
+        onkeydown="if(event.key==='Enter'&&!event.isComposing)submitNickname()"
       >
       <div id="nickname-error" style="color:var(--danger);font-size:12px;font-weight:700;min-height:18px;margin-bottom:10px;"></div>
       <button onclick="submitNickname()"
@@ -1323,13 +1331,28 @@ function mqAutoLogin() {
   const st = STUDENTS.find(s => String(s.id) === String(m.id));
   if (!st) return;
   currentStudent = st;
+  rememberName(st.nickname || st.name);
   document.getElementById('screen-name').style.display = 'none';
   showInputScreen();
   checkEnemyAttack();
 }
 
 
+// この端末でログインした名前を覚えておき、次から候補としてタップで選べるようにする
+// (localStorageはマル単と同じ場所なので、マル単でも使える)
+const MQ_NAMES = 'mq_names';
+function recentNames(){ try{ const v = JSON.parse(localStorage.getItem(MQ_NAMES) || '[]'); return Array.isArray(v) ? v.filter(x => typeof x === 'string' && x) : []; }catch(e){ return []; } }
+function rememberName(n){ if(!n) return; try{ const a = recentNames().filter(x => x !== n); a.unshift(n); localStorage.setItem(MQ_NAMES, JSON.stringify(a.slice(0, 8))); }catch(e){} }
+function forgetName(n){ try{ localStorage.setItem(MQ_NAMES, JSON.stringify(recentNames().filter(x => x !== n))); }catch(e){} renderNameGrid(); }
 function renderNameGrid() {
+  const box = document.getElementById('recent-names');
+  if (!box) return;
+  const list = recentNames().filter(n => STUDENTS.some(s => s.name === n || s.nickname === n));
+  if (!list.length) { box.innerHTML = ''; return; }
+  box.innerHTML = '<div class="rn-label">この端末で使った名前(タップで選べるよ)</div><div class="rn-list">' +
+    list.map(n => `<span class="rn-chip"><button type="button" class="rn-pick" data-n="${esc_(n)}">${esc_(n)}</button><button type="button" class="rn-x" data-x="${esc_(n)}" aria-label="候補から消す">×</button></span>`).join('') + '</div>';
+  box.querySelectorAll('.rn-pick').forEach(b => b.onclick = () => { document.getElementById('nickname-input').value = b.dataset.n; submitNickname(); });
+  box.querySelectorAll('.rn-x').forEach(b => b.onclick = () => forgetName(b.dataset.x));
 }
 
 function submitNickname() {
@@ -1372,6 +1395,7 @@ async function verifyPin() {
   const res = await api('verifyPin', { studentId: currentStudent.id, pin: pinBuffer });
   if (res.ok && res.valid) {
     mqSet({ kind: 'student', id: currentStudent.id, nickname: currentStudent.nickname || currentStudent.name });
+    rememberName(currentStudent.nickname || currentStudent.name);
     showInputScreen();
     checkEnemyAttack();
   } else {
@@ -1570,6 +1594,7 @@ function backToNames() {
   document.getElementById('screen-name').style.display = 'block';
   document.getElementById('screen-pin').style.display = 'none';
   document.getElementById('screen-input').style.display = 'none';
+  renderNameGrid();
 }
 
 function calcStreak(sid) {
