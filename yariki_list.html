@@ -2939,8 +2939,9 @@ async function submitManualRecord() {
   }
 }
 
-init().then(() => {
-  loadBossData();
+init().then(async () => {
+  await loadBossData();
+  if (typeof summonWeeklyCheck === 'function') summonWeeklyCheck();   // 月曜:先週の自習室の召喚
 });
 
 const LEVEL_TABLE = [
@@ -4867,14 +4868,18 @@ function roomBlock(){
 
 <script>
 /* ==== MAL QUEST:自習室の召喚 と マルのバッジ ==== */
-/* 召喚:今日 自習室に来た人数で呼び出せる召喚獣が変わる。威力 = みんなの自習時間(1人2時間まで)の合計 × 召喚獣の倍率 */
+/* 召喚:1週間(月〜日)に自習室に来た人数で召喚獣が決まり、自習時間で威力が決まる。
+   月曜に最初にだれかがアプリを開いたとき、先週の分が自動で発動。その週のうちに開いた全員に1回ずつ演出を見せる。
+   威力 = 1週間の自習時間(分。1人1日2時間まで)× 10 × 召喚獣の倍率 */
 const SUMMONS = [
   { min:8, key:'rocket',  icon:'🚀', name:'羅針盤ロケット', mult:3,   move:'殻をつき破る！',     effect:'cure', effText:'来た仲間の状態異常がとけた！' },
   { min:5, key:'teacher', icon:'🧑‍🏫', name:'塾長',         mult:2,   move:'ナイショの話',       effect:'cure', effText:'来た仲間の状態異常がとけた！' },
   { min:3, key:'bigowl',  icon:'🦉', name:'巨大フクロウ',   mult:1.5, move:'大風！',             effect:'' },
   { min:1, key:'owl',     icon:'🦉', name:'フクロウくん',   mult:1,   move:'はばたき',           effect:'' },
 ];
-const SUMMON_CAP_MIN = 120;
+const SUMMON_CAP_MIN = 120;     // 1人1日あたり数える上限(分)
+const SUMMON_PER_MIN = 10;      // 1分あたりのダメージ
+const SUMMON_NO_OUT_MIN = 60;   // 退室のQRを読まずに帰った日は60分として数える
 let MQX_AT = 0, MQX_BUSY = false;
 const MQB = {};   // 生徒id → マル単から届いたマル・バッジ・装備
 function mqExtrasLoad(force){
@@ -4885,83 +4890,111 @@ function mqExtrasLoad(force){
     api('getAllStudy', {}).then(a => { if (a && a.ok && a.data) Object.entries(a.data).forEach(([k, v]) => { try { const o = JSON.parse(v); if (o && o.mq) MQB[k] = o.mq; } catch(e){} }); }).catch(() => {}),
   ]).finally(() => { MQX_BUSY = false; renderParty(); renderSummon(); });
 }
-function roomToday(){
-  if (!VISITS || !VISITS.visits) return { n:0, people:[], minutes:0, today:null };
-  const today = VISITS.today, by = {};
-  VISITS.visits.filter(v => v.date === today).forEach(v => {
+function jstToday(){ return (VISITS && VISITS.today) || new Date(Date.now() + 9*3600e3).toISOString().slice(0,10); }
+function weekStartOf(d){ const dow = sdParse(d).getDay(); return sdAdd(d, -((dow + 6) % 7)); }   // 月曜はじまり
+function md(d){ const p = String(d).split('-'); return `${+p[1]}/${+p[2]}`; }
+/* from〜to の来室をまとめる(人ごと・日ごとに上限をかけて合計) */
+function roomRange(from, to){
+  if (!VISITS || !VISITS.visits) return { n:0, people:[], minutes:0 };
+  const today = jstToday(), byDay = {}, names = {};
+  VISITS.visits.filter(v => v.date >= from && v.date <= to).forEach(v => {
     const k = nName(v.name); if (!k) return;
-    const live = !v.out && v.inMs ? Math.max(0, (Date.now() - Number(v.inMs)) / 6e4) : 0;
-    const m = Number(v.min) || live;
-    (by[k] ||= { name:v.name, min:0 }).min += m;
+    let m = Number(v.min) || 0;
+    if (!m && !v.out) m = v.date === today && v.inMs ? Math.max(0, (Date.now() - Number(v.inMs)) / 6e4) : (v.date < today ? SUMMON_NO_OUT_MIN : 0);
+    const key = k + '|' + v.date; byDay[key] = (byDay[key] || 0) + m; names[k] ||= v.name;
   });
-  const people = Object.values(by).map(p => Object.assign(p, { min: Math.min(SUMMON_CAP_MIN, Math.round(p.min)) }));
-  return { n: people.length, people, minutes: people.reduce((a, p) => a + p.min, 0), today };
+  const per = {};
+  Object.entries(byDay).forEach(([key, m]) => { const k = key.split('|')[0]; per[k] = (per[k] || 0) + Math.min(SUMMON_CAP_MIN, Math.round(m)); });
+  const people = Object.keys(names).map(k => ({ name: names[k], min: per[k] || 0 }));
+  return { n: people.length, people, minutes: people.reduce((a, p) => a + p.min, 0) };
 }
-function roomTodayIds(){
-  const r = roomToday(), ids = new Set();
+function roomToday(){ const t = jstToday(); return roomRange(t, t); }
+function idsOf(r){
+  const ids = new Set();
   if (!r.n || typeof rosterStudents !== 'function') return ids;
   rosterStudents().forEach(st => { if (r.people.some(p => nameMatch(st, p.name))) ids.add(String(st.id)); });
   return ids;
 }
+function roomTodayIds(){ return idsOf(roomToday()); }
 function summonTier(n){ return SUMMONS.find(t => n >= t.min) || null; }
-function summonSentToday(){
-  return (DAMAGE_LOG || []).filter(l => String(l.date).slice(0,10) === TODAY && (l.habitsDone === '召喚' || /^自習室の召喚/.test(l.nickname || l.name || '')))
-    .reduce((a, l) => a + (Number(l.damage) || 0), 0);
-}
-function summonPower(r){ const t = summonTier(r.n); return t ? Math.round(Math.max(r.minutes, r.n * 10) * t.mult) : 0; }
+function summonPower(r){ const t = summonTier(r.n); return t ? Math.round(r.minutes * SUMMON_PER_MIN * t.mult) : 0; }
+function summonLogFor(ws){ return (DAMAGE_LOG || []).find(l => String(l.nickname || l.name || '').includes('[' + ws + ']')); }
 function renderSummon(){
   const box = document.getElementById('summon-wrap'); if (!box) return;
   if (!VISITS) { box.style.display = 'none'; return; }
   box.style.display = 'block';
-  const r = roomToday(), t = summonTier(r.n), sent = summonSentToday(), power = summonPower(r), left = Math.max(0, power - sent);
+  const today = jstToday(), ws = weekStartOf(today), r = roomRange(ws, today), t = summonTier(r.n), power = summonPower(r);
   const nxt = SUMMONS.slice().reverse().find(x => x.min > r.n);
   const ladder = SUMMONS.slice().reverse().map(x => `<div class="sl ${r.n >= x.min ? 'got' : ''} ${t && t.key === x.key ? 'now' : ''}"><i style="${x.key==='bigowl'?'font-size:26px':''}">${x.icon}</i>${x.name}<br>${x.min}人〜</div>`).join('');
-  let btn;
-  if (!r.n) btn = `<button class="summon-btn" disabled>今日はまだだれも来ていない…自習室でQRチェックインしよう</button>`;
-  else if (left >= 10) btn = `<button class="summon-btn" onclick="doSummon(this)">${t.icon} みんなで${t.name}を召喚する！</button>`;
-  else btn = `<button class="summon-btn" disabled>✓ 今日の召喚ずみ(${sent.toLocaleString()}ダメージ)　仲間や時間がふえたら、また呼べる</button>`;
-  box.innerHTML = `<div class="summon-h"><b>🚪 自習室の召喚</b><span>今日 ${r.n}人・${Math.floor(r.minutes/60)}時間${r.minutes%60}分</span></div>
+  const last = summonLogFor(sdAdd(ws, -7));
+  const lastHtml = last ? `<button class="summon-btn" style="margin-top:8px;background:#2a2a4a;box-shadow:none;font-size:12px" onclick="replaySummon('${sdAdd(ws, -7)}')">▶ 先週の召喚をもう一度見る(${(Number(last.damage)||0).toLocaleString()}ダメージ)</button>` : '';
+  box.innerHTML = `<div class="summon-h"><b>🚪 今週の自習室の召喚</b><span>${md(ws)}〜${md(sdAdd(ws, 6))}</span></div>
     <div class="summon-ladder">${ladder}</div>
+    <div class="summon-note" style="margin:0 0 6px;font-size:13px;color:#fff">今週 <b>${r.n}</b>人・<b>${Math.floor(r.minutes/60)}</b>時間${r.minutes%60 ? (r.minutes%60) + '分' : ''}${t ? `　→ ${t.icon}<b>${t.name}</b> <b style="color:#7fe0ff">${power.toLocaleString()}</b>ダメージ` : ''}</div>
     ${r.n ? `<div class="summon-names">${r.people.map(p => `<span>${esc(p.name)}</span>`).join('')}</div>` : ''}
-    ${btn}
-    <div class="summon-note">${t ? `いまの召喚獣:<b>${t.icon}${t.name}</b>(威力×${t.mult})${left >= 10 ? `・<b>${left.toLocaleString()}</b>ダメージ` : ''}` : ''}${nxt ? `${t ? '　' : ''}あと<b>${nxt.min - r.n}</b>人で ${nxt.icon}${nxt.name}！` : ''}<br>威力 = みんなの自習時間(1人2時間まで)× 召喚獣の倍率</div>`;
+    <button class="summon-btn" disabled>${r.n ? `🌙 来週の月曜に、自動で召喚されるよ！` : '今週はまだだれも来ていない…自習室でQRチェックインしよう'}</button>
+    ${lastHtml}
+    <div class="summon-note">${nxt ? `あと<b>${nxt.min - r.n}</b>人来れば ${nxt.icon}<b>${nxt.name}</b>(×${nxt.mult})！　` : ''}自習1分 = ${SUMMON_PER_MIN}ダメージ(1人1日2時間まで)× 召喚獣の倍率</div>`;
 }
-async function doSummon(btn){
-  if (btn) { btn.disabled = true; btn.textContent = '召喚の準備中…'; }
-  await loadVisits();
-  try { const lr = await api('getDamageLog', { days: 30 }); if (lr && lr.ok && Array.isArray(lr.logs)) DAMAGE_LOG = lr.logs; } catch(e) {}
-  const r = roomToday(), t = summonTier(r.n), dmg = summonPower(r) - summonSentToday();
-  if (!t || dmg < 10) { showToast('もう召喚ずみだよ。仲間がふえたら、また呼べる！'); renderSummon(); return; }
-  const nickname = `自習室の召喚:${t.name}(${r.n}人)`;
-  const base = { nickname, damage: dmg, isCrit: false, habitsDone: '召喚' };
-  let sd = await api('saveDamage', Object.assign({ studentId: 'room' }, base));
-  if ((!sd || !sd.ok) && currentStudent) sd = await api('saveDamage', Object.assign({ studentId: currentStudent.id }, base));
-  if (!sd || !sd.ok) { showToast('召喚できませんでした(通信エラー)'); renderSummon(); return; }
-  DAMAGE_LOG.unshift({ nickname, damage: dmg, isCrit: false, date: TODAY, habitsDone: '召喚' });
-  TODAY_DMG = (TODAY_DMG || 0) + dmg; MONTH_DMG = (MONTH_DMG || 0) + dmg;
-  let eff = '';
-  if (t.effect === 'cure') {
-    const ids = [...roomTodayIds()].filter(id => STATUS_MAP[id] && STATUS_MAP[id].status);
-    for (const id of ids) { try { await api('breakSpell', { studentId: id, nickname: studentNameById(id) }); } catch(e) {} }
-    if (ids.length) { eff = t.effText; await loadStatuses(); } else eff = '仲間はみんな元気！';
-  }
-  summonFx(t, r.n, dmg, eff);
-  let hpRes = null;
-  if (BOSS_DATA) {
-    BOSS_DATA.currentHp = Math.max(0, (BOSS_DATA.currentHp ?? BOSS_DATA.hp) - dmg);
-    try { hpRes = await api('updateBossHp', { damage: dmg, heroName: '自習室の仲間' }); } catch(e) {}
-    if (hpRes && hpRes.ok && typeof hpRes.currentHp === 'number') BOSS_DATA.currentHp = hpRes.currentHp;
-  }
-  renderBossView();
-  if (hpRes && hpRes.ok && hpRes.defeated) setTimeout(() => showBossDefeated('自習室の仲間', hpRes.treasure || BOSS_DATA.treasure, hpRes.bossName || BOSS_DATA.name), 5200);
+/* 先週の分を発動(月曜に最初に開いた人の端末で1回だけ)して、まだ見ていない人には演出を見せる */
+let SUMMON_CHECKING = false;
+async function summonWeeklyCheck(){
+  if (SUMMON_CHECKING) return; SUMMON_CHECKING = true;
+  try {
+    await loadVisits(); if (!VISITS) return;
+    const ws = sdAdd(weekStartOf(jstToday()), -7), we = sdAdd(ws, 6);
+    if (ws < '2026-10-19') return;   // QRの記録はこの週から
+    try { const lr = await api('getDamageLog', { days: 30 }); if (lr && lr.ok && Array.isArray(lr.logs)) DAMAGE_LOG = lr.logs; } catch(e) {}
+    let log = summonLogFor(ws), fresh = null;
+    const r = roomRange(ws, we), t = summonTier(r.n);
+    if (!log && t) {
+      let lock = null; try { lock = localStorage.getItem('summon_fire_' + ws); } catch(e) {}
+      if (lock && Date.now() - Number(lock) < 120000) return;
+      try { localStorage.setItem('summon_fire_' + ws, String(Date.now())); } catch(e) {}
+      const dmg = summonPower(r), nickname = `自習室の召喚:${t.name}(${r.n}人)[${ws}]`;
+      const base = { nickname, damage: dmg, isCrit: false, habitsDone: '召喚' };
+      let sd = await api('saveDamage', Object.assign({ studentId: 'room' }, base));
+      if ((!sd || !sd.ok) && currentStudent) sd = await api('saveDamage', Object.assign({ studentId: currentStudent.id }, base));
+      if (!sd || !sd.ok) { try { localStorage.removeItem('summon_fire_' + ws); } catch(e) {} return; }
+      log = { nickname, damage: dmg, isCrit: false, date: TODAY, habitsDone: '召喚' };
+      DAMAGE_LOG.unshift(log); TODAY_DMG = (TODAY_DMG || 0) + dmg; MONTH_DMG = (MONTH_DMG || 0) + dmg;
+      let eff = '';
+      if (t.effect === 'cure') {
+        const ids = [...idsOf(r)].filter(id => STATUS_MAP[id] && STATUS_MAP[id].status);
+        for (const id of ids) { try { await api('breakSpell', { studentId: id, nickname: studentNameById(id) }); } catch(e) {} }
+        if (ids.length) { eff = t.effText; await loadStatuses(); }
+      }
+      let hpRes = null;
+      if (BOSS_DATA) {
+        BOSS_DATA.currentHp = Math.max(0, (BOSS_DATA.currentHp ?? BOSS_DATA.hp) - dmg);
+        try { hpRes = await api('updateBossHp', { damage: dmg, heroName: '自習室の仲間' }); } catch(e) {}
+        if (hpRes && hpRes.ok && typeof hpRes.currentHp === 'number') BOSS_DATA.currentHp = hpRes.currentHp;
+      }
+      fresh = { eff, hpRes };
+    }
+    if (!log) return;
+    let seen = null; try { seen = localStorage.getItem('summon_seen_' + ws); } catch(e) {}
+    if (!seen || fresh) {
+      try { localStorage.setItem('summon_seen_' + ws, '1'); } catch(e) {}
+      replaySummon(ws, fresh && fresh.eff);
+      if (fresh && fresh.hpRes && fresh.hpRes.ok && fresh.hpRes.defeated) setTimeout(() => showBossDefeated('自習室の仲間', fresh.hpRes.treasure || BOSS_DATA.treasure, fresh.hpRes.bossName || BOSS_DATA.name), 6500);
+    }
+    if (typeof renderBossView === 'function') renderBossView();
+  } finally { SUMMON_CHECKING = false; }
 }
-function summonFx(t, n, dmg, eff){
+function replaySummon(ws, eff){
+  const log = summonLogFor(ws); if (!log) return;
+  const m = /^自習室の召喚:(.+?)\((\d+)人\)/.exec(log.nickname || log.name || '') || [];
+  const t = SUMMONS.find(x => x.name === m[1]) || SUMMONS[SUMMONS.length - 1];
+  summonFx(t, Number(m[2]) || 0, Number(log.damage) || 0, eff || (t.effect === 'cure' ? '来た仲間はみんな元気になった！' : ''), `${md(ws)}〜${md(sdAdd(ws, 6))} の`);
+}
+function summonFx(t, n, dmg, eff, when){
   const old = document.getElementById('summon-fx'); if (old) old.remove();
   const el = document.createElement('div'); el.id = 'summon-fx'; el.className = 't-' + t.key;
   const feathers = t.key === 'owl' || t.key === 'bigowl' ? Array.from({ length: t.key === 'bigowl' ? 10 : 5 }, (_, i) => `<span class="sfx-feather" style="left:${8 + i * 9}%;animation-delay:${(i * .37) % 2}s">🪶</span>`).join('') : '';
   el.innerHTML = `<div class="sfx-ring"></div>${feathers}
     <div class="sfx-who">${t.icon}</div>
-    <div class="sfx-t1">自習室の仲間 ${n}人の力で…</div>
+    <div class="sfx-t1">${when ? esc(when) : ''}自習室の仲間 ${n}人の力で…</div>
     <div class="sfx-t2">${esc(t.name)} を召喚！</div>
     <div class="sfx-t3">${esc(t.move)}</div>
     <div class="sfx-dmg">${dmg.toLocaleString()}</div>
@@ -4969,7 +5002,7 @@ function summonFx(t, n, dmg, eff){
     <small>タップでとじる</small>`;
   el.onclick = () => el.remove();
   document.body.appendChild(el);
-  setTimeout(() => el.remove(), 7000);
+  setTimeout(() => el.remove(), 9000);
 }
 
 /* マルとバッジ:マル単で区分(英検5級など)のセットをマルにするとバッジ。自分のキャラに3つまで装備できる */
