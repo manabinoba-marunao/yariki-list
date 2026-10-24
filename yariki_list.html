@@ -405,6 +405,62 @@ td.td-name { padding-left: 16px; text-align: left; }
 @keyframes log-flash { 0%{background:rgba(255,215,0,.35)} 100%{background:transparent} }
 .log-title { font-family:var(--font-game); font-size:11px; color:var(--gold); letter-spacing:.1em; margin:4px 0 6px; }
 
+/* 自習室の召喚 */
+.summon-wrap { margin:0 0 14px; padding:12px; border-radius:12px; border:1px solid #4a4a7a; background:linear-gradient(135deg,rgba(80,60,160,.25),rgba(20,20,50,.6)); }
+.summon-h { display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-family:var(--font-game); }
+.summon-h b { color:var(--gold); font-size:13px; letter-spacing:.06em; }
+.summon-h span { font-size:11px; color:#b8b8e0; }
+.summon-ladder { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin:10px 0 8px; }
+.sl { text-align:center; padding:6px 2px; border-radius:8px; border:1px solid #3a3a6a; color:#8888bb; font-size:9.5px; line-height:1.35; letter-spacing:-.03em; word-break:keep-all; }
+.sl i { display:block; font-style:normal; font-size:20px; filter:grayscale(1); opacity:.5; }
+.sl.got { border-color:var(--gold); color:#fff; background:rgba(255,215,0,.08); }
+.sl.got i { filter:none; opacity:1; }
+.sl.now { box-shadow:0 0 10px rgba(255,215,0,.45); }
+.summon-names { display:flex; flex-wrap:wrap; gap:4px; justify-content:center; margin:2px 0 8px; }
+.summon-names span { font-size:11px; padding:1px 8px; border-radius:999px; background:rgba(255,255,255,.08); color:#e8e6ff; }
+.summon-btn { width:100%; padding:12px; border:none; border-radius:10px; background:linear-gradient(135deg,#7b5cff,#c04bff); color:#fff; font-family:var(--font-game); font-size:15px; font-weight:700; letter-spacing:.04em; box-shadow:0 0 14px rgba(160,90,255,.5); cursor:pointer; }
+.summon-btn:disabled { background:#2a2a4a; box-shadow:none; color:#8888bb; font-size:12px; }
+.summon-note { font-size:11px; color:#9a9ac8; text-align:center; margin-top:6px; line-height:1.6; }
+.log-summon { color:#7fe0ff; text-shadow:0 0 6px #3fb8ff; }
+#summon-fx { position:fixed; inset:0; z-index:400; display:flex; flex-direction:column; align-items:center; justify-content:center; background:radial-gradient(circle at 50% 45%, rgba(60,30,120,.92), rgba(5,5,20,.97)); color:#fff; font-family:var(--font-game); text-align:center; padding:20px; animation:sfx-in .3s ease-out; }
+@keyframes sfx-in { from{opacity:0} to{opacity:1} }
+#summon-fx .sfx-ring { position:absolute; width:min(80vw,340px); aspect-ratio:1; border-radius:50%; border:3px solid rgba(255,215,0,.75); box-shadow:0 0 30px rgba(255,215,0,.5), inset 0 0 30px rgba(255,215,0,.35); animation:sfx-ring 4s linear infinite; }
+#summon-fx .sfx-ring::before, #summon-fx .sfx-ring::after { content:''; position:absolute; inset:12%; border-radius:50%; border:2px dashed rgba(200,170,255,.8); }
+#summon-fx .sfx-ring::after { inset:28%; border-style:solid; border-color:rgba(255,255,255,.35); }
+@keyframes sfx-ring { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+#summon-fx .sfx-who { position:relative; font-size:96px; line-height:1; animation:sfx-rise 1.1s cubic-bezier(.2,1.4,.4,1) both .3s; filter:drop-shadow(0 0 18px rgba(255,255,255,.6)); }
+#summon-fx.t-bigowl .sfx-who { font-size:150px; }
+#summon-fx.t-teacher .sfx-who { font-size:120px; }
+#summon-fx.t-rocket .sfx-who { font-size:120px; animation:sfx-rocket 1.6s ease-in both .3s; }
+@keyframes sfx-rise { from{transform:translateY(80px) scale(.2); opacity:0} to{transform:none; opacity:1} }
+@keyframes sfx-rocket { 0%{transform:translate(-40vw,40vh) rotate(0) scale(.4); opacity:0} 60%{transform:translate(0,0) rotate(0) scale(1.1); opacity:1} 100%{transform:translate(0,0) scale(1)} }
+#summon-fx .sfx-feather { position:absolute; font-size:22px; animation:sfx-feather 3s ease-in-out infinite; opacity:.8; }
+@keyframes sfx-feather { 0%{transform:translateY(-30vh) rotate(0)} 100%{transform:translateY(40vh) rotate(360deg); opacity:0} }
+#summon-fx .sfx-t1 { position:relative; margin-top:18px; font-size:14px; color:#c9bff5; letter-spacing:.1em; animation:sfx-rise .6s ease-out both 1s; }
+#summon-fx .sfx-t2 { position:relative; font-size:26px; color:var(--gold); margin:4px 0; animation:sfx-rise .6s ease-out both 1.2s; }
+#summon-fx .sfx-t3 { position:relative; font-size:15px; animation:sfx-rise .6s ease-out both 1.5s; }
+#summon-fx .sfx-dmg { position:relative; font-family:var(--mono); font-size:44px; color:#7fe0ff; text-shadow:0 0 14px #3fb8ff; margin-top:8px; animation:sfx-rise .5s cubic-bezier(.2,1.6,.4,1) both 1.8s; }
+#summon-fx .sfx-eff { position:relative; margin-top:6px; font-size:13px; color:#9ff0b0; animation:sfx-rise .5s ease-out both 2.1s; }
+#summon-fx small { position:relative; margin-top:14px; font-size:11px; color:#8888bb; }
+@media (prefers-reduced-motion:reduce){ #summon-fx *{animation:none!important} }
+/* マルとバッジ */
+.pm-bdg { font-size:12px; line-height:1; margin-top:2px; min-height:12px; letter-spacing:-1px; }
+.pm-room { position:absolute; right:4px; top:22px; font-size:12px; }
+.bd-sec { margin-top:10px; padding-top:10px; border-top:1px solid var(--rpg-border); }
+.bd-maru { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; font-size:12px; color:#b8b8e0; }
+.bd-maru b { font-family:var(--mono); font-size:22px; color:#ffb4b4; }
+.bd-maru .mr { display:inline-block; border:2px solid #ff6b6b; color:#ff9b9b; border-radius:999px; padding:0 8px; font-weight:700; font-size:12px; }
+.bd-list { display:flex; flex-direction:column; gap:6px; margin-top:8px; max-height:38vh; overflow:auto; }
+.bd-item { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:8px; background:rgba(255,255,255,.04); border:1px solid #3a3a6a; font-size:12px; }
+.bd-item.t3 { border-color:#d4a514; background:rgba(242,201,76,.10); }
+.bd-item.t4 { border-color:#8b6bff; background:rgba(139,107,255,.12); }
+.bd-item .ic { font-size:20px; width:24px; text-align:center; }
+.bd-item .nm { flex:1; color:#fff; }
+.bd-item .nm small { display:block; color:#8888bb; font-size:10px; }
+.bd-item .eq { padding:5px 10px; border-radius:8px; border:1px solid var(--gold); background:transparent; color:var(--gold); font-size:11px; font-family:var(--font-game); cursor:pointer; }
+.bd-item .eq.on { background:var(--gold); color:#1c1c38; }
+.bd-item .eqd { font-size:10px; color:var(--gold); }
+.bd-empty { font-size:12px; color:#8888bb; line-height:1.7; }
 /* 今日戦った仲間(パーティ) */
 .party-wrap { margin:4px 0 12px; }
 .party-title { font-family:var(--font-game); font-size:12px; color:var(--gold); letter-spacing:.08em; margin-bottom:8px; text-align:center; }
@@ -1073,6 +1129,7 @@ td.td-name { padding-left: 16px; text-align: left; }
         <div class="party" id="party"></div>
         <div class="rescue-note" id="party-note" style="text-align:center"></div>
       </div>
+      <div class="summon-wrap" id="summon-wrap" style="display:none"></div>
       <div class="log-title">📜 バトルログ</div>
       <div class="damage-log" id="damage-log">▶ ボスが現れた！みんなで習慣を続けて倒せ！</div>
       <div class="total-damage">
@@ -2649,6 +2706,7 @@ function todayParty() {
     if (l.isCrit === true || l.isCrit === 'true' || l.isCrit === 'YES') m.crit = true;
   });
   rosterStudents().forEach(s => { if (ALL_RECORDS[s.id]?.[TODAY]) get(String(s.id)); });
+  if (typeof roomTodayIds === 'function') roomTodayIds().forEach(id => get(id));   // 今日 自習室に来た仲間も
   const activeIds = new Set(rosterStudents().map(s => String(s.id)));
   Object.keys(STATUS_MAP).forEach(id => {
     const m = STATUS_MAP[id];
@@ -2672,14 +2730,16 @@ function renderParty() {
     return `<button class="pm ${def ? 'st-' + sm.status : ''} ${p.id === myId ? 'me' : ''}" onclick="openMember('${p.id}')">
       ${def ? '<span class="pm-bubble">たすけて！</span>' : ''}${fx}
       <div class="pm-body"><span class="pm-face">${face}</span><span class="pm-wpn ${w.cls}">${weaponIcon(w, {held:true})}</span></div>
+      ${typeof roomTodayIds === 'function' && roomTodayIds().has(p.id) ? '<span class="pm-room" title="今日 自習室に来た">🚪</span>' : ''}
       <div class="pm-name">${esc(name)}</div>
+      <div class="pm-bdg">${typeof equippedBadges === 'function' ? equippedBadges(p.id).map(b => b.icon).join('') : ''}</div>
       <div class="pm-dmg ${total ? '' : 'zero'}">${total ? total.toLocaleString() : '—'}</div>
     </button>`;
   }).join('');
   const note = document.getElementById('party-note');
   if (note) {
     const myCandies = MY_STATUS ? (Number(MY_STATUS.candies) || 0) : 0;
-    note.innerHTML = myId ? `タップすると、ダメージや状態が見られるよ　あなたのお菓子：🍬 × ${myCandies}` : 'タップすると、ダメージや状態が見られるよ';
+    note.innerHTML = myId ? `タップすると、ダメージ・状態・マルとバッジが見られるよ　あなたのお菓子：🍬 × ${myCandies}` : 'タップすると、ダメージ・状態・マルとバッジが見られるよ';
   }
 }
 
@@ -2705,6 +2765,7 @@ function openMember(id) {
     <div class="pm-row"><span>🔮 今日の魔法(マル単)</span><b>${p.magic.toLocaleString()}</b></div>
     <div class="pm-row"><span>今月の合計</span><b>${calcMonthDmg(p.id).toLocaleString()}</b></div>
     ${stHtml}
+    ${typeof badgeSection === 'function' ? badgeSection(p.id) : ''}
     <button class="pm-close" onclick="closeMember()">とじる</button>`;
   document.getElementById('pm-sheet').classList.add('show');
 }
@@ -3208,6 +3269,7 @@ function renderBossView() {
         const crit = l.isCrit === true || l.isCrit === 'true' || l.isCrit === 'YES';
         // マル単からのダメージは「魔法」として表示
         const isMagic = /\(マル単\)$/.test(rawNick) || l.habitsDone === 'マル単';
+        const isSummon = l.habitsDone === '召喚' || /^自習室の召喚/.test(rawNick);
         const nick = rawNick.replace(/\(マル単\)$/, '') + statusTagByNick(rawNick.replace(/\(マル単\)$/, ''));
         // 日付表示（例：8/6）
         const dateStr = l.date ? (() => {
@@ -3218,7 +3280,9 @@ function renderBossView() {
         const st = studentByNick(rawNick.replace(/\(マル単\)$/, ''));
         const w = st ? weaponFor(levelOf(st.id)) : WEAPONS[WEAPONS.length-1];
         let line;
-        if (isMagic) line = crit
+        if (isSummon) { const m = /^自習室の召喚:(.+?)\((\d+)人\)/.exec(rawNick) || []; const t = (typeof SUMMONS !== 'undefined' && SUMMONS.find(x => x.name === m[1])) || { icon:'🦉' };
+          line = `${t.icon} [${dateStr}] <b>自習室の仲間${m[2] ? ' ' + m[2] + '人' : ''}</b>が${esc(m[1] || '召喚獣')}を召喚！<span class="log-summon">${dmg.toLocaleString()}の召喚ダメージ</span>`; }
+        else if (isMagic) line = crit
           ? `🔮 [${dateStr}] <b>${nick}</b> の大魔法！<span class="log-magic-crit">✨${dmg.toLocaleString()}の魔法ダメージ</span>`
           : `🔮 [${dateStr}] <b>${nick}</b> の魔法！<span class="log-magic">${dmg.toLocaleString()}の魔法ダメージ</span>`;
         else line = crit
@@ -3270,6 +3334,7 @@ function renderBossView() {
   renderRescue();
   const oldRescue = document.getElementById('rescue-section');
   if (oldRescue) oldRescue.style.display = 'none';   // 「今日戦った仲間」に統合
+  if (typeof renderSummon === 'function') { renderSummon(); mqExtrasLoad(); }
   renderParty();
 
   const rankList = document.getElementById('rank-list');
@@ -4106,6 +4171,7 @@ function sdSave(){
 }
 async function sdPush(){
   if(sdSid==null||sdSyncState==='off') return;
+  const mqNew = typeof MQB !== 'undefined' ? MQB[String(sdSid)] : null; if(mqNew && (!SD.mq || (mqNew.at||0) >= (SD.mq.at||0))) SD.mq = mqNew;   // マル単から届いたバッジを消さない
   const r = await api('saveStudy', {studentId: sdSid, data: JSON.stringify(SD)});
   sdSyncState = r && r.ok ? 'cloud' : 'off';
   const el=document.getElementById('sv-sync'); if(el) el.textContent = sdSyncLabel();
@@ -4118,7 +4184,7 @@ async function sdOpen(st){
   const r = await api('getStudy', {studentId: st.id});
   if(r && r.ok){
     sdSyncState = 'cloud';
-    if(r.data){ try{ const remote = JSON.parse(r.data); if(remote && (remote.updated||0) > (SD.updated||0)){ SD = Object.assign(sdBlank(), remote); try{ localStorage.setItem(sdKeyName(st.id), JSON.stringify(SD)); }catch(e){} } }catch(e){} }
+    if(r.data){ try{ const remote = JSON.parse(r.data); if(remote && remote.mq) SD.mq = remote.mq; if(remote && (remote.updated||0) > (SD.updated||0)){ SD = Object.assign(sdBlank(), remote); try{ localStorage.setItem(sdKeyName(st.id), JSON.stringify(SD)); }catch(e){} } }catch(e){} }
   } else sdSyncState = 'off';
   if(sdSyncState==='cloud'){ const a = await api('getAllStudy', {}); if(a&&a.ok&&a.data){ TEAM={}; Object.entries(a.data).forEach(([k,v])=>{ try{ TEAM[k]=JSON.parse(v); }catch(e){} }); } }
   if(currentStudent && currentStudent.id===st.id) renderStudy();
@@ -4676,7 +4742,7 @@ async function loadVisits(){
 function dTestDate(d){ const t = STUDY_TESTS.find(x=>x.id===(d.test||{}).id); return t ? t.start : (d.test||{}).date || null; }
 function dMinutes(d, from, to){ return (d.sessions||[]).filter(x=>{ const k=sdKey(x.a); return k>=from && k<=to; }).reduce((a,x)=>a+(x.b-x.a)/6e4,0); }
 function dRow(st){
-  const d = TEAM[String(st.id)] || null;
+  const d0 = TEAM[String(st.id)] || null, d = d0 && (d0.v || d0.updated) ? d0 : null;   // マル単のバッジだけのデータは「未使用」扱い
   const today = sdToday();
   const vs = visitsOf(st), wk = sdAdd(today,-6);
   const vWeek = vs.filter(v=>v.date>=wk), vNow = vs.some(v=>v.date===today && !v.out), vToday = vs.some(v=>v.date===today);
@@ -4798,12 +4864,174 @@ function roomBlock(){
   if (document.readyState === 'complete') document.body.appendChild(box);
 })();
 </script>
-<!-- MAL QUEST:アプリ間ジャンプ -->
+
+<script>
+/* ==== MAL QUEST:自習室の召喚 と マルのバッジ ==== */
+/* 召喚:今日 自習室に来た人数で呼び出せる召喚獣が変わる。威力 = みんなの自習時間(1人2時間まで)の合計 × 召喚獣の倍率 */
+const SUMMONS = [
+  { min:8, key:'rocket',  icon:'🚀', name:'羅針盤ロケット', mult:3,   move:'殻をつき破る！',     effect:'cure', effText:'来た仲間の状態異常がとけた！' },
+  { min:5, key:'teacher', icon:'🧑‍🏫', name:'塾長',         mult:2,   move:'ナイショの話',       effect:'cure', effText:'来た仲間の状態異常がとけた！' },
+  { min:3, key:'bigowl',  icon:'🦉', name:'巨大フクロウ',   mult:1.5, move:'大風！',             effect:'' },
+  { min:1, key:'owl',     icon:'🦉', name:'フクロウくん',   mult:1,   move:'はばたき',           effect:'' },
+];
+const SUMMON_CAP_MIN = 120;
+let MQX_AT = 0, MQX_BUSY = false;
+const MQB = {};   // 生徒id → マル単から届いたマル・バッジ・装備
+function mqExtrasLoad(force){
+  if (MQX_BUSY || (!force && Date.now() - MQX_AT < 60000)) return;
+  MQX_BUSY = true; MQX_AT = Date.now();
+  Promise.all([
+    (typeof loadVisits === 'function' ? loadVisits() : Promise.resolve()),
+    api('getAllStudy', {}).then(a => { if (a && a.ok && a.data) Object.entries(a.data).forEach(([k, v]) => { try { const o = JSON.parse(v); if (o && o.mq) MQB[k] = o.mq; } catch(e){} }); }).catch(() => {}),
+  ]).finally(() => { MQX_BUSY = false; renderParty(); renderSummon(); });
+}
+function roomToday(){
+  if (!VISITS || !VISITS.visits) return { n:0, people:[], minutes:0, today:null };
+  const today = VISITS.today, by = {};
+  VISITS.visits.filter(v => v.date === today).forEach(v => {
+    const k = nName(v.name); if (!k) return;
+    const live = !v.out && v.inMs ? Math.max(0, (Date.now() - Number(v.inMs)) / 6e4) : 0;
+    const m = Number(v.min) || live;
+    (by[k] ||= { name:v.name, min:0 }).min += m;
+  });
+  const people = Object.values(by).map(p => Object.assign(p, { min: Math.min(SUMMON_CAP_MIN, Math.round(p.min)) }));
+  return { n: people.length, people, minutes: people.reduce((a, p) => a + p.min, 0), today };
+}
+function roomTodayIds(){
+  const r = roomToday(), ids = new Set();
+  if (!r.n || typeof rosterStudents !== 'function') return ids;
+  rosterStudents().forEach(st => { if (r.people.some(p => nameMatch(st, p.name))) ids.add(String(st.id)); });
+  return ids;
+}
+function summonTier(n){ return SUMMONS.find(t => n >= t.min) || null; }
+function summonSentToday(){
+  return (DAMAGE_LOG || []).filter(l => String(l.date).slice(0,10) === TODAY && (l.habitsDone === '召喚' || /^自習室の召喚/.test(l.nickname || l.name || '')))
+    .reduce((a, l) => a + (Number(l.damage) || 0), 0);
+}
+function summonPower(r){ const t = summonTier(r.n); return t ? Math.round(Math.max(r.minutes, r.n * 10) * t.mult) : 0; }
+function renderSummon(){
+  const box = document.getElementById('summon-wrap'); if (!box) return;
+  if (!VISITS) { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  const r = roomToday(), t = summonTier(r.n), sent = summonSentToday(), power = summonPower(r), left = Math.max(0, power - sent);
+  const nxt = SUMMONS.slice().reverse().find(x => x.min > r.n);
+  const ladder = SUMMONS.slice().reverse().map(x => `<div class="sl ${r.n >= x.min ? 'got' : ''} ${t && t.key === x.key ? 'now' : ''}"><i style="${x.key==='bigowl'?'font-size:26px':''}">${x.icon}</i>${x.name}<br>${x.min}人〜</div>`).join('');
+  let btn;
+  if (!r.n) btn = `<button class="summon-btn" disabled>今日はまだだれも来ていない…自習室でQRチェックインしよう</button>`;
+  else if (left >= 10) btn = `<button class="summon-btn" onclick="doSummon(this)">${t.icon} みんなで${t.name}を召喚する！</button>`;
+  else btn = `<button class="summon-btn" disabled>✓ 今日の召喚ずみ(${sent.toLocaleString()}ダメージ)　仲間や時間がふえたら、また呼べる</button>`;
+  box.innerHTML = `<div class="summon-h"><b>🚪 自習室の召喚</b><span>今日 ${r.n}人・${Math.floor(r.minutes/60)}時間${r.minutes%60}分</span></div>
+    <div class="summon-ladder">${ladder}</div>
+    ${r.n ? `<div class="summon-names">${r.people.map(p => `<span>${esc(p.name)}</span>`).join('')}</div>` : ''}
+    ${btn}
+    <div class="summon-note">${t ? `いまの召喚獣:<b>${t.icon}${t.name}</b>(威力×${t.mult})${left >= 10 ? `・<b>${left.toLocaleString()}</b>ダメージ` : ''}` : ''}${nxt ? `${t ? '　' : ''}あと<b>${nxt.min - r.n}</b>人で ${nxt.icon}${nxt.name}！` : ''}<br>威力 = みんなの自習時間(1人2時間まで)× 召喚獣の倍率</div>`;
+}
+async function doSummon(btn){
+  if (btn) { btn.disabled = true; btn.textContent = '召喚の準備中…'; }
+  await loadVisits();
+  try { const lr = await api('getDamageLog', { days: 30 }); if (lr && lr.ok && Array.isArray(lr.logs)) DAMAGE_LOG = lr.logs; } catch(e) {}
+  const r = roomToday(), t = summonTier(r.n), dmg = summonPower(r) - summonSentToday();
+  if (!t || dmg < 10) { showToast('もう召喚ずみだよ。仲間がふえたら、また呼べる！'); renderSummon(); return; }
+  const nickname = `自習室の召喚:${t.name}(${r.n}人)`;
+  const base = { nickname, damage: dmg, isCrit: false, habitsDone: '召喚' };
+  let sd = await api('saveDamage', Object.assign({ studentId: 'room' }, base));
+  if ((!sd || !sd.ok) && currentStudent) sd = await api('saveDamage', Object.assign({ studentId: currentStudent.id }, base));
+  if (!sd || !sd.ok) { showToast('召喚できませんでした(通信エラー)'); renderSummon(); return; }
+  DAMAGE_LOG.unshift({ nickname, damage: dmg, isCrit: false, date: TODAY, habitsDone: '召喚' });
+  TODAY_DMG = (TODAY_DMG || 0) + dmg; MONTH_DMG = (MONTH_DMG || 0) + dmg;
+  let eff = '';
+  if (t.effect === 'cure') {
+    const ids = [...roomTodayIds()].filter(id => STATUS_MAP[id] && STATUS_MAP[id].status);
+    for (const id of ids) { try { await api('breakSpell', { studentId: id, nickname: studentNameById(id) }); } catch(e) {} }
+    if (ids.length) { eff = t.effText; await loadStatuses(); } else eff = '仲間はみんな元気！';
+  }
+  summonFx(t, r.n, dmg, eff);
+  let hpRes = null;
+  if (BOSS_DATA) {
+    BOSS_DATA.currentHp = Math.max(0, (BOSS_DATA.currentHp ?? BOSS_DATA.hp) - dmg);
+    try { hpRes = await api('updateBossHp', { damage: dmg, heroName: '自習室の仲間' }); } catch(e) {}
+    if (hpRes && hpRes.ok && typeof hpRes.currentHp === 'number') BOSS_DATA.currentHp = hpRes.currentHp;
+  }
+  renderBossView();
+  if (hpRes && hpRes.ok && hpRes.defeated) setTimeout(() => showBossDefeated('自習室の仲間', hpRes.treasure || BOSS_DATA.treasure, hpRes.bossName || BOSS_DATA.name), 5200);
+}
+function summonFx(t, n, dmg, eff){
+  const old = document.getElementById('summon-fx'); if (old) old.remove();
+  const el = document.createElement('div'); el.id = 'summon-fx'; el.className = 't-' + t.key;
+  const feathers = t.key === 'owl' || t.key === 'bigowl' ? Array.from({ length: t.key === 'bigowl' ? 10 : 5 }, (_, i) => `<span class="sfx-feather" style="left:${8 + i * 9}%;animation-delay:${(i * .37) % 2}s">🪶</span>`).join('') : '';
+  el.innerHTML = `<div class="sfx-ring"></div>${feathers}
+    <div class="sfx-who">${t.icon}</div>
+    <div class="sfx-t1">自習室の仲間 ${n}人の力で…</div>
+    <div class="sfx-t2">${esc(t.name)} を召喚！</div>
+    <div class="sfx-t3">${esc(t.move)}</div>
+    <div class="sfx-dmg">${dmg.toLocaleString()}</div>
+    ${eff ? `<div class="sfx-eff">✨ ${esc(eff)}</div>` : ''}
+    <small>タップでとじる</small>`;
+  el.onclick = () => el.remove();
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 7000);
+}
+
+/* マルとバッジ:マル単で区分(英検5級など)のセットをマルにするとバッジ。自分のキャラに3つまで装備できる */
+const EQUIP_MAX = 3;
+function badgesOf(id){ const m = MQB[String(id)]; return m && Array.isArray(m.badges) ? m.badges : []; }
+function equippedBadges(id){
+  const m = MQB[String(id)]; if (!m) return [];
+  const all = badgesOf(id);
+  if (!Array.isArray(m.equip)) return all.slice(0, 1);   // まだ選んでいなければ、いちばんいいバッジを1つ
+  return m.equip.map(e => all.find(b => b.id === e)).filter(Boolean).slice(0, EQUIP_MAX);
+}
+function badgeSection(id){
+  const m = MQB[String(id)], mine = currentStudent && String(currentStudent.id) === String(id);
+  if (!m) return `<div class="bd-sec"><div class="bd-empty">🏅 マルとバッジ:まだマル単の記録が届いていないよ。${mine ? 'マル単でテストをすると、ここに出るよ！' : ''}</div></div>`;
+  const all = badgesOf(id), eq = new Set(equippedBadges(id).map(b => b.id));
+  const subj = Object.entries(m.subj || {}).map(([k, n]) => `${esc(k)} ${n}`).join('・');
+  const list = all.length ? all.map(b => `<div class="bd-item t${b.tier}"><span class="ic">${b.icon}</span><span class="nm">${esc(b.name)}<small>${b.tier === 4 ? `マル ${b.total}個 達成` : `${b.done}/${b.total} セットがマル${b.tier === 3 ? '(ぜんぶ！)' : ''}`}</small></span>${
+      mine ? `<button class="eq ${eq.has(b.id) ? 'on' : ''}" onclick="toggleEquip('${esc(b.id)}')">${eq.has(b.id) ? '装備中' : '装備する'}</button>` : (eq.has(b.id) ? '<span class="eqd">装備中</span>' : '')}</div>`).join('')
+    : `<div class="bd-empty">区分(英検5級など)のセットを3割マルで🥉、6割で🥈、ぜんぶで🥇のバッジ！</div>`;
+  return `<div class="bd-sec">
+    <div class="bd-maru"><span class="mr">マル</span><b>${Number(m.maru) || 0}</b>個${subj ? `<span>(${subj})</span>` : ''}</div>
+    ${mine && all.length ? `<div class="bd-empty" style="margin-top:4px">バッジは${EQUIP_MAX}つまで装備できるよ。装備すると仲間の画面で名前の下に出る！</div>` : ''}
+    <div class="bd-list">${list}</div></div>`;
+}
+async function toggleEquip(bid){
+  if (!currentStudent) return;
+  const id = String(currentStudent.id), m = MQB[id]; if (!m) return;
+  let eq = Array.isArray(m.equip) ? m.equip.slice() : equippedBadges(id).map(b => b.id);
+  if (eq.includes(bid)) eq = eq.filter(x => x !== bid);
+  else { if (eq.length >= EQUIP_MAX) { showToast(`装備できるのは${EQUIP_MAX}つまで。どれかをはずしてね`); return; } eq.push(bid); }
+  m.equip = eq; m.at = Date.now();
+  openMember(id); renderParty();
+  try {
+    const r = await api('getStudy', { studentId: currentStudent.id });
+    let obj = {}; try { obj = r && r.data ? JSON.parse(r.data) : {}; } catch(e) { obj = {}; }
+    if (!obj || typeof obj !== 'object') obj = {};
+    obj.mq = Object.assign({}, obj.mq || {}, m, { badges: (obj.mq && (obj.mq.at || 0) > (m.at || 0)) ? obj.mq.badges : m.badges, equip: eq });
+    MQB[id] = obj.mq;
+    if (typeof sdSid !== 'undefined' && String(sdSid) === id && SD) { SD.mq = obj.mq; try { localStorage.setItem(sdKeyName(sdSid), JSON.stringify(SD)); } catch(e) {} }
+    const w = await api('saveStudy', { studentId: currentStudent.id, data: JSON.stringify(obj) });
+    showToast(w && w.ok ? '装備を変えたよ！' : '保存できませんでした(通信エラー)');
+  } catch(e) { showToast('保存できませんでした(通信エラー)'); }
+}
+</script>
+<!-- MAL QUEST:アプリ間ジャンプ(左はしの小さなタブ。タップで開いてから移動。問題を解いている間は出さない) -->
 <style>
-.mq-jump{position:fixed;right:14px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:150;display:inline-flex;align-items:center;gap:6px;padding:10px 16px;border-radius:999px;background:#5b3fa0;color:#fff;font-weight:700;font-size:14px;text-decoration:none;box-shadow:0 4px 14px rgba(0,0,0,.25);-webkit-tap-highlight-color:transparent}
-.mq-jump:active{transform:scale(.96)}
-body{padding-bottom:72px}
+.mq-jump{position:fixed;left:0;bottom:calc(30% + env(safe-area-inset-bottom));z-index:150;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;transition:transform .2s ease}
+.mq-jump .mq-tab{display:flex;align-items:center;gap:2px;height:44px;padding:0 6px 0 8px;border:none;border-radius:0 14px 14px 0;background:#5b3fa0;color:#fff;font-size:18px;line-height:1;box-shadow:2px 3px 10px rgba(0,0,0,.25);opacity:.82;cursor:pointer}
+.mq-jump .mq-tab i{font-style:normal;font-size:14px;opacity:.85}
+.mq-jump .mq-go{display:none;align-items:center;gap:6px;margin-left:6px;padding:10px 16px;border-radius:999px;background:#5b3fa0;color:#fff;font-weight:700;font-size:14px;text-decoration:none;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.mq-jump.open .mq-tab{opacity:1}
+.mq-jump.open .mq-tab i{transform:rotate(180deg)}
+.mq-jump.open .mq-go{display:inline-flex;animation:mqj-in .18s ease-out}
+@keyframes mqj-in{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
+body.quizzing .mq-jump{display:none}
 </style>
-<a class="mq-jump" href="https://manabinoba-marunao.github.io/marutan/">🔮 マル単へ</a>
+<div class="mq-jump" id="mqJump"><button class="mq-tab" type="button" aria-label="マル単を開く" aria-expanded="false">🔮<i>›</i></button><a class="mq-go" href="https://manabinoba-marunao.github.io/marutan/">🔮 マル単へ</a></div>
+<script>(function(){
+  const j=document.getElementById("mqJump"); if(!j) return; let t=null;
+  const set=o=>{ j.classList.toggle("open",o); j.querySelector(".mq-tab").setAttribute("aria-expanded",o); clearTimeout(t); if(o) t=setTimeout(()=>set(false),5000); };
+  j.querySelector(".mq-tab").addEventListener("click",e=>{ e.stopPropagation(); set(!j.classList.contains("open")); });
+  document.addEventListener("click",e=>{ if(!j.contains(e.target)) set(false); });
+})();</script>
 </body>
 </html>
