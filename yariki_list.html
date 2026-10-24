@@ -4870,7 +4870,7 @@ function roomBlock(){
 /* ==== MAL QUEST:自習室の召喚 と マルのバッジ ==== */
 /* 召喚:1週間(月〜日)に自習室に来た人数で召喚獣が決まり、自習時間で威力が決まる。
    月曜に最初にだれかがアプリを開いたとき、先週の分が自動で発動。その週のうちに開いた全員に1回ずつ演出を見せる。
-   威力 = 1週間の自習時間(分。1人1日2時間まで)× 10 × 召喚獣の倍率 */
+   威力 = 1週間の自習時間(分。1人1日2時間まで)× 5 × 召喚獣の倍率 */
 const SUMMONS = [
   { min:8, key:'rocket',  icon:'🚀', name:'羅針盤ロケット', mult:3,   move:'殻をつき破る！',     effect:'cure', effText:'来た仲間の状態異常がとけた！' },
   { min:5, key:'teacher', icon:'🧑‍🏫', name:'塾長',         mult:2,   move:'ナイショの話',       effect:'cure', effText:'来た仲間の状態異常がとけた！' },
@@ -4878,7 +4878,7 @@ const SUMMONS = [
   { min:1, key:'owl',     icon:'🦉', name:'フクロウくん',   mult:1,   move:'はばたき',           effect:'' },
 ];
 const SUMMON_CAP_MIN = 120;     // 1人1日あたり数える上限(分)
-const SUMMON_PER_MIN = 10;      // 1分あたりのダメージ
+const SUMMON_PER_MIN = 5;       // 1分あたりのダメージ(HP12万に合わせて調整)
 const SUMMON_NO_OUT_MIN = 60;   // 退室のQRを読まずに帰った日は60分として数える
 let MQX_AT = 0, MQX_BUSY = false;
 const MQB = {};   // 生徒id → マル単から届いたマル・バッジ・装備
