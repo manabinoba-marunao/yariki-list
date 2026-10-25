@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MAL QUEST 召喚</title>
+<style>
+:root{--gold:#ffd700;--cyan:#7fe0ff}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:rgba(3,2,15,.96);color:#fff;font-family:"Hiragino Sans","Noto Sans JP",system-ui,sans-serif;display:flex;align-items:center;justify-content:center;overflow:hidden;-webkit-user-select:none;user-select:none}
+h1{font-size:16px;margin:4px 0 0;color:var(--gold);letter-spacing:.06em}
+.note{font-size:12px;color:#b8b8e0;text-align:center;line-height:1.6;max-width:420px;margin:0}
+.btns{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;width:100%;max-width:420px}
+.btns button{padding:11px 6px;border-radius:10px;border:1px solid #4a4a7a;background:#1c1a3e;color:#fff;font-size:13px;font-weight:700;cursor:pointer}
+.btns button small{display:block;font-weight:400;color:#b8b8e0;font-size:10px;margin-top:2px}
+.btns button.on{border-color:var(--gold);box-shadow:0 0 10px rgba(255,215,0,.35)}
+#stage{position:relative;width:min(100vw,60vh,480px);aspect-ratio:9/15;border-radius:16px;overflow:hidden;background:radial-gradient(circle at 50% 45%,#3c1e78,#06051a 75%);border:1px solid #3a3a6a;isolation:isolate}
+#stage.shake{animation:shake .45s linear}
+#stage.shake2{animation:shake2 .9s linear}
+@keyframes shake{0%,100%{transform:none}20%{transform:translate(-7px,3px)}40%{transform:translate(7px,-4px)}60%{transform:translate(-5px,-2px)}80%{transform:translate(4px,5px)}}
+@keyframes shake2{0%,100%{transform:none}10%{transform:translate(-10px,4px)}20%{transform:translate(9px,-6px)}30%{transform:translate(-8px,-3px)}40%{transform:translate(8px,6px)}50%{transform:translate(-6px,2px)}60%{transform:translate(6px,-4px)}70%{transform:translate(-4px,3px)}80%{transform:translate(3px,-2px)}90%{transform:translate(-2px,1px)}}
+#cv{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:7}
+.txt{position:absolute;left:0;right:0;text-align:center;z-index:9;text-shadow:0 2px 8px #000,0 0 2px #000;opacity:0;transition:opacity .35s,transform .35s;transform:translateY(10px);padding:0 10px}
+.txt.on{opacity:1;transform:none}
+#t1{top:5.5%;font-size:13px;color:#d6ccff;letter-spacing:.08em}
+#t2{top:10%;font-size:27px;font-weight:900;color:var(--gold);letter-spacing:.04em}
+#t3{bottom:21%;font-size:17px;font-weight:800}
+#dmg{bottom:10.5%;font-family:ui-monospace,Menlo,monospace;font-size:50px;font-weight:900;color:var(--cyan);text-shadow:0 0 18px #3fb8ff,0 2px 0 #0b2a8a}
+#eff{bottom:6.5%;font-size:12px;color:#9ff0b0}
+#hint{position:absolute;bottom:2%;left:0;right:0;text-align:center;font-size:10px;color:#8888bb;z-index:9}
+#boss{position:absolute;z-index:4;filter:drop-shadow(0 0 14px rgba(160,60,255,.7))}
+#boss.hit{animation:bosshit .55s ease-out}
+@keyframes bosshit{0%{filter:brightness(3.2) drop-shadow(0 0 24px #fff);transform:translateX(8px) rotate(3deg)}40%{transform:translateX(-6px) rotate(-2deg)}100%{filter:drop-shadow(0 0 14px rgba(160,60,255,.7));transform:none}}
+#crack{position:absolute;z-index:5;pointer-events:none;opacity:0}
+.flash{position:absolute;inset:0;background:#fff;z-index:10;opacity:0;pointer-events:none}
+.flash.go{animation:flash .45s ease-out}
+@keyframes flash{0%{opacity:.95}100%{opacity:0}}
+.dark{position:absolute;inset:0;background:#000;z-index:3;opacity:0;transition:opacity .5s;pointer-events:none}
+.stars{position:absolute;inset:0;background-image:radial-gradient(1px 1px at 20% 30%,#fff,transparent),radial-gradient(1px 1px at 70% 20%,#fff,transparent),radial-gradient(1.5px 1.5px at 40% 70%,#fff,transparent),radial-gradient(1px 1px at 85% 60%,#fff,transparent),radial-gradient(1px 1px at 10% 85%,#fff,transparent),radial-gradient(1.5px 1.5px at 55% 45%,#fff,transparent);opacity:.7}
+/* 魔法陣と光の柱 */
+.circle{position:absolute;left:50%;width:80%;aspect-ratio:1;transform:translate(-50%,-50%) rotateX(64deg) scale(.2);z-index:2;opacity:0;transition:opacity .4s,transform .7s cubic-bezier(.2,1.3,.4,1);filter:drop-shadow(0 0 6px rgba(255,215,0,.9)) drop-shadow(0 0 16px rgba(180,120,255,.7))}
+.circle.on{opacity:1;transform:translate(-50%,-50%) rotateX(64deg) scale(1)}
+.circle svg{width:100%;height:100%;overflow:visible}
+.circle .mr{transform-origin:100px 100px;animation:spin linear infinite}
+.mclabel{position:absolute;left:0;right:0;text-align:center;z-index:3;font-size:11px;color:#ffe680;letter-spacing:.2em;text-shadow:0 0 6px #b06bff;opacity:0;transition:opacity .4s}
+.mclabel.on{opacity:.9}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pillar{position:absolute;left:50%;bottom:0;width:46%;transform:translateX(-50%) scaleX(0);z-index:2;background:linear-gradient(0deg,rgba(255,230,140,.0),rgba(255,240,180,.75) 25%,rgba(255,255,255,.25) 75%,rgba(255,255,255,0));filter:blur(2px);opacity:0}
+.pillar.go{animation:pillar 1.4s ease-out forwards}
+@keyframes pillar{0%{opacity:0;transform:translateX(-50%) scaleX(.1)}25%{opacity:1;transform:translateX(-50%) scaleX(1)}100%{opacity:0;transform:translateX(-50%) scaleX(1.3)}}
+/* フクロウくん */
+.owl{position:absolute;z-index:5;opacity:0;transform-origin:50% 90%}
+.owl img{width:100%;display:block;filter:drop-shadow(0 0 3px #fff) drop-shadow(0 0 16px rgba(255,240,160,.8))}
+.owl.rise{animation:rise .9s cubic-bezier(.2,1.5,.4,1) forwards}
+.owl.idle{opacity:1;animation:bob 1.2s ease-in-out infinite}
+.owl.flap{opacity:1;animation:flapo .22s ease-in-out infinite}
+@keyframes rise{from{opacity:0;transform:translateY(80px) scale(.2)}to{opacity:1;transform:none}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes flapo{0%,100%{transform:rotate(-4deg) scaleY(1)}50%{transform:rotate(4deg) scaleY(.92) translateY(-8px)}}
+.owl.grow{opacity:1;transition:all 1.1s cubic-bezier(.3,1.4,.4,1)}
+.eyeglint{position:absolute;width:22%;aspect-ratio:1;z-index:6;opacity:0;background:radial-gradient(circle,#fff 0 18%,rgba(255,255,200,.9) 22%,transparent 60%);clip-path:polygon(50% 0,58% 42%,100% 50%,58% 58%,50% 100%,42% 58%,0 50%,42% 42%)}
+.eyeglint.go{animation:glint .6s ease-out}
+.eyeglint.y{background:radial-gradient(circle,#fff 0 18%,rgba(255,230,60,1) 25%,transparent 60%)}
+.owl.shadow img{filter:brightness(.12) drop-shadow(0 0 10px rgba(140,60,255,.9))}
+.juku{position:absolute;z-index:5;left:21%;width:60%;top:35%;opacity:0;pointer-events:none}
+.juku img{width:100%;display:block;filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 14px rgba(80,190,255,.95))}
+.juku.aura img{animation:aura .25s ease-in-out infinite alternate}
+@keyframes aura{from{filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 12px rgba(80,190,255,.9))}to{filter:drop-shadow(0 0 4px #fff) drop-shadow(0 0 30px rgba(120,220,255,1)) drop-shadow(0 0 50px rgba(56,182,255,.7))}}
+#orb2{position:absolute;z-index:6;width:14px;height:14px;border-radius:50%;transform:translate(-50%,-50%) scale(0);background:radial-gradient(circle,#fff 0%,#bff4ff 30%,#38b6ff 60%,rgba(56,182,255,0) 72%);box-shadow:0 0 30px 12px rgba(80,190,255,.85);pointer-events:none}
+.zan{position:absolute;z-index:9;font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;font-weight:900;color:#fff;text-shadow:0 0 12px #b06bff,0 0 30px #6a2bff,0 4px 0 #2a0a4a;opacity:0;pointer-events:none;writing-mode:vertical-rl;letter-spacing:.05em}
+.zan.go{animation:zan 1.6s ease-out forwards}
+@keyframes zan{0%{opacity:0;transform:scale(2.5)}12%{opacity:1;transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:scale(1.05)}}
+@keyframes glint{0%{opacity:0;transform:scale(.2) rotate(0)}40%{opacity:1;transform:scale(1.3) rotate(45deg)}100%{opacity:0;transform:scale(.6) rotate(90deg)}}
+/* 塾長 */
+.photo{position:absolute;inset:0;z-index:1;opacity:0;overflow:hidden}
+.photo img{position:absolute;width:100%;height:100%;object-fit:cover;object-position:60% 30%;transform:scale(1.25)}
+.photo.on{opacity:1;transition:opacity .6s}
+.photo.on img{transform:scale(1.05);transition:transform 2s ease-out}
+.photo::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,5,26,.7),rgba(6,5,26,.1) 30%,rgba(6,5,26,.1) 65%,rgba(6,5,26,.9))}
+#vwrap{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%) scale(.9);z-index:5;opacity:0;transition:opacity .3s,transform .5s cubic-bezier(.2,1.2,.4,1);aspect-ratio:16/9;background:#000;overflow:hidden;border-top:3px solid #38b6ff;border-bottom:3px solid #38b6ff;box-shadow:0 0 30px rgba(56,182,255,.6)}
+#vwrap.on{opacity:1;transform:translateY(-50%) scale(1)}
+#vcv{width:100%;height:100%;display:block}
+.chant{position:absolute;z-index:9;left:0;right:0;text-align:center;font-size:36px;font-weight:900;color:#fff;letter-spacing:.06em;-webkit-text-stroke:1.5px #1a4cff;text-shadow:0 0 14px #38b6ff,0 3px 0 #0b2a8a}
+#chA{top:17%} #chB{bottom:16%}
+.chant span{display:inline-block;opacity:0;transform:scale(2.4)}
+.chant span.on{opacity:1;transform:none;transition:all .16s cubic-bezier(.2,1.6,.4,1)}
+.chant.big{font-size:40px;white-space:nowrap}
+.speed{position:absolute;inset:0;z-index:2;opacity:0;background:repeating-conic-gradient(from 0deg at 0% 55%,rgba(120,200,255,.0) 0deg 3deg,rgba(150,215,255,.35) 3deg 4deg);transition:opacity .3s}
+.speed.on{opacity:1;animation:speedpulse .15s linear infinite}
+@keyframes speedpulse{50%{opacity:.6}}
+.beam{position:absolute;z-index:5;left:-5%;transform-origin:left center;pointer-events:none}
+.beam i{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);border-radius:999px}
+.beam .b1{height:100%;background:radial-gradient(ellipse at right,rgba(120,200,255,.0),rgba(56,182,255,.55) 40%,rgba(56,182,255,.2) 70%,transparent);filter:blur(6px)}
+.beam .b2{height:62%;background:linear-gradient(180deg,rgba(56,182,255,0),#38b6ff 20%,#9fe7ff 40%,#fff 50%,#9fe7ff 60%,#38b6ff 80%,rgba(56,182,255,0));box-shadow:0 0 40px 10px rgba(80,190,255,.8)}
+.beam .b3{height:22%;background:#fff;filter:blur(2px);animation:flick .06s linear infinite}
+@keyframes flick{50%{opacity:.75;height:26%}}
+/* ロケット */
+#logo{position:absolute;z-index:4;left:50%;bottom:9%;width:50%;aspect-ratio:965/1045;transform:translateX(-50%) scale(.2);opacity:0}
+#logo.on{opacity:1;transform:translateX(-50%) scale(1);transition:all .8s cubic-bezier(.2,1.4,.4,1)}
+#logo img{position:absolute;inset:0;width:100%;height:100%}
+#ring{filter:drop-shadow(0 0 10px rgba(255,255,255,.55))}
+#ring.spin{animation:spin .55s linear infinite}
+#ring.spinf{animation:spin .3s linear infinite}
+#ring.tremble{animation:shiver .05s linear infinite}
+#ring .rp{position:absolute;inset:0;width:100%;height:100%}
+#needle{filter:drop-shadow(0 0 12px rgba(120,180,255,.95))}
+#rocket{position:absolute;z-index:6;left:50%;width:34%;aspect-ratio:240/405;transform:translateX(-50%);opacity:0;pointer-events:none}
+#rocket img{position:absolute;inset:0;width:100%;height:100%;transform-origin:45.8% 62.7%;filter:drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff) drop-shadow(0 0 16px rgba(255,255,255,.95)) drop-shadow(0 0 30px rgba(255,215,0,.6))}
+#rocket::before{content:'';position:absolute;left:50%;top:45%;width:180%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.55),rgba(255,230,150,.25) 35%,rgba(255,255,255,0) 65%);z-index:-2}
+#rocket.shiver img{animation:shiverR .05s linear infinite}
+@keyframes shiverR{0%{translate:1.5px 0}50%{translate:-1.5px 1px}100%{translate:0 -1px}}
+.flame{position:absolute;left:48%;top:97%;width:70%;height:0;mix-blend-mode:screen;transform:translateX(-50%);transform-origin:50% 0;z-index:-1;transition:height .35s ease-out}
+.flame i{position:absolute;left:50%;top:0;transform:translateX(-50%);border-radius:50% 50% 50% 50% / 20% 20% 80% 80%;animation:flick2 .07s linear infinite alternate}
+.flame .f1{width:100%;height:100%;clip-path:polygon(30% 0,70% 0,100% 30%,50% 100%,0 30%);background:linear-gradient(180deg,#ffb347 0%,#ff6a1a 35%,rgba(255,50,20,.6) 70%,rgba(255,40,20,0) 100%);filter:blur(4px)}
+.flame .f2{width:62%;height:75%;clip-path:polygon(25% 0,75% 0,100% 25%,50% 100%,0 25%);background:linear-gradient(180deg,#fff 0%,#fff5b0 25%,#ffc93a 55%,rgba(255,140,20,0) 100%);filter:blur(2px)}
+.flame .f3{width:30%;height:42%;clip-path:polygon(20% 0,80% 0,100% 20%,50% 100%,0 20%);background:linear-gradient(180deg,#fff 0%,#dff6ff 50%,rgba(150,215,255,0) 100%);filter:blur(1px)}
+.flame::before{content:'';position:absolute;left:50%;top:-10%;width:160%;height:60%;transform:translateX(-50%);background:radial-gradient(ellipse,rgba(255,170,60,.65),rgba(255,120,40,0) 70%)}
+@keyframes flick2{from{transform:translateX(-50%) scaleY(.92) scaleX(1.04)}to{transform:translateX(-50%) scaleY(1.08) scaleX(.96)}}
+.count{position:absolute;z-index:9;left:0;right:0;top:40%;text-align:center;font-size:64px;font-weight:900;color:#fff;text-shadow:0 0 18px #ff7a2a,0 4px 0 #8a2a00;opacity:0}
+.count.go{animation:cnt .55s ease-out}
+@keyframes cnt{0%{opacity:0;transform:scale(2.2)}30%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.8)}}
+#needle.shiver{animation:shiver .06s linear infinite}
+@keyframes shiver{0%{transform:translate(1.5px,0)}50%{transform:translate(-1.5px,1px)}100%{transform:translate(0,-1.5px)}}
+</style></head>
+<body>
+<div id="stage">
+  <div class="stars"></div>
+  <div class="photo" id="photo"></div>
+  <div class="speed" id="speed"></div>
+  <div class="pillar" id="pillar"></div>
+  <div class="circle" id="circle"></div><div class="mclabel" id="mclabel"></div>
+  <img id="boss" src="boss_oct.png" alt="ボス">
+  <svg id="crack" viewBox="0 0 100 100"><g stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" style="filter:drop-shadow(0 0 4px #ffd700)"><path d="M50 50 L30 22 L24 8"/><path d="M50 50 L78 30 L92 26"/><path d="M50 50 L64 84 L60 96"/><path d="M50 50 L18 62 L6 70"/><path d="M30 22 L18 26"/><path d="M78 30 L84 14"/></g></svg>
+  <div id="fx"></div><div id="orb2"></div>
+  <div id="vwrap"><canvas id="vcv" width="480" height="270"></canvas></div>
+  <div id="logo"><div id="ring" style="position:absolute;inset:0"><img class="rp" data-k="green" src="summon/ring_green.png" alt=""><img class="rp" data-k="lime" src="summon/ring_lime.png" alt=""><img class="rp" data-k="orange" src="summon/ring_orange.png" alt=""><img class="rp" data-k="red" src="summon/ring_red.png" alt=""></div><img id="needle" src="summon/needle.png" alt=""></div>
+  <div id="rocket"><div class="flame" id="flame"><i class="f1"></i><i class="f2"></i><i class="f3"></i></div><img src="summon/rocket.png" alt=""></div>
+  <div class="count" id="count"></div>
+  <div class="dark" id="dark"></div>
+  <canvas id="cv"></canvas>
+  <div class="txt" id="t1"></div><div class="txt" id="t2"></div>
+  <div class="chant" id="chA"></div><div class="chant" id="chB"></div>
+  <div class="txt" id="t3"></div><div class="txt" id="dmg"></div><div class="txt" id="eff"></div>
+  <div class="flash" id="flash"></div>
+  <div id="hint"></div>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const st = $('stage'), cv = $('cv'), ctx = cv.getContext('2d');
+const OWL = 'summon/owl.png', JUKU = 'summon/juku.png';
+let timers = [], parts = [], rings = [], winds = [], slashes = [];
+const at = (ms, f) => timers.push(setTimeout(f, ms));
+function size(){ const r = st.getBoundingClientRect(), d = Math.min(2, devicePixelRatio||1); cv.width = r.width*d; cv.height = r.height*d; ctx.setTransform(d,0,0,d,0,0); }
+const W = () => st.clientWidth, H = () => st.clientHeight;
+function loop(){
+  ctx.clearRect(0,0,W(),H());
+  ctx.globalCompositeOperation = 'lighter';
+  rings = rings.filter(r => r.t < r.d);
+  for(const r of rings){ r.t++; const k = r.t/r.d; ctx.globalAlpha = (1-k)*.9; ctx.strokeStyle = r.c; ctx.lineWidth = r.lw*(1-k)+1; ctx.beginPath(); ctx.ellipse(r.x, r.y, r.r0+(r.r1-r.r0)*Math.sqrt(k), (r.r0+(r.r1-r.r0)*Math.sqrt(k))*(r.flat||1), 0, 0, 7); ctx.stroke(); }
+  winds = winds.filter(w => w.t < w.d);
+  for(const w of winds){ w.t++; const k = w.t/w.d, x = w.x0+(w.x1-w.x0)*k, y = w.y0+(w.y1-w.y0)*k - Math.sin(k*Math.PI)*w.arc;
+    ctx.globalAlpha = Math.sin(k*Math.PI); ctx.strokeStyle = w.c; ctx.lineWidth = w.lw; ctx.lineCap = 'round';
+    for(let j=0;j<w.n;j++){ const a = w.rot + w.t*.35 + j*(6.28/w.n); ctx.beginPath(); ctx.arc(x, y, w.r*(1-.25*j/w.n), a, a+1.6); ctx.stroke(); }
+    if(w.t===w.d-1 && w.onHit) w.onHit(); }
+  parts = parts.filter(p => p.life > 0);
+  for(const p of parts){
+    if(p.tx!=null){ const k = 1-p.life/p.max; p.x = p.sx+(p.tx-p.sx)*k*k; p.y = p.sy+(p.ty-p.sy)*k*k - Math.sin(k*Math.PI)*p.arc; if(p.life===1 && p.onHit) p.onHit(); }
+    else { p.x += p.vx; p.y += p.vy; p.vy += p.g||0; p.vx *= p.fr||1; p.vy *= p.fr||1; }
+    p.life--; const a = Math.max(0, p.life/p.max);
+    ctx.globalAlpha = p.keep ? 1 : a;
+    if(p.shuri){ (p.tr ||= []).push([p.x,p.y]); if(p.tr.length>9) p.tr.shift();
+      ctx.save(); ctx.lineCap='round'; for(let j=1;j<p.tr.length;j++){ ctx.globalAlpha=j/p.tr.length*.7; ctx.strokeStyle='#ffe9a0'; ctx.lineWidth=p.s*.5*j/p.tr.length; ctx.beginPath(); ctx.moveTo(p.tr[j-1][0],p.tr[j-1][1]); ctx.lineTo(p.tr[j][0],p.tr[j][1]); ctx.stroke(); }
+      ctx.globalAlpha=1; const gl=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.s*1.8); gl.addColorStop(0,'rgba(255,240,170,.8)'); gl.addColorStop(1,'rgba(255,200,60,0)'); ctx.fillStyle=gl; ctx.beginPath(); ctx.arc(p.x,p.y,p.s*1.8,0,7); ctx.fill();
+      ctx.globalCompositeOperation='source-over'; ctx.translate(p.x,p.y); ctx.rotate(p.rot = (p.rot||0) + .55);
+      for(let k=0;k<4;k++){ ctx.rotate(Math.PI/2); ctx.fillStyle = k%2 ? '#ffffff' : '#ffe27a'; ctx.beginPath(); ctx.ellipse(p.s*.55,0,p.s*.62,p.s*.2,0,0,7); ctx.fill(); ctx.strokeStyle='#7a5320'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(p.s*1.1,0); ctx.stroke(); }
+      ctx.fillStyle='#7a5320'; ctx.beginPath(); ctx.arc(0,0,p.s*.16,0,7); ctx.fill(); ctx.restore(); continue; }
+    if(p.feather){ ctx.save(); ctx.globalCompositeOperation='source-over'; ctx.translate(p.x,p.y); ctx.rotate(p.rot += p.vr||0.15);
+      ctx.fillStyle = p.c; ctx.beginPath(); ctx.ellipse(0,0,p.s,p.s*.32,0,0,7); ctx.fill(); ctx.strokeStyle='#5a3a1a'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(-p.s,0); ctx.lineTo(p.s,0); ctx.stroke(); ctx.restore(); continue; }
+    if(p.line){ ctx.strokeStyle = p.c; ctx.lineWidth = p.s; ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x-p.vx*p.len, p.y-p.vy*p.len); ctx.stroke(); continue; }
+    if(p.smoke){ ctx.save(); ctx.globalCompositeOperation='source-over'; ctx.globalAlpha=a*.55; const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.s*(1.6-a*.6)); g.addColorStop(0,p.c); g.addColorStop(1,'rgba(120,110,150,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,p.s*(1.6-a*.6),0,7); ctx.fill(); ctx.restore(); continue; }
+    ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x,p.y,Math.max(.3,p.s*(p.shrink? a:1)),0,7); ctx.fill();
+  }
+  slashes = slashes.filter(z => z.t < z.d);
+  for(const z of slashes){ z.t++; const k = Math.min(1, z.t/(z.d*.3)), a = z.t < z.d*.3 ? 1 : 1-(z.t-z.d*.3)/(z.d*.7);
+    const x2 = z.x1+(z.x2-z.x1)*k, y2 = z.y1+(z.y2-z.y1)*k; ctx.lineCap='round';
+    ctx.globalAlpha = a*.55; ctx.strokeStyle = z.c || '#a46bff'; ctx.lineWidth = z.w*3; ctx.beginPath(); ctx.moveTo(z.x1,z.y1); ctx.lineTo(x2,y2); ctx.stroke();
+    ctx.globalAlpha = a; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = z.w; ctx.beginPath(); ctx.moveTo(z.x1,z.y1); ctx.lineTo(x2,y2); ctx.stroke();
+    if(z.t === Math.ceil(z.d*.3) && z.onHit) z.onHit(); }
+  ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+  requestAnimationFrame(loop);
+}
+function burst(x,y,n,colors,spd,s,life){ for(let i=0;i<n;i++){ const a=Math.random()*6.283, v=spd*(.3+Math.random()); parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,c:colors[i%colors.length],s:s*(.5+Math.random()),life,max:life,fr:.94,shrink:true}); } }
+function sparks(x,y,n,colors,spd){ for(let i=0;i<n;i++){ const a=Math.random()*6.283, v=spd*(.5+Math.random()); parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,c:colors[i%colors.length],s:2,len:3,line:true,life:22,max:22,fr:.9}); } }
+function ring(x,y,r1,c,d,lw,flat){ rings.push({x,y,r0:6,r1,c,d,t:0,lw:lw||6,flat}); }
+function bossC(){ const b=$('boss'), r=b.getBoundingClientRect(), s=st.getBoundingClientRect(); return {x:r.left-s.left+r.width/2, y:r.top-s.top+r.height*.5, w:r.width}; }
+function txt(id, html){ const e=$(id); e.innerHTML = html; e.classList.add('on'); }
+function shake(big){ st.classList.remove('shake','shake2'); void st.offsetWidth; st.classList.add(big?'shake2':'shake'); }
+function flash(){ const f=$('flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }
+function hitBoss(big){ const b=$('boss'); b.classList.remove('hit'); void b.offsetWidth; b.classList.add('hit'); shake(big); }
+function countUp(v, ms){ const e=$('dmg'); e.classList.add('on'); const t0=performance.now(); (function f(t){ const k=Math.min(1,(t-t0)/ms), e2=1-Math.pow(1-k,3); e.textContent = Math.round(v*e2).toLocaleString(); if(k<1) requestAnimationFrame(f); })(t0); }
+function chant(id, text, step, big){ const ch=$(id); ch.className='chant'+(big?' big':''); ch.innerHTML = text.split('').map(c=>`<span>${c}</span>`).join(''); [...ch.children].forEach((s,i)=>at(i*step, ()=>s.classList.add('on'))); }
+function reset(){
+  timers.forEach(clearTimeout); timers=[]; parts=[]; rings=[]; winds=[]; slashes=[];
+  ['t1','t2','t3','dmg','eff'].forEach(i=>{ $(i).classList.remove('on'); $(i).innerHTML=''; });
+  ['chA','chB'].forEach(i=>{ $(i).innerHTML=''; $(i).className='chant'; });
+  $('fx').innerHTML=''; $('orb2').getAnimations().forEach(a=>a.cancel()); $('orb2').style.transform='translate(-50%,-50%) scale(0)'; $('photo').classList.remove('on'); $('circle').classList.remove('on'); $('mclabel').classList.remove('on'); $('vwrap').getAnimations().forEach(a=>a.cancel()); $('pillar').className='pillar'; $('speed').className='speed';
+  $('vwrap').classList.remove('on'); clipStop();
+  $('logo').className=''; $('logo').style.cssText=''; const rk=$('rocket'); rk.getAnimations().forEach(a=>a.cancel()); rk.style.cssText=''; rk.className=''; rk.querySelector('img').getAnimations().forEach(a=>a.cancel()); $('flame').style.height='0'; $('needle').className=''; $('needle').style.cssText=''; $('needle').getAnimations().forEach(a=>a.cancel()); $('ring').className=''; $('ring').style.cssText='position:absolute;inset:0'; document.querySelectorAll('#ring .rp').forEach(x=>{ x.getAnimations().forEach(a=>a.cancel()); x.style.opacity=''; });
+  $('crack').style.cssText='opacity:0'; $('boss').style.cssText='opacity:0'; $('dark').style.opacity=0; $('hint').textContent='';
+  st.style.background=''; document.querySelector('.stars').style.opacity='';
+}
+function intro(n, name){ n = CFG.n || n; txt('t1', `${CFG.when||''}自習室の仲間 ${n}人の力で…`); $('t2').style.fontSize = name.length >= 8 ? '21px' : ''; at(600, ()=>txt('t2', `${name} を召喚！`)); }
+function ending(move, dmg, eff, d0){ if(CFG.dmg != null) dmg = CFG.dmg; if(CFG.eff != null && eff) eff = CFG.eff;
+  at(d0+3600, ()=>parent.postMessage({mqSummon:'done'}, '*'));
+  at(d0, ()=>txt('t3', move)); at(d0+200, ()=>countUp(dmg, 1100)); if(eff) at(d0+1400, ()=>txt('eff', '✨ '+eff));
+  at(d0+1500, ()=>$('hint').textContent='タップでとじる');
+}
+function showBoss(css){ const b=$('boss'); b.style.cssText = css+';opacity:0;transform:scale(.8);transition:opacity .5s,transform .5s'; requestAnimationFrame(()=>{ b.style.opacity=1; b.style.transform='none'; }); setTimeout(()=>{ b.style.transition=''; b.style.transform=''; }, 600); }
+/* 魔法陣:自習室に来た人数の数だけ円を重ねる(5人なら5重、10人なら10重) */
+function magicCircle(n, cy){ n = CFG.n || n;
+  n = Math.max(1, Math.min(20, n)); const c=$('circle'); c.style.top = cy;
+  const cols = ['#ffd700','#d6b8ff','#ffffff','#ffb347','#9fe7ff'];
+  let g = '';
+  for(let i=0;i<n;i++){
+    const r = n===1 ? 92 : 96 - i*(78/(n-1)), col = i===0 ? '#ffd700' : cols[i%cols.length], dash = i===0 ? '' : (i%2 ? 'stroke-dasharray="6 5"' : (i%3===0 ? 'stroke-dasharray="2 4"' : ''));
+    const dur = (3 + (i%4)*1.3).toFixed(1), dir = i%2 ? 'reverse' : 'normal';
+    g += `<g class="mr" style="animation-duration:${dur}s;animation-direction:${dir}"><circle cx="100" cy="100" r="${r.toFixed(1)}" fill="none" stroke="${col}" stroke-width="${i===0?3:1.8}" ${dash} opacity="${i===0?1:.9}"/>`;
+    if(i===0) for(let k=0;k<12;k++){ const a=k*Math.PI/6, x=100+Math.cos(a)*r, y=100+Math.sin(a)*r; g += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#ffd700"/>`; }
+    g += '</g>';
+  }
+  if(n>=5){ const R = 96 - Math.min(n-1,3)*(78/(n-1)); const pts=k=>[0,1,2].map(j=>{ const a=-Math.PI/2+k*Math.PI/3+j*2*Math.PI/3; return `${(100+Math.cos(a)*R).toFixed(1)},${(100+Math.sin(a)*R).toFixed(1)}`; }).join(' ');
+    g += `<g class="mr" style="animation-duration:9s"><polygon points="${pts(0)}" fill="none" stroke="#ffd700" stroke-width="1.5" opacity=".8"/><polygon points="${pts(1)}" fill="none" stroke="#ffd700" stroke-width="1.5" opacity=".8"/></g>`; }
+  c.innerHTML = `<svg viewBox="0 0 200 200">${g}</svg>`;
+  c.classList.add('on');
+  const lb=$('mclabel'); lb.textContent = `${n}重の魔法陣`; lb.style.top = `calc(${cy} + ${W()*.2}px)`; lb.classList.add('on');
+}
+function summonOwl(o){ // 魔法陣・光の柱からフクロウくん
+  magicCircle(o.n, o.cy);
+  at(400, ()=>{ const p=$('pillar'); p.style.height = o.ph; p.classList.add('go'); ring(W()/2, H()*parseFloat(o.cy)/100, W()*.5, 'rgba(255,220,120,1)', 40, 8, .3); });
+}
+/* 魔法陣の中心から、床をすり抜けるようにせり上がる(足元は魔法陣の中心) */
+function riseFromCircle(el, ms){
+  const r=el.getBoundingClientRect(), S=st.getBoundingClientRect();
+  ring(r.left-S.left+r.width/2, r.bottom-S.top, W()*.35, 'rgba(255,240,180,1)', 30, 8, .35);
+  burst(r.left-S.left+r.width/2, r.bottom-S.top, 40, ['#fff6c0','#ffd700','#ffffff'], 6, 4, 40);
+  return el.animate([{opacity:1,transform:'translateY(100%)',clipPath:'inset(0 0 100% 0)'},{opacity:1,transform:'translateY(0)',clipPath:'inset(0 0 0 0)'}],{duration:ms||900,easing:'cubic-bezier(.25,1,.35,1)',fill:'forwards'});
+}
+function glint(el, x, y){ const g=document.createElement('div'); g.className='eyeglint'; g.style.left=x; g.style.top=y; el.appendChild(g); requestAnimationFrame(()=>g.classList.add('go')); }
+/* ---------- フクロウくん ---------- */
+function playOwl(){
+  reset(); showBoss('top:16%;right:5%;width:42%'); intro(2, 'フクロウくん');
+  summonOwl({cy:'78%', ph:'55%', n:2});
+  const o=document.createElement('div'); o.className='owl'; o.style.cssText='left:27%;top:50.5%;width:46%'; o.innerHTML=`<img src="${OWL}" alt="フクロウくん">`; $('fx').appendChild(o);
+  at(700, ()=>riseFromCircle(o, 800));
+  at(1500, ()=>{ o.getAnimations().forEach(a=>a.cancel()); o.classList.add('idle'); glint(o,'30%','30%'); glint(o,'58%','30%'); });
+  at(2000, ()=>{ o.classList.remove('idle'); o.classList.add('flap'); });
+  const B = bossC();
+  const hit = (big) => { hitBoss(big); sparks(B.x,B.y,big?40:16,['#fff','#ffe680','#ffd700'],big?10:7); ring(B.x,B.y,B.w*(big?.9:.45),'rgba(255,240,170,1)',big?34:20,big?10:5);
+    const r=B.w*(big?.5:.25); slashes.push({x1:B.x-r,y1:B.y,x2:B.x+r,y2:B.y,w:big?5:3,d:16,t:0,c:'#ffd700'},{x1:B.x,y1:B.y-r,x2:B.x,y2:B.y+r,w:big?5:3,d:16,t:0,c:'#ffd700'}); };
+  for(let v=0; v<3; v++) at(2200+v*420, ()=>{
+    const r=o.getBoundingClientRect(), s=st.getBoundingClientRect(), sx=r.left-s.left+r.width*.6, sy=r.top-s.top+r.height*.4;
+    for(let i=0;i<4;i++) at(i*60, ()=>parts.push({shuri:true, sx:sx+(Math.random()-.5)*30, sy:sy+(Math.random()-.5)*30, tx:B.x+(Math.random()-.5)*B.w*.35, ty:B.y+(Math.random()-.5)*B.w*.35, arc:(i%2?-1:1)*(40+Math.random()*70), x:sx,y:sy, s:11+Math.random()*3, life:26, max:26, keep:true, onHit:()=>hit(false)}));
+  });
+  // とどめの大きな羽手裏剣
+  at(3700, ()=>{ const r=o.getBoundingClientRect(), s=st.getBoundingClientRect(), sx=r.left-s.left+r.width*.6, sy=r.top-s.top+r.height*.4;
+    parts.push({shuri:true, sx, sy, tx:B.x, ty:B.y, arc:90, x:sx, y:sy, s:30, life:34, max:34, keep:true, onHit:()=>{ flash(); hit(true); burst(B.x,B.y,60,['#fff','#ffe680','#ffd700'],9,5,50); }}); });
+  at(4400, ()=>o.classList.replace('flap','idle'));
+  ending('不苦労羽手裏剣！', 2069, '', 4500);
+}
+/* ---------- 巨大フクロウくん:異名「闇の暗殺者」。不苦労斬り(ふくろうぎり) ---------- */
+function slash(x1,y1,x2,y2,w,d,onHit,c){ slashes.push({x1,y1,x2,y2,w,d,t:0,onHit,c}); }
+function playBigOwl(){
+  reset(); showBoss('top:20%;right:6%;width:44%'); intro(4, '巨大フクロウくん');
+  summonOwl({cy:'80%', ph:'85%', n:4});
+  const o=document.createElement('div'); o.className='owl'; o.style.cssText='left:30%;top:56.5%;width:40%'; o.innerHTML=`<img src="${OWL}" alt="フクロウくん">`; $('fx').appendChild(o);
+  at(700, ()=>riseFromCircle(o, 750));
+  at(1500, ()=>{ $('dark').style.opacity=.45; o.getAnimations().forEach(a=>a.cancel()); o.style.opacity=1; o.classList.add('grow'); o.style.left='-4%'; o.style.top='30%'; o.style.width='92%'; shake(true); ring(W()*.45,H()*.6,W()*.9,'rgba(255,220,120,1)',45,10); });
+  // 闇に溶けて、目だけが光る
+  at(2500, ()=>{ $('t2').classList.remove('on'); txt('t1','異名 ── 闇の暗殺者'); $('dark').style.opacity=.92; o.classList.remove('grow'); o.classList.add('idle','shadow');
+    const g1=document.createElement('div'), g2=document.createElement('div'); [g1,g2].forEach((g,i)=>{ g.className='eyeglint y'; g.style.left=i?'56%':'29%'; g.style.top='31%'; o.appendChild(g); setTimeout(()=>g.classList.add('go'), 300); }); });
+  // 消える
+  at(3400, ()=>{ o.animate([{opacity:1,transform:'scale(1)'},{opacity:0,transform:'scale(1.15)',filter:'blur(6px)'}],{duration:260,fill:'forwards'}); sparks(W()*.45,H()*.55,30,['#b06bff','#ffffff'],9); });
+  // 連続の斬撃
+  const B=bossC(), L=[[-.6,-.7,.6,.7],[.6,-.7,-.6,.7],[-.8,0,.8,.05],[-.3,-.8,.4,.8],[.7,-.4,-.7,.5],[-.7,.4,.7,-.5]];
+  L.forEach((z,i)=>at(3700+i*170, ()=>{ const r=B.w*.75; slash(B.x+z[0]*r,B.y+z[1]*r,B.x+z[2]*r,B.y+z[3]*r,4,22,()=>{ hitBoss(i===L.length-1); sparks(B.x+(Math.random()-.5)*B.w*.4,B.y+(Math.random()-.5)*B.w*.4,16,['#ffffff','#d6b8ff','#ffe680'],8); }); }));
+  // 不苦労斬り(大きな文字)→ とどめのX字斬り
+  at(4900, ()=>{ const z=document.createElement('div'); z.className='zan'; z.textContent='不苦労斬り'; z.style.cssText=`left:6%;top:16%;font-size:${W()*.15}px`; $('fx').appendChild(z); requestAnimationFrame(()=>z.classList.add('go')); });
+  at(5500, ()=>{ const r=B.w*1.1; slash(B.x-r,B.y-r,B.x+r,B.y+r,9,30,null,'#ffd700'); });
+  at(5650, ()=>{ const r=B.w*1.1; slash(B.x+r,B.y-r,B.x-r,B.y+r,9,30,()=>{ flash(); hitBoss(true); burst(B.x,B.y,110,['#ffffff','#d6b8ff','#a46bff','#ffd700'],11,6,60); ring(B.x,B.y,W()*.9,'rgba(200,150,255,1)',40,12); },'#ffd700'); });
+  at(6300, ()=>{ $('dark').style.opacity=.25; $('t1').classList.remove('on'); });
+  ending('闇の暗殺者の 不苦労斬り！', 5336, '仲間の苦労を斬りすてた！', 6400);
+}
+/* ---------- 塾長:カメハメハ大王の前でカメハメ波 ---------- */
+function playTeacher(){
+  reset(); intro(7, '塾長');
+  // 魔法陣と光の柱 → 構えた塾長(切り抜き写真)がせり上がる
+  magicCircle(7, '80%');
+  at(400, ()=>{ const p=$('pillar'); p.style.height='92%'; p.style.width='70%'; p.classList.add('go'); ring(W()/2, H()*.8, W()*.6, 'rgba(255,220,120,1)', 40, 8, .3); for(let i=0;i<40;i++) at(i*25, ()=>parts.push({x:W()*(.2+Math.random()*.6), y:H()*.82, vx:0, vy:-3-Math.random()*4, c:['#ffe680','#ffffff','#9fe7ff'][i%3], s:2.5, life:40, max:40, shrink:true})); });
+  const j=document.createElement('div'); j.className='juku'; j.innerHTML=`<img src="${JUKU}" alt="塾長">`; $('fx').appendChild(j);
+  at(700, ()=>riseFromCircle(j, 750));
+  // オーラをまとって構える
+  at(1450, ()=>{ $('t2').classList.remove('on'); $('t1').classList.remove('on'); $('dark').style.opacity=.5; j.classList.add('aura'); shake(); });
+  // 本物の動画へ:ためるところ(0.5秒〜)から。2.05秒で発射、勢いのある3.2秒でボスへ切りかえ
+  const V0 = 1900, F0 = 6;               // 動画の6コマ目(0.5秒)から
+  at(V0, ()=>{ flash(); j.style.display='none'; $('circle').classList.remove('on'); $('mclabel').classList.remove('on'); $('dark').style.opacity=.6;
+    $('vwrap').classList.add('on'); clipPlay(F0); chant('chA','カメハメ…',300); });
+  at(V0 + (2.05-0.5)*1000, ()=>{ chant('chB','波ーーーッ！！',40,true); flash(); shake(); });
+  // ボスへ:画面いっぱいの光線
+  at(V0 + (3.2-0.5)*1000, ()=>{
+    cancelAnimationFrame(clipRaf);   // 音はそのまま流す
+    $('vwrap').classList.remove('on'); $('circle').classList.remove('on'); $('mclabel').classList.remove('on'); $('chA').innerHTML=''; $('dark').style.opacity=.55; $('speed').classList.add('on');
+    showBoss('top:30%;right:2%;width:52%');
+    const bm=document.createElement('div'); bm.className='beam'; const B={x:W()*.74, y:H()*.30+W()*.26};
+    const hgt = W()*.32; bm.style.cssText=`top:${B.y-hgt/2}px;height:${hgt}px;width:${B.x+W()*.08}px`;
+    bm.innerHTML='<i class="b1"></i><i class="b2"></i><i class="b3"></i>'; $('fx').appendChild(bm);
+    bm.animate([{transform:'scaleX(0)'},{transform:'scaleX(1)',offset:.18},{transform:'scaleX(1) scaleY(1.15)',offset:.75},{transform:'scaleX(1) scaleY(0)'}],{duration:1700,easing:'ease-out',fill:'forwards'});
+    for(let i=0;i<8;i++) at(300+i*150, ()=>{ const C=bossC(); hitBoss(i%3===0); sparks(C.x-C.w*.2,C.y,26,['#ffffff','#bff4ff','#38b6ff','#ffd700'],9); if(i%2===0) ring(C.x-C.w*.1,C.y,C.w*.9,'rgba(140,210,255,1)',26,9,.85); });
+    at(320, ()=>flash());
+    at(1500, ()=>{ const C=bossC(); flash(); shake(true); burst(C.x,C.y,120,['#ffffff','#bff4ff','#38b6ff','#ffd700'],11,6,60); ring(C.x,C.y,W()*.9,'rgba(255,255,255,1)',40,14); $('chB').innerHTML=''; });
+    at(1900, ()=>{ $('speed').classList.remove('on'); });
+  });
+  ending('カメハメハ大王に放った塾長カメハメ波！', 10435, '来た仲間の状態異常がとけた！', V0 + 2700 + 1800);
+}
+/* ---------- 羅針盤ロケット:ロゴの針がロケットになって、下から噴射して打ち上がる ---------- */
+function playRocket(){
+  reset(); st.style.background = 'radial-gradient(ellipse 120% 45% at 50% 100%,rgba(255,214,120,.95),rgba(255,140,90,.7) 35%,rgba(255,140,90,0) 70%),linear-gradient(180deg,#0b1546 0%,#1d3b8f 40%,#4f6fd0 70%,#9a8fd8 100%)'; document.querySelector('.stars').style.opacity=.9;
+  showBoss('top:15%;left:29%;width:42%'); intro(8, 'マル直羅針盤ロケット');
+  const rk=$('rocket'), img=rk.querySelector('img'), fl=$('flame');
+  const pos = () => { const r=rk.getBoundingClientRect(), s=st.getBoundingClientRect(); return {x:r.left-s.left+r.width*.48, y:r.top-s.top+r.height*.97, w:r.width}; };
+  // 1) ロゴが現れる
+  magicCircle(8, '76%');
+  at(600, ()=>{ $('logo').style.bottom='26%'; $('logo').style.width='44%'; $('logo').classList.add('on'); });
+  // 2) 針がロゴから外れて、まっすぐ上を向く(マルは発射台に)
+  at(1500, ()=>{
+    const L=$('logo').getBoundingClientRect(), S=st.getBoundingClientRect();
+    // ロゴの針の位置(丸い窓)に重ねてから、まっすぐ上を向かせる
+    const rw = L.width*240/482, dotX = L.left-S.left+L.width*.456, dotY = L.top-S.top+L.height*.53;
+    rk.style.cssText = `opacity:1;left:${dotX - rw*.458 + rw/2}px;top:${dotY - rw*405/240*.627}px;width:${rw}px;transform:translateX(-50%)`;
+    $('needle').style.opacity=0; $('ring').classList.add('spin');
+    img.animate([{transform:'rotate(39.4deg)'},{transform:'rotate(0deg)'}],{duration:700,easing:'cubic-bezier(.3,1.4,.5,1)',fill:'forwards'});
+    txt('t3','自分の殻をやぶれ！');
+  });
+  // 3) 点火・カウントダウン
+  let ign = 0;
+  at(2300, ()=>{ fl.style.height='55%'; rk.classList.add('shiver'); $('t3').classList.remove('on');
+    $('ring').classList.remove('spin'); $('ring').classList.add('tremble');   // 殻がきしむ
+    ign = setInterval(()=>{ fire(4, 4); smoke(2,false); }, 40); timers.push(ign); });
+  const smoke = (n, big) => { const P=pos(); for(let i=0;i<n;i++){ const a=Math.PI*(Math.random()); parts.push({x:P.x+(Math.random()-.5)*P.w*.3, y:P.y+P.w*.25, vx:Math.cos(a)*(big?4:2)*(Math.random()*.8+.4)*(Math.random()<.5?-1:1), vy:-Math.random()*.6, c:'rgba(170,160,190,.9)', smoke:true, s:(big?16:9)+Math.random()*12, life:55, max:55, fr:.96}); } };
+  const fire = (n, power) => { const P=pos(); for(let i=0;i<n;i++) parts.push({x:P.x+(Math.random()-.5)*P.w*.12, y:P.y+P.w*.12, vx:(Math.random()-.5)*2, vy:power*(1+Math.random()), c:['#fff6c0','#ffd700','#ff9a2a','#ff4a1a'][i%4], s:3+Math.random()*5, life:22, max:22, shrink:true}); };
+  ['3','2','1'].forEach((c,i)=>at(2400+i*500, ()=>{ const e=$('count'); e.textContent=c; e.classList.remove('go'); void e.offsetWidth; e.classList.add('go'); shake(); }));
+  // 4) 発射！ 下から大噴射して上昇 → ボスに激突
+  at(3900, ()=>{
+    clearInterval(ign); const e=$('count'); e.textContent='発射！'; e.style.fontSize='54px'; e.classList.remove('go'); void e.offsetWidth; e.classList.add('go');
+    fl.style.height='230%'; flash(); shake(true); smoke(40,true); const P=pos(); ring(P.x,P.y+P.w*.3,W()*.9,'rgba(255,170,80,1)',40,12,.25);
+    // 殻(マル)がはじけ飛んで、針が解き放たれる
+    $('ring').classList.remove('tremble');
+    const DIR = {green:[-1.1,-.5,-50], lime:[1.2,-.4,60], orange:[.6,1,40], red:[1.1,-1.1,90]};
+    document.querySelectorAll('#ring .rp').forEach(x=>{ const [ax,ay,rot]=DIR[x.dataset.k];
+      x.animate([{transform:'none',opacity:1},{transform:`translate(${ax*W()*.55}px,${ay*W()*.55}px) rotate(${rot}deg) scale(1.3)`,opacity:0}],{duration:900,easing:'cubic-bezier(.1,.8,.3,1)',fill:'forwards'}); });
+    { const L=$('logo').getBoundingClientRect(), S=st.getBoundingClientRect(), cx=L.left-S.left+L.width/2, cy=L.top-S.top+L.height/2;
+      burst(cx,cy,70,['#00a03c','#acc800','#ee6c00','#e60012','#ffffff'],10,5,50); ring(cx,cy,W()*.8,'rgba(255,255,255,1)',30,10); }
+    const B=bossC(), dy = (B.y + B.w*.15) - (rk.getBoundingClientRect().top - st.getBoundingClientRect().top) ;
+    rk.animate([{transform:'translateX(-50%) translateY(0)'},{transform:'translateX(-50%) translateY(-6%)',offset:.35},{transform:`translateX(-50%) translateY(${dy}px) scale(.85)`}],{duration:1200,easing:'cubic-bezier(.6,0,.9,.45)',fill:'forwards'});
+    const t0=performance.now(); (function tr(){ const k=(performance.now()-t0)/1200; if(k>1) return; fire(8, 7); if(Math.random()<.6) smoke(2,true);
+      if(k>.35) for(let i=0;i<3;i++) parts.push({x:Math.random()*W(), y:-10, vx:0, vy:18+Math.random()*10, c:'rgba(255,255,255,.55)', s:1.5, len:2.5, line:true, life:24, max:24});
+      requestAnimationFrame(tr); })();
+  });
+  // 5) 激突:殻をつき破る
+  at(5100, ()=>{ const B=bossC(); rk.style.opacity=0; flash(); hitBoss(true);
+    const c=$('crack'); c.style.cssText=`opacity:1;left:${B.x-B.w*.5}px;top:${B.y-B.w*.5}px;width:${B.w}px;height:${B.w}px;transition:opacity 1.6s 1.4s`; setTimeout(()=>c.style.opacity=0,60);
+    burst(B.x,B.y+B.w*.2,160,['#ffffff','#ffd700','#ff7a2a','#e60012','#00a03c','#acc800','#2a6fd6'],12,7,75);
+    ring(B.x,B.y,W()*.95,'rgba(255,215,0,1)',44,16); ring(B.x,B.y,W()*.6,'rgba(255,255,255,1)',30,10); sparks(B.x,B.y,60,['#fff','#ffd700'],12); });
+  at(5500, ()=>{ const B=bossC(); hitBoss(true); ring(B.x,B.y,W()*.7,'rgba(255,122,42,1)',34,10); burst(B.x,B.y,60,['#ffd700','#fff'],8,5,50); });
+  ending('マル直羅針盤ロケットが 殻をつき破った！', 30812, '来た仲間の状態異常がとけた！', 5800);
+}
+const PLAY = {owl:playOwl, bigowl:playBigOwl, teacher:playTeacher, rocket:playRocket};
+// 動画(base64 → blob)
+// 塾長の動画:どの端末でも映るように、コマ画像(12コマ/秒)を順番に描く。音は別に再生
+const SPR = new Image(); SPR.src = 'summon/kame_sprite.jpg';
+const CLIP = {fps:12, n:56, cols:8, w:480, h:270};
+let clipRaf = 0, clipAud = null;
+function clipStop(){ cancelAnimationFrame(clipRaf); if(clipAud){ try{ clipAud.pause(); }catch(e){} clipAud = null; } }
+function clipPlay(from){
+  from = from || 0; clipStop(); const c = $('vcv').getContext('2d'), t0 = performance.now();
+  try{ clipAud = new Audio('summon/kame.m4a'); clipAud.currentTime = from/CLIP.fps; clipAud.play().catch(()=>{}); }catch(e){}
+  (function f(){ const i = Math.min(CLIP.n-1, from + Math.floor((performance.now()-t0)/1000*CLIP.fps));
+    c.drawImage(SPR, (i%CLIP.cols)*CLIP.w, Math.floor(i/CLIP.cols)*CLIP.h, CLIP.w, CLIP.h, 0, 0, CLIP.w, CLIP.h);
+    if(i < CLIP.n-1) clipRaf = requestAnimationFrame(f); })();
+}
+addEventListener('resize', size); size(); requestAnimationFrame(loop);
+/* やりきリストから呼ばれる:{mqSummon:'play', k, n, dmg, eff, when, boss:{imgUrl|svgHtml}} */
+let CFG = {}, T0 = 0;
+function bossSrc(b){ if(!b) return 'boss_oct.png'; if(b.imgUrl) return b.imgUrl; if(b.svgHtml) return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(b.svgHtml.includes('xmlns=') ? b.svgHtml : b.svgHtml.replace('<svg','<svg xmlns="http://www.w3.org/2000/svg"')); return 'boss_oct.png'; }
+function start(c){ CFG = c || {}; $('boss').src = bossSrc(CFG.boss); T0 = Date.now(); size(); (PLAY[CFG.k] || PLAY.owl)(); }
+addEventListener('message', e => { const d = e.data || {}; if(d.mqSummon === 'play') start(d); });
+st.addEventListener('click', () => { if(Date.now() - T0 > 1200){ clipStop(); parent.postMessage({mqSummon:'close'}, '*'); } });
+// 単体で開いたときの確認用:summon.html?k=teacher&n=7&dmg=10435
+{ const q = new URLSearchParams(location.search); if(q.get('k')) addEventListener('load', () => start({k:q.get('k'), n:+q.get('n')||null, dmg:q.get('dmg')!=null?+q.get('dmg'):null})); }
+parent.postMessage({mqSummon:'ready'}, '*');
+</script>
+</body></html>

@@ -425,27 +425,6 @@ td.td-name { padding-left: 16px; text-align: left; }
 .summon-btn:disabled { background:#2a2a4a; box-shadow:none; color:#8888bb; font-size:12px; }
 .summon-note { font-size:11px; color:#9a9ac8; text-align:center; margin-top:6px; line-height:1.6; }
 .log-summon { color:#7fe0ff; text-shadow:0 0 6px #3fb8ff; }
-#summon-fx { position:fixed; inset:0; z-index:400; display:flex; flex-direction:column; align-items:center; justify-content:center; background:radial-gradient(circle at 50% 45%, rgba(60,30,120,.92), rgba(5,5,20,.97)); color:#fff; font-family:var(--font-game); text-align:center; padding:20px; animation:sfx-in .3s ease-out; }
-@keyframes sfx-in { from{opacity:0} to{opacity:1} }
-#summon-fx .sfx-ring { position:absolute; width:min(80vw,340px); aspect-ratio:1; border-radius:50%; border:3px solid rgba(255,215,0,.75); box-shadow:0 0 30px rgba(255,215,0,.5), inset 0 0 30px rgba(255,215,0,.35); animation:sfx-ring 4s linear infinite; }
-#summon-fx .sfx-ring::before, #summon-fx .sfx-ring::after { content:''; position:absolute; inset:12%; border-radius:50%; border:2px dashed rgba(200,170,255,.8); }
-#summon-fx .sfx-ring::after { inset:28%; border-style:solid; border-color:rgba(255,255,255,.35); }
-@keyframes sfx-ring { from{transform:rotate(0)} to{transform:rotate(360deg)} }
-#summon-fx .sfx-who { position:relative; font-size:96px; line-height:1; animation:sfx-rise 1.1s cubic-bezier(.2,1.4,.4,1) both .3s; filter:drop-shadow(0 0 18px rgba(255,255,255,.6)); }
-#summon-fx.t-bigowl .sfx-who { font-size:150px; }
-#summon-fx.t-teacher .sfx-who { font-size:120px; }
-#summon-fx.t-rocket .sfx-who { font-size:120px; animation:sfx-rocket 1.6s ease-in both .3s; }
-@keyframes sfx-rise { from{transform:translateY(80px) scale(.2); opacity:0} to{transform:none; opacity:1} }
-@keyframes sfx-rocket { 0%{transform:translate(-40vw,40vh) rotate(0) scale(.4); opacity:0} 60%{transform:translate(0,0) rotate(0) scale(1.1); opacity:1} 100%{transform:translate(0,0) scale(1)} }
-#summon-fx .sfx-feather { position:absolute; font-size:22px; animation:sfx-feather 3s ease-in-out infinite; opacity:.8; }
-@keyframes sfx-feather { 0%{transform:translateY(-30vh) rotate(0)} 100%{transform:translateY(40vh) rotate(360deg); opacity:0} }
-#summon-fx .sfx-t1 { position:relative; margin-top:18px; font-size:14px; color:#c9bff5; letter-spacing:.1em; animation:sfx-rise .6s ease-out both 1s; }
-#summon-fx .sfx-t2 { position:relative; font-size:26px; color:var(--gold); margin:4px 0; animation:sfx-rise .6s ease-out both 1.2s; }
-#summon-fx .sfx-t3 { position:relative; font-size:15px; animation:sfx-rise .6s ease-out both 1.5s; }
-#summon-fx .sfx-dmg { position:relative; font-family:var(--mono); font-size:44px; color:#7fe0ff; text-shadow:0 0 14px #3fb8ff; margin-top:8px; animation:sfx-rise .5s cubic-bezier(.2,1.6,.4,1) both 1.8s; }
-#summon-fx .sfx-eff { position:relative; margin-top:6px; font-size:13px; color:#9ff0b0; animation:sfx-rise .5s ease-out both 2.1s; }
-#summon-fx small { position:relative; margin-top:14px; font-size:11px; color:#8888bb; }
-@media (prefers-reduced-motion:reduce){ #summon-fx *{animation:none!important} }
 /* マルとバッジ */
 .pm-bdg { font-size:12px; line-height:1; margin-top:2px; min-height:12px; letter-spacing:-1px; }
 .pm-room { position:absolute; right:4px; top:22px; font-size:12px; }
@@ -4936,10 +4915,10 @@ function roomBlock(){
    月曜に最初にだれかがアプリを開いたとき、先週の分が自動で発動。その週のうちに開いた全員に1回ずつ演出を見せる。
    威力 = 1週間の自習ポイント × 5 × 召喚獣の倍率(召喚獣ごとに上限:フクロウくん3千・巨大フクロウ6千・塾長1万・ロケット3万)。自習ポイント=自習時間(分)。1日2時間をこえた分は「ねばりボーナス」で1.5倍(1人1日4時間まで) */
 const SUMMONS = [
-  { min:8, key:'rocket',  icon:'🚀', name:'羅針盤ロケット', mult:3,   cap:30000, move:'殻をつき破る！',     effect:'cure', effText:'来た仲間の状態異常がとけた！' },
-  { min:5, key:'teacher', icon:'🧑‍🏫', name:'塾長',         mult:2,   cap:10000, move:'ナイショの話',       effect:'cure', effText:'来た仲間の状態異常がとけた！' },
-  { min:3, key:'bigowl',  icon:'🦉', name:'巨大フクロウ',   mult:1.5, cap:6000,  move:'大風！',             effect:'' },
-  { min:1, key:'owl',     icon:'🦉', name:'フクロウくん',   mult:1,   cap:3000,  move:'はばたき',           effect:'' },
+  { min:8, key:'rocket',  icon:'🚀', name:'マル直羅針盤ロケット', mult:3,   cap:30000, move:'殻をつき破る！',           effect:'cure', effText:'来た仲間の状態異常がとけた！' },
+  { min:5, key:'teacher', icon:'🧑‍🏫', name:'塾長',                 mult:2,   cap:10000, move:'カメハメハ大王に放った塾長カメハメ波！', effect:'cure', effText:'来た仲間の状態異常がとけた！' },
+  { min:3, key:'bigowl',  icon:'🦉', name:'巨大フクロウくん',     mult:1.5, cap:6000,  move:'闇の暗殺者の 不苦労斬り！', effect:'' },
+  { min:1, key:'owl',     icon:'🦉', name:'フクロウくん',         mult:1,   cap:3000,  move:'不苦労羽手裏剣！',         effect:'' },
 ];
 const SUMMON_CAP_MIN = 240;     // 1人1日あたり数える上限(分)
 const NEBARI_FROM = 120;        // この分数をこえた分は ねばりボーナス
@@ -4986,7 +4965,8 @@ function idsOf(r){
 function roomTodayIds(){ return idsOf(roomToday()); }
 function summonTier(n){ return SUMMONS.find(t => n >= t.min) || null; }
 function summonRaw(r){ const t = summonTier(r.n); return t ? Math.round((r.pts ?? r.minutes) * SUMMON_PER_MIN * t.mult) : 0; }
-function summonPower(r){ const t = summonTier(r.n); return t ? Math.min(t.cap || Infinity, summonRaw(r)) : 0; }   // 召喚獣ごとに上限あり
+const SUMMON_OVER = 0.25;   // 目安をこえた分は1/4だけ足す(最後の1分まで力になる)
+function summonPower(r){ const t = summonTier(r.n); if (!t) return 0; const raw = summonRaw(r); return raw <= t.cap ? raw : Math.round(t.cap + (raw - t.cap) * SUMMON_OVER); }
 function hm(m){ m = Math.round(m); return m >= 60 ? `${Math.floor(m/60)}時間${m%60 ? m%60 + '分' : ''}` : `${m}分`; }
 function summonLogFor(ws){ return (DAMAGE_LOG || []).find(l => String(l.nickname || l.name || '').includes('[' + ws + ']')); }
 function renderSummon(){
@@ -4995,12 +4975,12 @@ function renderSummon(){
   box.style.display = 'block';
   const today = jstToday(), ws = weekStartOf(today), r = roomRange(ws, today), t = summonTier(r.n), power = summonPower(r);
   const nxt = SUMMONS.slice().reverse().find(x => x.min > r.n);
-  const ladder = SUMMONS.slice().reverse().map(x => `<div class="sl ${r.n >= x.min ? 'got' : ''} ${t && t.key === x.key ? 'now' : ''}"><i style="${x.key==='bigowl'?'font-size:26px':''}">${x.icon}</i>${x.name}<br>${x.min}人〜<br><span style="opacity:.8">最大${x.cap >= 10000 ? (x.cap/10000) + '万' : x.cap.toLocaleString()}</span></div>`).join('');
+  const ladder = SUMMONS.slice().reverse().map(x => `<div class="sl ${r.n >= x.min ? 'got' : ''} ${t && t.key === x.key ? 'now' : ''}"><i style="${x.key==='bigowl'?'font-size:26px':''}">${x.icon}</i>${x.name}<br>${x.min}人〜<br><span style="opacity:.8">目安${x.cap >= 10000 ? (x.cap/10000) + '万' : x.cap.toLocaleString()}</span></div>`).join('');
   const last = summonLogFor(sdAdd(ws, -7));
   const lastHtml = last ? `<button class="summon-btn" style="margin-top:8px;background:#2a2a4a;box-shadow:none;font-size:12px" onclick="replaySummon('${sdAdd(ws, -7)}')">▶ 先週の召喚をもう一度見る(${(Number(last.damage)||0).toLocaleString()}ダメージ)</button>` : '';
   box.innerHTML = `<div class="summon-h"><b>🚪 今週の自習室の召喚</b><span>${md(ws)}〜${md(sdAdd(ws, 6))}</span></div>
     <div class="summon-ladder">${ladder}</div>
-    <div class="summon-note" style="margin:0 0 6px;font-size:13px;color:#fff">今週 <b>${r.n}</b>人・<b>${Math.floor(r.minutes/60)}</b>時間${r.minutes%60 ? (r.minutes%60) + '分' : ''}${t ? `　→ ${t.icon}<b>${t.name}</b> <b style="color:#7fe0ff">${power.toLocaleString()}</b>ダメージ${power >= t.cap ? '<span style="color:#ffd700">(MAX！)</span>' : ''}` : ''}</div>
+    <div class="summon-note" style="margin:0 0 6px;font-size:13px;color:#fff">今週 <b>${r.n}</b>人・<b>${Math.floor(r.minutes/60)}</b>時間${r.minutes%60 ? (r.minutes%60) + '分' : ''}${t ? `　→ ${t.icon}<b>${t.name}</b> <b style="color:#7fe0ff">${power.toLocaleString()}</b>ダメージ${power >= t.cap ? '<span style="color:#ffd700">(目安こえ！)</span>' : ''}` : ''}</div>
     ${r.n ? `<div class="summon-names">${r.people.map(p => `<span class="${p.nebari ? 'nb' : ''}">${p.nebari ? '🔥' : ''}${esc(p.name)} <b>${hm(p.min)}</b></span>`).join('')}</div>` : ''}
     <button class="summon-btn" disabled>${r.n ? `🌙 来週の月曜に、自動で召喚されるよ！` : '今週はまだだれも来ていない…自習室でQRチェックインしよう'}</button>
     ${lastHtml}
@@ -5058,21 +5038,22 @@ function replaySummon(ws, eff){
   const t = SUMMONS.find(x => x.name === m[1]) || SUMMONS[SUMMONS.length - 1];
   summonFx(t, Number(m[2]) || 0, Number(log.damage) || 0, eff || (t.effect === 'cure' ? '来た仲間はみんな元気になった！' : ''), `${md(ws)}〜${md(sdAdd(ws, 6))} の`);
 }
+/* 召喚の演出は summon.html(全画面)で再生する。魔法陣は来た人数の数だけ円が重なる */
 function summonFx(t, n, dmg, eff, when){
   const old = document.getElementById('summon-fx'); if (old) old.remove();
-  const el = document.createElement('div'); el.id = 'summon-fx'; el.className = 't-' + t.key;
-  const feathers = t.key === 'owl' || t.key === 'bigowl' ? Array.from({ length: t.key === 'bigowl' ? 10 : 5 }, (_, i) => `<span class="sfx-feather" style="left:${8 + i * 9}%;animation-delay:${(i * .37) % 2}s">🪶</span>`).join('') : '';
-  el.innerHTML = `<div class="sfx-ring"></div>${feathers}
-    <div class="sfx-who">${t.icon}</div>
-    <div class="sfx-t1">${when ? esc(when) : ''}自習室の仲間 ${n}人の力で…</div>
-    <div class="sfx-t2">${esc(t.name)} を召喚！</div>
-    <div class="sfx-t3">${esc(t.move)}</div>
-    <div class="sfx-dmg">${dmg.toLocaleString()}</div>
-    ${eff ? `<div class="sfx-eff">✨ ${esc(eff)}</div>` : ''}
-    <small>タップでとじる</small>`;
-  el.onclick = () => el.remove();
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 9000);
+  const el = document.createElement('div'); el.id = 'summon-fx';
+  el.style.cssText = 'position:fixed;inset:0;z-index:400;background:#03020f';
+  const fr = document.createElement('iframe'); fr.src = 'summon.html?v=1'; fr.title = '召喚'; fr.allow = 'autoplay';
+  fr.style.cssText = 'border:0;width:100%;height:100%;display:block;background:#03020f';
+  el.appendChild(fr); document.body.appendChild(el);
+  const boss = (typeof yarikiBossArt === 'function') ? yarikiBossArt() : {};
+  const msg = { mqSummon:'play', k:t.key, n, dmg, eff: eff || (t.effect === 'cure' ? '来た仲間はみんな元気になった！' : ''), when, boss };
+  let sent = false; const send = () => { if (!sent) { sent = true; try { fr.contentWindow.postMessage(msg, '*'); } catch(e){} } };
+  const close = () => { el.remove(); removeEventListener('message', onMsg); };
+  const onMsg = e => { if (e.source !== fr.contentWindow) return; const d = e.data || {}; if (d.mqSummon === 'ready') send(); if (d.mqSummon === 'close' || d.mqSummon === 'done') close(); };
+  addEventListener('message', onMsg);
+  fr.addEventListener('load', () => setTimeout(send, 50));
+  setTimeout(() => { if (document.getElementById('summon-fx') === el) close(); }, 20000);   // 念のため
 }
 
 /* マルとバッジ:マル単で区分(英検5級など)のセットをマルにするとバッジ。自分のキャラに3つまで装備できる */
