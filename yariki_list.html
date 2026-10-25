@@ -423,6 +423,10 @@ td.td-name { padding-left: 16px; text-align: left; }
 .summon-names span.nb b { color:#ffc48a; }
 .summon-btn { width:100%; padding:12px; border:none; border-radius:10px; background:linear-gradient(135deg,#7b5cff,#c04bff); color:#fff; font-family:var(--font-game); font-size:15px; font-weight:700; letter-spacing:.04em; box-shadow:0 0 14px rgba(160,90,255,.5); cursor:pointer; }
 .summon-btn:disabled { background:#2a2a4a; box-shadow:none; color:#8888bb; font-size:12px; }
+.summon-ok { text-align:center; margin:4px 0 8px; font-family:var(--font-game); font-size:15px; color:var(--gold); text-shadow:0 0 10px rgba(255,215,0,.6); }
+.summon-ok small { display:block; font-size:11px; color:#d6ccff; text-shadow:none; margin-top:2px; }
+.summon-vote { font-size:11px; color:#b8b8e0; text-align:center; margin-bottom:6px; }
+.summon-vote .summon-names span.vt { background:rgba(255,215,0,.18); border:1px solid rgba(255,215,0,.7); color:#fff; }
 .summon-note { font-size:11px; color:#9a9ac8; text-align:center; margin-top:6px; line-height:1.6; }
 .log-summon { color:#7fe0ff; text-shadow:0 0 6px #3fb8ff; }
 /* マルとバッジ */
@@ -475,6 +479,13 @@ td.td-name { padding-left: 16px; text-align: left; }
 .pm.st-cat .pm-fx { left:-6px; top:44px; font-size:16px; }
 .pm.st-pumpkin .pm-body { background:radial-gradient(circle,#4a2a00,#1c1c38); }
 .pm.st-pumpkin .pm-face { font-size:30px; }
+.pm.st-bat .pm-body { background:radial-gradient(circle,#3a1a4a,#1c1c38); }
+.pm.st-bat .pm-face { font-size:28px; animation:fx-bat 1.2s ease-in-out infinite; }
+.pm.st-cat .pm-body { background:radial-gradient(circle,#2a2a3a,#111122); }
+.pm.st-cat .pm-face { font-size:28px; }
+.pm.st-ghost .pm-body { background:radial-gradient(circle,#4a4a6a,#1c1c38); }
+.pm.st-ghost .pm-face { font-size:28px; opacity:.75; animation:fx-ghost 2s ease-in-out infinite; }
+@keyframes fx-ghost { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
 @keyframes fx-bat { 0%,100%{transform:translate(0,0) rotate(-10deg)} 50%{transform:translate(4px,-6px) rotate(10deg)} }
 @keyframes fx-spin { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
 .pm-bubble { position:absolute; top:0; left:50%; transform:translateX(-50%); background:#fff; color:#d0283c; font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; white-space:nowrap; box-shadow:0 2px 6px rgba(0,0,0,.4); animation:bubble-bob 1.4s ease-in-out infinite; z-index:2; }
@@ -2711,8 +2722,9 @@ function renderParty() {
     const w = weaponFor(levelOf(p.id));
     const sm = STATUS_MAP[p.id]; const def = sm && sm.status ? STATUS_DEFS[sm.status] : null;
     const total = p.hit + p.magic;
-    const face = def && sm.status === 'pumpkin' ? '🎃' : esc(Array.from(name)[0] || '？');
-    const fx = def && sm.status !== 'pumpkin' ? `<div class="pm-fx">${def.icon}</div>` : '';
+    const FACE_ST = { pumpkin:'🎃', bat:'🦇', cat:'🐈‍⬛', ghost:'👻' };   // 変身系は顔そのものが変わる
+    const face = def && FACE_ST[sm.status] ? FACE_ST[sm.status] : esc(Array.from(name)[0] || '？');
+    const fx = def && !FACE_ST[sm.status] ? `<div class="pm-fx">${def.icon}</div>` : '';
     return `<button class="pm ${def ? 'st-' + sm.status : ''} ${p.id === myId ? 'me' : ''}" onclick="openMember('${p.id}')">
       ${def ? '<span class="pm-bubble">たすけて！</span>' : ''}${fx}
       <div class="pm-body"><span class="pm-face">${face}</span><span class="pm-wpn ${w.cls}">${weaponIcon(w, {held:true})}</span>${(typeof equippedBadges === 'function' && equippedBadges(p.id)[0]) ? `<span class="pm-medal">${medalSVG(equippedBadges(p.id)[0], 20)}</span>` : ''}</div>
@@ -4949,8 +4961,61 @@ function mqExtrasLoad(force){
   MQX_BUSY = true; MQX_AT = Date.now();
   Promise.all([
     (typeof loadVisits === 'function' ? loadVisits() : Promise.resolve()),
-    api('getAllStudy', {}).then(a => { if (a && a.ok && a.data) Object.entries(a.data).forEach(([k, v]) => { try { const o = JSON.parse(v); if (o && o.mq) MQB[k] = o.mq; } catch(e){} }); }).catch(() => {}),
+    loadMQB(),
   ]).finally(() => { MQX_BUSY = false; renderParty(); renderSummon(); });
+}
+function loadMQB(){ return api('getAllStudy', {}).then(a => { if (a && a.ok && a.data) Object.entries(a.data).forEach(([k, v]) => { try { const o = JSON.parse(v); if (o && o.mq) MQB[k] = o.mq; } catch(e){} }); }).catch(() => {}); }
+/* 自分の学習データのセルに mq の項目を足して保存(メダル・召喚ボタンで使う) */
+async function writeMQ(patch){
+  if (!currentStudent) return false;
+  const id = String(currentStudent.id);
+  try {
+    const r = await api('getStudy', { studentId: currentStudent.id });
+    let obj = {}; try { obj = r && r.data ? JSON.parse(r.data) : {}; } catch(e) { obj = {}; }
+    if (!obj || typeof obj !== 'object') obj = {};
+    obj.mq = Object.assign({}, obj.mq || {}, patch);
+    MQB[id] = obj.mq;
+    if (typeof sdSid !== 'undefined' && String(sdSid) === id && SD) { SD.mq = obj.mq; try { localStorage.setItem(sdKeyName(sdSid), JSON.stringify(SD)); } catch(e) {} }
+    const w = await api('saveStudy', { studentId: currentStudent.id, data: JSON.stringify(obj) });
+    return !!(w && w.ok);
+  } catch(e) { return false; }
+}
+/* ==== みんなで召喚ボタン:今日教室にいる全員(QRで退室していない人)が押すと、今週の召喚が成立 ==== */
+function presentIds(){
+  const ids = new Set(); if (!VISITS || !VISITS.visits || typeof rosterStudents !== 'function') return ids;
+  // QRで退室していない人。ただし入室から6時間以上たっている人(退室のQRを忘れて帰った人)は数えない
+  const t = jstToday(), names = VISITS.visits.filter(v => v.date === t && !v.out && (!v.inMs || Date.now() - Number(v.inMs) < 6*3600e3)).map(v => v.name);
+  rosterStudents().forEach(st => { if (names.some(n => nameMatch(st, n))) ids.add(String(st.id)); });
+  return ids;
+}
+function votedIds(ws, day){ const ids = new Set(); Object.entries(MQB).forEach(([id, m]) => { if (m && m.vote && m.vote.ws === ws && m.vote.date === day) ids.add(String(id)); }); return ids; }
+function summonOK(ws){ let ok = null; Object.values(MQB).forEach(m => { if (m && m.summonOK && m.summonOK.ws === ws && (!ok || m.summonOK.at < ok.at)) ok = m.summonOK; }); return ok; }
+let VOTE_POLL = 0;
+async function voteSummon(btn){
+  if (!currentStudent) return;
+  if (btn) { btn.disabled = true; btn.textContent = '送っています…'; }
+  await loadVisits();
+  const today = jstToday(), ws = weekStartOf(today), me = String(currentStudent.id);
+  if (!presentIds().has(me)) { showToast('召喚ボタンは、いま教室にいる人だけ押せるよ'); renderSummon(); return; }
+  const ok = await writeMQ({ vote: { ws, date: today, at: Date.now() } });
+  if (!ok) { showToast('送れませんでした(通信エラー)'); renderSummon(); return; }
+  await checkSummonOK();
+}
+/* 教室にいる全員が押していたら成立させる(押した人の端末で) */
+async function checkSummonOK(){
+  if (!currentStudent) return;
+  await Promise.all([loadVisits(), loadMQB()]);
+  const today = jstToday(), ws = weekStartOf(today), me = String(currentStudent.id);
+  let okObj = summonOK(ws);
+  const present = presentIds(), voted = votedIds(ws, today);
+  if (!okObj && voted.has(me) && present.size && [...present].every(id => voted.has(id))) {
+    const r = roomRange(ws, today);
+    okObj = { ws, at: Date.now(), date: today, n: r.n, voters: [...voted].filter(id => present.has(id)).length };
+    await writeMQ({ summonOK: okObj });
+  }
+  renderSummon();
+  if (okObj && voted.has(me)) { let seen = null; try { seen = localStorage.getItem('summon_ok_seen_' + ws); } catch(e) {}
+    if (!seen) { try { localStorage.setItem('summon_ok_seen_' + ws, '1'); } catch(e) {} previewSummon(true); } }
 }
 function jstToday(){ return (VISITS && VISITS.today) || new Date(Date.now() + 9*3600e3).toISOString().slice(0,10); }
 function weekStartOf(d){ const dow = sdParse(d).getDay(); return sdAdd(d, -((dow + 6) % 7)); }   // 月曜はじまり
@@ -4986,6 +5051,27 @@ const SUMMON_OVER = 0.25;   // 目安をこえた分は1/4だけ足す(最後の
 function summonPower(r){ const t = summonTier(r.n); if (!t) return 0; const raw = summonRaw(r); return raw <= t.cap ? raw : Math.round(t.cap + (raw - t.cap) * SUMMON_OVER); }
 function hm(m){ m = Math.round(m); return m >= 60 ? `${Math.floor(m/60)}時間${m%60 ? m%60 + '分' : ''}` : `${m}分`; }
 function summonLogFor(ws){ return (DAMAGE_LOG || []).find(l => String(l.nickname || l.name || '').includes('[' + ws + ']')); }
+function summonVoteHtml(ws, today, r, t){
+  if (!r.n) return `<button class="summon-btn" disabled>今週はまだだれも来ていない…自習室でQRチェックインしよう</button>`;
+  const me = currentStudent ? String(currentStudent.id) : null, okObj = summonOK(ws);
+  clearTimeout(VOTE_POLL);
+  if (okObj) {
+    const inWeek = me && idsOf(r).has(me);
+    return `<div class="summon-ok">✨ 今週の召喚は成立！<small>${md(okObj.date || today)} 教室にいた${okObj.voters || ''}人が力を合わせた</small></div>
+      ${inWeek ? `<button class="summon-btn" onclick="previewSummon(true)">▶ 召喚を見る</button>` : ''}
+      <button class="summon-btn" disabled style="margin-top:6px">🌙 月曜日、みんなの前でボスに放たれる！</button>`;
+  }
+  if (!t) return '';
+  const present = presentIds(), voted = votedIds(ws, today), vin = [...present].filter(id => voted.has(id));
+  const chips = [...present].map(id => `<span class="${voted.has(id) ? 'vt' : ''}">${voted.has(id) ? '✓' : '…'}${esc(studentNameById(id))}</span>`).join('');
+  let btn;
+  if (me && present.has(me)) {
+    if (voted.has(me)) { btn = `<button class="summon-btn" disabled>✓ 押した！ あと${present.size - vin.length}人を待っています</button>`; VOTE_POLL = setTimeout(checkSummonOK, 15000); }
+    else btn = `<button class="summon-btn" onclick="voteSummon(this)">🔮 召喚する！(${vin.length}/${present.size}人)</button>`;
+  } else btn = `<button class="summon-btn" disabled>まだ召喚は成立していない…</button>`;
+  return `${present.size ? `<div class="summon-vote">いま教室にいる仲間<div class="summon-names">${chips}</div></div>` : ''}${btn}
+    <div class="summon-note" style="margin-top:4px">教室にいる全員が「召喚する」を押すと、今週の召喚が成立！ 最後まで残った仲間で力を合わせよう(QRで退室した人は数えない)</div>`;
+}
 function renderSummon(){
   const box = document.getElementById('summon-wrap'); if (!box) return;
   if (!VISITS) { box.style.display = 'none'; return; }
@@ -4999,8 +5085,7 @@ function renderSummon(){
     <div class="summon-ladder">${ladder}</div>
     <div class="summon-note" style="margin:0 0 6px;font-size:13px;color:#fff">今週 <b>${r.n}</b>人・<b>${Math.floor(r.minutes/60)}</b>時間${r.minutes%60 ? (r.minutes%60) + '分' : ''}${t ? `　→ ${t.icon}<b>${t.name}</b> を召喚できる！` : ''}</div>
     ${r.n ? `<div class="summon-names">${r.people.map(p => `<span class="${p.nebari ? 'nb' : ''}">${p.nebari ? '🔥' : ''}${esc(p.name)} <b>${hm(p.min)}</b></span>`).join('')}</div>` : ''}
-    ${t && currentStudent && idsOf(r).has(String(currentStudent.id)) ? `<button class="summon-btn" onclick="previewSummon()">🔮 召喚する！</button><div class="summon-note" style="margin-top:4px">今週来たあなたは、いまの召喚獣を見られるよ(ボスへの攻撃は月曜日)</div>` : ''}
-    <button class="summon-btn" disabled style="margin-top:6px">${r.n ? `🌙 来週の月曜に、自動で召喚されるよ！` : '今週はまだだれも来ていない…自習室でQRチェックインしよう'}</button>
+    ${summonVoteHtml(ws, today, r, t)}
     ${lastHtml}
     <div class="summon-note">${nxt ? `あと<b>${nxt.min - r.n}</b>人来れば ${nxt.icon}<b>${nxt.name}</b>！<br>` : ''}みんなの自習時間が長いほど、召喚獣は強くなる<br>🔥 ねばりボーナス:1日2時間をこえた分は1.5倍(4時間まで)。最後までいる人が召喚獣を強くする！</div>`;
 }
@@ -5015,7 +5100,9 @@ async function summonWeeklyCheck(){
     try { const lr = await api('getDamageLog', { days: 30 }); if (lr && lr.ok && Array.isArray(lr.logs)) DAMAGE_LOG = lr.logs; } catch(e) {}
     let log = summonLogFor(ws), fresh = null;
     const r = roomRange(ws, we), t = summonTier(r.n);
-    if (!log && t) {
+    if (!log && t) await loadMQB();
+    const established = ws <= '2026-10-19' || !!summonOK(ws);   // 召喚ボタンで成立した週だけ(最初の週は例外)
+    if (!log && t && established) {
       let lock = null; try { lock = localStorage.getItem('summon_fire_' + ws); } catch(e) {}
       if (lock && Date.now() - Number(lock) < 120000) return;
       try { localStorage.setItem('summon_fire_' + ws, String(Date.now())); } catch(e) {}
@@ -5062,7 +5149,7 @@ async function previewSummon(){
   await loadVisits();
   const today = jstToday(), ws = weekStartOf(today), r = roomRange(ws, today), t = summonTier(r.n);
   if (!t) { showToast('今週はまだ召喚できないよ'); return; }
-  summonFx(t, r.n, null, '', '今週の', { preview: true });
+  summonFx(t, r.n, null, '', '力を合わせた今週の', { preview: true });
 }
 function summonFx(t, n, dmg, eff, when, opt){
   const old = document.getElementById('summon-fx'); if (old) old.remove();
