@@ -4999,7 +4999,7 @@ function renderSummon(){
     <div class="summon-ladder">${ladder}</div>
     <div class="summon-note" style="margin:0 0 6px;font-size:13px;color:#fff">今週 <b>${r.n}</b>人・<b>${Math.floor(r.minutes/60)}</b>時間${r.minutes%60 ? (r.minutes%60) + '分' : ''}${t ? `　→ ${t.icon}<b>${t.name}</b> を召喚できる！` : ''}</div>
     ${r.n ? `<div class="summon-names">${r.people.map(p => `<span class="${p.nebari ? 'nb' : ''}">${p.nebari ? '🔥' : ''}${esc(p.name)} <b>${hm(p.min)}</b></span>`).join('')}</div>` : ''}
-    ${t && currentStudent && roomTodayIds().has(String(currentStudent.id)) ? `<button class="summon-btn" onclick="previewSummon()">${t.icon} ${t.name}を召喚して帰る！</button><div class="summon-note" style="margin-top:4px">今日来たあなたは、いまの召喚獣を見られるよ(ボスへの攻撃は月曜日)</div>` : ''}
+    ${t && currentStudent && idsOf(r).has(String(currentStudent.id)) ? `<button class="summon-btn" onclick="previewSummon()">${t.icon} ${t.name}を召喚する！</button><div class="summon-note" style="margin-top:4px">今週来たあなたは、いまの召喚獣を見られるよ(ボスへの攻撃は月曜日)</div>` : ''}
     <button class="summon-btn" disabled style="margin-top:6px">${r.n ? `🌙 来週の月曜に、自動で召喚されるよ！` : '今週はまだだれも来ていない…自習室でQRチェックインしよう'}</button>
     ${lastHtml}
     <div class="summon-note">${nxt ? `あと<b>${nxt.min - r.n}</b>人来れば ${nxt.icon}<b>${nxt.name}</b>！<br>` : ''}みんなの自習時間が長いほど、召喚獣は強くなる<br>🔥 ねばりボーナス:1日2時間をこえた分は1.5倍(4時間まで)。最後までいる人が召喚獣を強くする！</div>`;
