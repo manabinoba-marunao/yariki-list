@@ -3987,6 +3987,18 @@ function mqStrike(o){
 .sr .ctl input{width:64px;font:700 15px var(--mono);padding:6px;border:1.5px solid var(--border);border-radius:8px;text-align:center}
 .sr .ctl button{font:700 12px var(--font);padding:7px 10px;border-radius:8px;border:1.5px solid var(--border);background:#fff;cursor:pointer}
 .sr .ctl button.all{border-color:var(--accent);color:var(--accent)}
+.sr .wk-name{font-size:12px;font-weight:900;color:var(--ink);margin-top:8px}
+.sr .wk-name span{font:700 11px var(--mono);color:var(--ink2)}
+.sr .wk-name span.wk-ok{font-family:var(--font);color:var(--accent)}
+.sr .wk-name span.wk-later{font-family:var(--font);color:var(--ink3);font-weight:700}
+.sr .wk-name.juku{margin-top:12px;padding-top:8px;border-top:1px dashed var(--border)}
+.sr .juku-ctl{margin-top:10px;padding-top:8px;border-top:1px dashed var(--border)}
+.rg-sec{font-size:13px;font-weight:900;color:var(--ink);margin-top:4px}
+.rg-work{display:flex;flex-direction:column;gap:6px;background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:8px}
+.rg-wh{display:flex;gap:6px;align-items:center}
+.rg-wh input{flex:1}
+.rg-del{flex:none;width:36px;height:36px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--danger);font:900 14px var(--font);cursor:pointer}
+.rg-add{font:700 13px var(--font);padding:10px;border-radius:10px;border:1.5px dashed var(--accent);background:var(--accent-light);color:var(--accent);cursor:pointer}
 .sr .set{font:700 12px var(--font);color:var(--accent);background:none;border:none;text-decoration:underline;cursor:pointer;padding:0}
 .badge-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .badge-row span{font-size:11px;font-weight:700;background:#fff7d6;border:1px solid #f0d77a;border-radius:999px;padding:3px 9px}
@@ -4341,8 +4353,9 @@ function goalSources(){
   if(testDate()) Object.entries(SD.test.subj||{}).forEach(([s,r])=>{
     if(!r || r.from==null) return;
     const lap = curLap(r);
-    if(lap<3){ const p=(r.laps||[])[lap]||0; out.push({key:`term:${s}:w${lap}`, group:termName, subj:s, mat:`学校ワーク${lap+1}周目`, unit:'p', from:Math.max(r.from,p+1), to:r.to}); }
-    const j = r.juku; if(j && j.from!=null && (j.done||0)<j.to) out.push({key:`term:${s}:j`, group:termName, subj:s, mat:j.name||'塾テキスト', unit:'p', from:Math.max(j.from,(j.done||0)+1), to:j.to});
+    if(lap<3) works(r).forEach(w=>{ if(wProg(w,lap)>=1) return; const p=w.laps[lap]||0;
+      out.push({key:`term:${s}:w${lap}:${w.wi}`, group:termName, subj:s, mat:`${w.name}${lap+1}周目`, unit:'p', from:Math.max(w.from,p+1), to:w.to}); });
+    const j = r.juku; if(j && j.from!=null && (j.done||0)<j.to) out.push({key:`term:${s}:j`, group:termName, subj:s, mat:j.name||'塾ワーク', unit:'p', from:Math.max(j.from,(j.done||0)+1), to:j.to});
   });
   (SD.targets||[]).forEach(t=>(t.items||[]).forEach(it=>{
     if((it.done||0) >= it.to) return;
@@ -4410,8 +4423,8 @@ function sdApplyGoal(g){
   const k = String(g.src).split(':');
   if(k[0]==='term'){
     const r = SD.test.subj[k[1]]; if(!r) return '';
-    if(k[2]==='j'){ if(!r.juku) return ''; r.juku.done = Math.min(r.juku.to, Math.max(r.juku.done||0, g.to)); if(r.juku.done>=r.juku.to) sdBadge(`${k[1]} 塾テキスト`); }
-    else { const i = Number(k[2].slice(1)); r.laps = r.laps||[0,0,0]; r.laps[i] = Math.min(r.to, Math.max(r.laps[i]||0, g.to)); if(r.laps[i]>=r.to) sdBadge(`${k[1]} ワーク${i+1}周`); }
+    if(k[2]==='j'){ if(!r.juku) return ''; r.juku.done = Math.min(r.juku.to, Math.max(r.juku.done||0, g.to)); if(r.juku.done>=r.juku.to) sdBadge(`${k[1]} 塾ワーク`); }
+    else { const i = Number(k[2].slice(1)), w = workAt(r, Number(k[3]||0)); if(!w) return ''; w.laps[i] = Math.min(w.to, Math.max(w.laps[i]||0, g.to)); if(lapProg(r,i)>=1) sdBadge(`${k[1]} ワーク${i+1}周`); }
     return '期末テスト';
   }
   const t = (SD.targets||[]).find(x=>x.id===k[1]); const it = t && (t.items||[]).find(x=>x.id===k[2]); if(!it) return '';
@@ -4429,13 +4442,27 @@ function sdGoalDel(id){ if(!confirm('この目標を消しますか？')) return
 
 /* ---------- 期末テスト 克己登竜門 ---------- */
 function testDate(){ const t = STUDY_TESTS.find(x=>x.id===SD.test.id); return t ? t.start : SD.test.date; }
-function lapProg(r, i){ // i周目の進み具合 0〜1
-  if(!r || r.from==null) return 0;
-  const n = r.to - r.from + 1, p = (r.laps||[])[i] || 0;
-  return p>=r.to ? 1 : p<r.from ? 0 : (p - r.from + 1)/n;
+/* 学校ワークは教科ごとに最大3冊。1冊目は r.from/r.to/r.laps(r.wname)、2冊目以降は r.extra[] */
+const MAX_WORKS = 3;
+const WORK_NAMES = ['学校ワーク','教科書準拠ワーク','漢字ワーク','文法ワーク','計算ワーク','単語帳','プリント','資料集ワーク'];
+function works(r){
+  if(!r || r.from==null) return [];
+  r.laps = r.laps || [0,0,0];
+  return [{name:r.wname||'学校ワーク', from:r.from, to:r.to, laps:r.laps, wi:0}]
+    .concat((r.extra||[]).map((w,k)=>{ w.laps = w.laps||[0,0,0]; return Object.assign(w, {wi:k+1}); }));
+}
+function workAt(r, wi){ return works(r)[wi||0] || null; }
+function wPages(w){ return w.to - w.from + 1; }
+function wDone(w, i){ const p=(w.laps||[])[i]||0; return Math.max(0, Math.min(w.to, p) - w.from + 1); }
+function wProg(w, i){ return wDone(w,i) / wPages(w); }
+function totalPages(r){ return works(r).reduce((a,w)=>a+wPages(w),0); }
+function lapProg(r, i){ // i周目の進み具合 0〜1(ワーク全冊のページ合計で)
+  const ws = works(r); if(!ws.length) return 0;
+  const n = ws.reduce((a,w)=>a+wPages(w),0), d = ws.reduce((a,w)=>a+wDone(w,i),0);
+  return n ? d/n : 0;
 }
 function curLap(r){ for(let i=0;i<3;i++) if(lapProg(r,i)<1) return i; return 3; }
-function pagesDone1(r){ const p=(r.laps||[])[0]||0; return Math.max(0, Math.min(r.to, p) - r.from + 1); }
+function pagesDone1(r){ return works(r).reduce((a,w)=>a+wDone(w,0),0); }
 /* 学校ワーク1周目の危機レベル */
 function crisisOf(data, td){
   const subs = Object.entries((data.test||{}).subj||{}).filter(([,r])=>r&&r.from!=null);
@@ -4443,7 +4470,7 @@ function crisisOf(data, td){
   const today = sdToday(), dl = sdAdd(td, -WORK_LEAD_DAYS), toDl = sdDiff(dl, today);
   let total=0, done=0, expect=0;
   subs.forEach(([,r])=>{
-    const n = r.to - r.from + 1; total += n; done += pagesDone1(r);
+    const n = totalPages(r); total += n; done += pagesDone1(r);
     const s = r.setAt || today, span = Math.max(1, sdDiff(dl, s)), el = Math.min(span, Math.max(0, sdDiff(today, s)));
     expect += n * el / span;
   });
@@ -4463,7 +4490,7 @@ function gateStats(){
   const cleared = rows.filter(d=>{ const c=crisisOf(d, testDate()); return c&&c.level==='clear'; }).length;
   return {n: rows.length, cleared};
 }
-const GATES = ['一ノ門<br>ワーク完遂','二ノ門<br>ワーク三周','三ノ門<br>塾テキスト'];
+const GATES = ['一ノ門<br>ワーク完遂','二ノ門<br>ワーク三周','三ノ門<br>塾ワーク'];
 function testCard(st){
   const today = sdToday(), td = testDate();
   const subs = studySubjects(st);
@@ -4496,7 +4523,7 @@ function testCard(st){
       <div class="cz-bar"><i style="width:${Math.round(c.done/c.total*100)}%"></i></div>
       <div class="cz-m">のこり <b>${c.left}</b> / ${c.total} ページ　${msg[1]}</div></div>`;
   } else if(step===3) box = `<div class="cz clear"><div class="cz-h">🐉 登竜成就！</div>すべての門をやぶった。テストまであと <b>${Math.max(0,toTest)}</b> 日、自信をもって挑もう！</div>`;
-  else box = `<div class="cz clear"><div class="cz-h">⛩ 一ノ門 突破！</div>テストまであと <b>${Math.max(0,toTest)}</b> 日。${step===1?'二ノ門:ワークを3周して完璧に。':'三ノ門:塾テキストで仕上げよう。'}</div>`;
+  else box = `<div class="cz clear"><div class="cz-h">⛩ 一ノ門 突破！</div>テストまであと <b>${Math.max(0,toTest)}</b> 日。${step===1?'二ノ門:ワークを3周して完璧に。':'三ノ門:塾ワークで仕上げよう。'}</div>`;
   return `<div class="sv-card gate">${title}${head}
     <div class="gates">${GATES.map((g,i)=>`<div class="${step>i?'ok':step===i?'now':''}">${step===i?'<span class="koi">🐟</span>':step>i?'<span class="koi">⛩</span>':''}${g}</div>`).join('')}<div class="${step===3?'ok dragon':''}">${step===3?'🐉':'竜'}</div></div>
     ${box}
@@ -4506,30 +4533,32 @@ function testCard(st){
   </div>`;
 }
 function subjRow(s, r, step){
-  if(r.from==null) return `<div class="sr"><div class="h">${s}<span class="rg"><button class="set" onclick="sdOpenRange('${s}')">ワークの範囲を入れる</button></span></div></div>`;
-  const lap = curLap(r);
-  const showJuku = step>=2 || lap>=3;
-  const i = Math.min(lap,2), pr = lapProg(r,i), p = (r.laps||[])[i] || 0;
+  const j = r.juku || {};
+  if(r.from==null) return `<div class="sr"><div class="h">${s}<span class="rg"><button class="set" onclick="sdOpenRange('${s}')">範囲を入れる</button></span></div></div>`;
+  const ws = works(r), lap = curLap(r);
+  const i = Math.min(lap,2);
   const lapLabel = lap>=3 ? 'ワーク3周クリア' : `ワーク${lap+1}周目`;
   // 1周目:今日までに終わっていたいライン
-  let mark = '', lateTag = '';
+  let exp = null, lateTag = '';
   const td = testDate();
   if(lap===0 && td){
     const dl = sdAdd(td,-WORK_LEAD_DAYS), s0 = r.setAt || sdToday(), span = Math.max(1, sdDiff(dl, s0)), el = Math.min(span, Math.max(0, sdDiff(sdToday(), s0)));
-    const exp = el/span, n = r.to-r.from+1, beh = Math.round((exp - pr)*n);
-    mark = `<b class="exp" style="left:${Math.round(exp*100)}%" title="今日までの目標"></b>`;
+    exp = el/span; const beh = Math.round((exp - lapProg(r,0))*totalPages(r));
     if(sdDiff(dl, sdToday())<0) lateTag = `<span class="late-tag">締め切りすぎ</span>`;
     else if(beh>0) lateTag = `<span class="late-tag">🔥 ${beh}p 遅れ</span>`;
   }
-  let html = `<div class="sr"><div class="h">${s}<span class="lap ${lap===0?'l1':lap>=3?'done':''}">${lapLabel}</span>${lateTag}<span class="rg">p.${r.from}〜${r.to} <button class="set" onclick="sdOpenRange('${s}')">変更</button></span></div>`;
-  if(lap<3) html += `<div class="pbar ${lap===0?'l1':''}"><i style="width:${Math.round(pr*100)}%"></i>${mark}</div>
-    <div class="ctl">p.<input type="number" inputmode="numeric" value="${p>=r.from?p:''}" placeholder="${r.from}" onchange="sdSetPage('${s}',${i},this.value)"> まで終わった　<button class="all" onclick="sdSetPage('${s}',${i},${r.to})">${lap+1}周目ぜんぶ終わった</button></div>`;
-  if(showJuku){
-    const j = r.juku || {};
-    if(j.from==null) html += `<div class="ctl" style="margin-top:6px">塾テキスト:<button class="set" onclick="sdOpenRange('${s}')">範囲を入れる</button></div>`;
-    else { const jn=j.to-j.from+1, jp=Math.min(1,Math.max(0,((j.done||0)-j.from+1)/jn)); html += `<div class="ctl" style="margin-top:8px"><b>${esc_(j.name||'塾テキスト')}</b> p.${j.from}〜${j.to}</div><div class="pbar"><i style="width:${Math.round(jp*100)}%"></i></div>
-      <div class="ctl">p.<input type="number" inputmode="numeric" value="${j.done>=j.from?j.done:''}" placeholder="${j.from}" onchange="sdSetJuku('${s}',this.value)"> まで終わった <button class="all" onclick="sdSetJuku('${s}',${j.to})">ぜんぶ終わった</button></div>`; }
-  }
+  let html = `<div class="sr"><div class="h">${s}<span class="lap ${lap===0?'l1':lap>=3?'done':''}">${lapLabel}</span>${lateTag}<span class="rg">${ws.length>1?`${ws.length}冊`:`p.${r.from}〜${r.to}`} <button class="set" onclick="sdOpenRange('${s}')">変更</button></span></div>`;
+  if(lap<3) ws.forEach(w=>{
+    const pr = wProg(w,i), p = w.laps[i]||0, wk = `'${s}',${i},`;
+    const mark = exp!=null ? `<b class="exp" style="left:${Math.round(exp*100)}%" title="今日までの目標"></b>` : '';
+    html += `${ws.length>1?`<div class="wk-name">${esc_(w.name)} <span>p.${w.from}〜${w.to}</span>${pr>=1?' <span class="wk-ok">✔ '+(i+1)+'周目OK</span>':''}</div>`:''}
+    <div class="pbar ${lap===0?'l1':''}"><i style="width:${Math.round(pr*100)}%"></i>${mark}</div>
+    ${pr>=1&&ws.length>1?'':`<div class="ctl">p.<input type="number" inputmode="numeric" value="${p>=w.from?p:''}" placeholder="${w.from}" onchange="sdSetPage(${wk}this.value,${w.wi})"> まで終わった　<button class="all" onclick="sdSetPage(${wk}${w.to},${w.wi})">${lap+1}周目ぜんぶ終わった</button></div>`}`;
+  });
+  // 塾ワーク(いつでも入れられる。三ノ門で仕上げ)
+  if(j.from==null) html += `<div class="ctl juku-ctl">🏫 塾ワーク:<button class="set" onclick="sdOpenRange('${s}')">範囲を入れる</button></div>`;
+  else { const jn=j.to-j.from+1, jp=Math.min(1,Math.max(0,((j.done||0)-j.from+1)/jn)); html += `<div class="wk-name juku">🏫 ${esc_(j.name||'塾ワーク')} <span>p.${j.from}〜${j.to}</span>${step<2&&lap<3?' <span class="wk-later">三ノ門で仕上げ</span>':''}</div><div class="pbar"><i style="width:${Math.round(jp*100)}%"></i></div>
+    <div class="ctl">p.<input type="number" inputmode="numeric" value="${j.done>=j.from?j.done:''}" placeholder="${j.from}" onchange="sdSetJuku('${s}',this.value)"> まで終わった <button class="all" onclick="sdSetJuku('${s}',${j.to})">ぜんぶ終わった</button></div>`; }
   return html + '</div>';
 }
 function sdCountdown(){
@@ -4543,17 +4572,18 @@ function sdSetTest(v){
   else { SD.test.id = v||null; SD.test.date = null; }
   sdSave(); renderStudy();
 }
-function sdSetPage(s, i, v){
+function sdSetPage(s, i, v, wi){
   const r = SD.test.subj[s]; if(!r) return;
-  const n = parseInt(v,10); r.laps = r.laps || [0,0,0];
-  r.laps[i] = isNaN(n) ? 0 : Math.min(r.to, Math.max(0, n));
-  if(r.laps[i] >= r.to) sdBadge(`${s} ワーク${i+1}周`);
+  const w = workAt(r, wi); if(!w) return;
+  const n = parseInt(v,10);
+  w.laps[i] = isNaN(n) ? 0 : Math.min(w.to, Math.max(0, n));
+  if(lapProg(r,i) >= 1) sdBadge(`${s} ワーク${i+1}周`);
   sdSave(); renderStudy();
 }
 function sdSetJuku(s, v){
   const r = SD.test.subj[s]; if(!r||!r.juku) return;
   const n = parseInt(v,10); r.juku.done = isNaN(n) ? 0 : Math.min(r.juku.to, Math.max(0,n));
-  if(r.juku.done >= r.juku.to) sdBadge(`${s} 塾テキスト`);
+  if(r.juku.done >= r.juku.to) sdBadge(`${s} 塾ワーク`);
   sdSave(); renderStudy();
 }
 function sdBadge(t){
@@ -4562,32 +4592,63 @@ function sdBadge(t){
   SD.badges.push({k:key, t, d:sdToday()});
   showToast('🏅 '+t+' クリア！');
 }
+/* テスト範囲の入力:学校ワーク(最大3冊)+塾ワーク */
+let RG = null;
 function sdOpenRange(s){
   const r = SD.test.subj[s] || {}, j = r.juku || {};
-  const jt = stageOf(currentStudent)==='中' ? jukuTexts(s) : ['塾のテキスト','その他'];
   sdSetSubj = s;
+  const ws = works(r).map(w=>({name:w.name, from:w.from, to:w.to}));
+  RG = {works: ws.length ? ws : [{name:'学校ワーク', from:null, to:null}], jname:j.name, jfrom:j.from, jto:j.to};
+  renderRangeModal();
+  document.getElementById('sv-modal').classList.add('on');
+}
+function rgRead(){
+  if(!RG) return;
+  const n = id=>{ const el=document.getElementById(id); if(!el) return null; const x=parseInt(el.value,10); return isNaN(x)?null:x; };
+  RG.works.forEach((w,k)=>{ const nm=document.getElementById('rg-wn'+k); if(nm) w.name = nm.value.trim(); w.from=n('rg-wf'+k); w.to=n('rg-wt'+k); });
+  const jn=document.getElementById('rg-jname'); if(jn) RG.jname = jn.value;
+  RG.jfrom = n('rg-jfrom'); RG.jto = n('rg-jto');
+}
+function renderRangeModal(){
+  const s = sdSetSubj, r = SD.test.subj[s] || {};
+  const jt = stageOf(currentStudent)==='中' ? jukuTexts(s) : ['塾のテキスト','その他'];
+  const jsel = RG.jname && !jt.includes(RG.jname) ? [RG.jname, ...jt] : jt;
   document.getElementById('sv-modal-body').innerHTML = `<h4>${s} のテスト範囲</h4>
-    <p class="sv-note">学校で配られた範囲表を見て入れよう。わからないときは先生に聞いてね。</p>
+    <p class="sv-note">学校で配られた範囲表を見て入れよう。ワークが2冊・3冊ある教科は「＋ 学校ワークを足す」で増やせるよ。</p>
+    <datalist id="rg-wnames">${WORK_NAMES.map(x=>`<option value="${x}">`).join('')}</datalist>
     <div class="gform">
-      <label class="full">学校ワーク(教科書準拠のワーク)<span class="rng">p.<input id="rg-from" type="number" inputmode="numeric" value="${r.from??''}"><span>〜</span>p.<input id="rg-to" type="number" inputmode="numeric" value="${r.to??''}"></span></label>
-      <label class="full">塾テキスト(あとで入れてもOK)<select id="rg-jname">${jt.map(x=>`<option ${j.name===x?'selected':''}>${x}</option>`).join('')}</select></label>
-      <label class="full"><span class="rng">p.<input id="rg-jfrom" type="number" inputmode="numeric" value="${j.from??''}"><span>〜</span>p.<input id="rg-jto" type="number" inputmode="numeric" value="${j.to??''}"></span></label>
+      <div class="full rg-sec">📘 学校ワーク</div>
+      ${RG.works.map((w,k)=>`<div class="full rg-work">
+        <div class="rg-wh"><input id="rg-wn${k}" list="rg-wnames" value="${esc_(w.name||'')}" placeholder="${k?'例:漢字ワーク':'学校ワーク'}">
+          ${RG.works.length>1?`<button class="rg-del" onclick="rgDelWork(${k})" aria-label="このワークを消す">✕</button>`:''}</div>
+        <span class="rng">p.<input id="rg-wf${k}" type="number" inputmode="numeric" value="${w.from??''}"><span>〜</span>p.<input id="rg-wt${k}" type="number" inputmode="numeric" value="${w.to??''}"></span></div>`).join('')}
+      ${RG.works.length<MAX_WORKS?`<button class="full rg-add" onclick="rgAddWork()">＋ 学校ワークを足す(${RG.works.length}/${MAX_WORKS}冊)</button>`:''}
+      <div class="full rg-sec">🏫 塾ワーク(あとで入れてもOK)</div>
+      <label class="full">教材<select id="rg-jname">${jsel.map(x=>`<option ${RG.jname===x?'selected':''}>${esc_(x)}</option>`).join('')}</select></label>
+      <label class="full"><span class="rng">p.<input id="rg-jfrom" type="number" inputmode="numeric" value="${RG.jfrom??''}"><span>〜</span>p.<input id="rg-jto" type="number" inputmode="numeric" value="${RG.jto??''}"></span></label>
       <div class="full" style="display:flex;gap:8px;justify-content:space-between">
         ${r.from!=null?`<button class="sv-btn ghost" onclick="sdClearRange()">この教科はテストなし</button>`:'<span></span>'}
         <span style="display:flex;gap:8px"><button class="sv-btn ghost" onclick="sdCloseModal()">やめる</button><button class="sv-btn" onclick="sdSaveRange()">保存</button></span></div>
     </div>`;
-  document.getElementById('sv-modal').classList.add('on');
 }
+function rgAddWork(){ rgRead(); if(RG.works.length>=MAX_WORKS) return; RG.works.push({name:'', from:null, to:null}); renderRangeModal(); const el=document.getElementById('rg-wn'+(RG.works.length-1)); if(el) el.focus(); }
+function rgDelWork(k){ rgRead(); RG.works.splice(k,1); renderRangeModal(); }
 function sdCloseModal(){ document.getElementById('sv-modal').classList.remove('on'); }
 function sdSaveRange(){
-  const n = id=>{ const x=parseInt(document.getElementById(id).value,10); return isNaN(x)?null:x; };
-  const from=n('rg-from'), to=n('rg-to');
-  if(from==null||to==null||to<from){ showToast('学校ワークのページを正しく入れてね'); return; }
-  const s = sdSetSubj, old = SD.test.subj[s] || {};
-  const r = {from, to, laps: old.laps || [0,0,0], setAt: old.setAt || sdToday()};
-  const jf=n('rg-jfrom'), jto=n('rg-jto');
-  if(jf!=null && jto!=null && jto>=jf) r.juku = {name: document.getElementById('rg-jname').value, from: jf, to: jto, done: (old.juku&&old.juku.done)||0};
-  SD.test.subj[s] = r; sdCloseModal(); sdSave(); renderStudy();
+  rgRead();
+  const s = sdSetSubj, old = SD.test.subj[s] || {}, oldW = works(old);
+  const filled = RG.works.filter(w=>w.from!=null || w.to!=null);
+  if(!filled.length){ showToast('学校ワークのページを入れてね'); return; }
+  for(const w of filled){ if(w.from==null||w.to==null||w.to<w.from){ showToast(`${w.name||'学校ワーク'}のページを正しく入れてね`); return; } }
+  // 前に入れていた進み具合は、同じ名前(なければ同じ順番)のワークに引きつぐ
+  const lapsFor = (w,k)=>{ const m = oldW.find(o=>o.name===(w.name||'学校ワーク')) || oldW[k]; return m ? m.laps.slice() : [0,0,0]; };
+  const [w0, ...rest] = filled;
+  const r = {from:w0.from, to:w0.to, laps:lapsFor(w0,0), setAt: old.setAt || sdToday()};
+  if(w0.name && w0.name!=='学校ワーク') r.wname = w0.name;
+  if(rest.length) r.extra = rest.map((w,k)=>({name:w.name || `ワーク${k+2}`, from:w.from, to:w.to, laps:lapsFor(w,k+1)}));
+  if(RG.jfrom!=null && RG.jto!=null && RG.jto>=RG.jfrom) r.juku = {name: RG.jname, from: RG.jfrom, to: RG.jto, done: (old.juku&&old.juku.done)||0};
+  else if(RG.jfrom!=null || RG.jto!=null){ showToast('塾ワークのページを正しく入れてね'); return; }
+  SD.test.subj[s] = r; RG = null; sdCloseModal(); sdSave(); renderStudy();
 }
 function sdClearRange(){ delete SD.test.subj[sdSetSubj]; sdCloseModal(); sdSave(); renderStudy(); }
 
@@ -4810,7 +4871,7 @@ function sdCard(r){
     (d.sessions||[]).filter(x=>sdKey(x.a)>=sdAdd(today,-6)).forEach(x=>{ per[x.s]=(per[x.s]||0)+(x.b-x.a)/6e4; });
     const goals = (d.goals||[]).filter(g=>!g.done || sdDiff(today, g.doneAt||today) < 7);
     det = `<div class="sd-det">
-      ${subs.length?subs.map(([s,x])=>{ const lap=curLap(x), i=Math.min(lap,2), p=Math.round(lapProg(x,i)*100); return `<div class="sd-sub"><span>${s}</span><span class="tag">${lap>=3?'3周クリア':(lap+1)+'周目'}</span><i class="bar"><i style="width:${lap>=3?100:p}%;background:${lap===0?'#dc2626':'#2a6b4e'}"></i></i><span class="n">p.${x.from}〜${x.to}${lap<3?` / ${(x.laps||[])[i]||'-'}まで`:''}</span></div>`; }).join(''):'<p class="sv-note">テスト範囲はまだ入っていません</p>'}
+      ${subs.length?subs.map(([s,x])=>{ const lap=curLap(x), i=Math.min(lap,2), p=Math.round(lapProg(x,i)*100); return `<div class="sd-sub"><span>${s}</span><span class="tag">${lap>=3?'3周クリア':(lap+1)+'周目'}</span><i class="bar"><i style="width:${lap>=3?100:p}%;background:${lap===0?'#dc2626':'#2a6b4e'}"></i></i><span class="n">${(x.extra||[]).length?`${works(x).length}冊 ${totalPages(x)}p`:`p.${x.from}〜${x.to}${lap<3?` / ${(x.laps||[])[i]||'-'}まで`:''}`}</span></div>`; }).join(''):'<p class="sv-note">テスト範囲はまだ入っていません</p>'}
       <div class="sd-time">7日間の教科別:${Object.keys(per).length?Object.entries(per).sort((a,b)=>b[1]-a[1]).map(([s,m])=>`<span style="color:${SUBJ_COLOR[s]||'#555'}">${s} ${fmtMin(m)}</span>`).join('　'):'記録なし'}</div>
       ${goals.length?`<div class="sd-goals">${goals.map(g=>`<div class="${g.done?'done':g.due<today?'late':''}">${g.done?'✅':g.due<today?'⚠':'□'} ${esc_(g.subj)}｜${esc_(g.mat)} ${goalRange(g)} 〜${sdLabel(g.due)}</div>`).join('')}</div>`:'<div class="sd-goals"><div>今週の目標:なし</div></div>'}
     </div>`;
