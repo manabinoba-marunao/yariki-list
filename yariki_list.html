@@ -429,6 +429,30 @@ td.td-name { padding-left: 16px; text-align: left; }
 .summon-vote .summon-names span.vt { background:rgba(255,215,0,.18); border:1px solid rgba(255,215,0,.7); color:#fff; }
 .summon-note { font-size:11px; color:#9a9ac8; text-align:center; margin-top:6px; line-height:1.6; }
 .log-summon { color:#7fe0ff; text-shadow:0 0 6px #3fb8ff; }
+/* 討伐図鑑 */
+.dex-open { display:block; width:100%; margin:14px 0 4px; padding:12px; border-radius:12px; border:1px solid var(--gold); background:linear-gradient(135deg,rgba(255,215,0,.12),rgba(170,68,255,.12)); color:var(--gold); font-family:var(--font-game); font-size:15px; font-weight:700; cursor:pointer; }
+.dex-open small { display:block; font-size:10px; color:#b8b8e0; font-weight:400; margin-top:2px; }
+.dex-tabs { display:flex; gap:6px; margin:6px 0 10px; }
+.dex-tabs button { flex:1; padding:7px; border-radius:8px; border:1px solid #4a4a7a; background:transparent; color:#b8b8e0; font-family:var(--font-game); font-size:12px; }
+.dex-tabs button.on { border-color:var(--gold); color:var(--gold); background:rgba(255,215,0,.08); }
+.dex-mine { font-size:12px; color:#e8e6ff; text-align:center; margin-bottom:8px; }
+.dex-mine b { color:var(--gold); font-family:var(--mono); font-size:16px; }
+.dex-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; max-height:52vh; overflow:auto; padding:2px; }
+.dex-card { position:relative; border-radius:10px; border:1px solid #3a3a6a; background:rgba(255,255,255,.04); padding:6px 4px 6px; text-align:center; cursor:pointer; color:#e8e6ff; font-size:10px; line-height:1.35; }
+.dex-card.boss { border-color:#b98aff; background:linear-gradient(160deg,rgba(170,68,255,.18),rgba(20,20,50,.4)); }
+.dex-card.me { box-shadow:0 0 0 2px var(--gold) inset; }
+.dex-card .art { width:100%; aspect-ratio:1; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.dex-card .art img, .dex-card .art svg { width:92%; height:92%; object-fit:contain; display:block; }
+.dex-card .nm { font-weight:700; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dex-card .hr { color:var(--gold); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dex-card .sp { position:absolute; top:3px; left:3px; font-size:9px; background:var(--gold); color:#1c1c38; border-radius:6px; padding:0 5px; font-weight:700; }
+.dex-card .no { position:absolute; top:3px; right:5px; font-size:9px; color:#8888bb; font-family:var(--mono); }
+.dex-rank { max-height:52vh; overflow:auto; }
+.dex-row { display:flex; align-items:center; gap:8px; padding:7px 4px; border-bottom:1px solid var(--rpg-border); font-size:13px; }
+.dex-row .n { width:22px; text-align:center; color:#8888bb; font-family:var(--mono); }
+.dex-row .who { flex:1; }
+.dex-row .c { font-family:var(--mono); color:var(--gold); white-space:nowrap; font-size:12px; }
+.dex-row.me { background:rgba(255,215,0,.08); border-radius:6px; }
 /* マルとバッジ */
 .pm-medal { position:absolute; left:50%; top:30px; transform:translateX(-50%); z-index:3; line-height:0; filter:drop-shadow(0 1px 2px rgba(0,0,0,.6)); }
 .pm-medal svg { display:block; }
@@ -1145,6 +1169,7 @@ td.td-name { padding-left: 16px; text-align: left; }
       <div class="rank-list" id="rank-list"></div>
       <button class="rank-more" id="rank-more" onclick="toggleRank()" style="display:none"></button>
     </div>
+    <button class="dex-open" id="dex-open" onclick="openDex()">📖 討伐図鑑<small>これまで倒した敵と、討伐した仲間</small></button>
   </div>
 </div>
 
@@ -5144,6 +5169,66 @@ function replaySummon(ws, eff){
   const t = SUMMONS.find(x => x.name === m[1]) || SUMMONS[SUMMONS.length - 1];
   summonFx(t, Number(m[2]) || 0, Number(log.damage) || 0, eff || (t.effect === 'cure' ? '来た仲間はみんな元気になった！' : ''), `${md(ws)}〜${md(sdAdd(ws, 6))} の`);
 }
+/* ==== 討伐図鑑:倒した敵(ボスも雑魚も)と、討伐した仲間・とどめを刺した英雄 ==== */
+let DEX = null, DEX_TAB = 'cards';
+function dexArt(d){
+  if (d.imageUrl) return `<img src="${esc(d.imageUrl)}" alt="" loading="lazy">`;
+  const id = ({ mob_slime:'boss-svg-jako', mob_goblin:'boss-svg-goblin', mob_ghost:'boss-svg-ghost', mob_bat:'boss-svg-bat' })[d.type] || 'boss-svg';
+  const el = document.getElementById(id); if (!el) return '👾';
+  const c = el.cloneNode(true); c.removeAttribute('id'); c.style.display = 'block'; return c.outerHTML;
+}
+function dexIsMe(d){ if (!currentStudent) return false; const me = String(currentStudent.id); return !!(d.members && d.members.some(m => String(m.id) === me)); }
+function dexIsHeroMe(d){ if (!currentStudent) return false; const nick = currentStudent.nickname || currentStudent.name; return String(d.heroId) === String(currentStudent.id) || d.hero === nick || d.hero === currentStudent.name; }
+async function openDex(){
+  document.getElementById('pm-sheet-body').innerHTML = '<h3>📖 討伐図鑑</h3><div class="sub">読みこみ中…</div><button class="pm-close" onclick="closeMember()">とじる</button>';
+  document.getElementById('pm-sheet').classList.add('show');
+  const r = await api('getDefeats', {});
+  if (!r || !r.ok) { document.getElementById('pm-sheet-body').innerHTML = '<h3>📖 討伐図鑑</h3><div class="sub">読みこめませんでした(サーバーの更新が必要かも)</div><button class="pm-close" onclick="closeMember()">とじる</button>'; return; }
+  DEX = r.defeats || []; renderDex();
+}
+function dexTab(t){ DEX_TAB = t; renderDex(); }
+function renderDex(){
+  const L = DEX || [], bosses = L.filter(d => String(d.type).indexOf('mob') !== 0).length;
+  const myJoin = L.filter(dexIsMe).length, myHero = L.filter(dexIsHeroMe).length;
+  let body;
+  if (DEX_TAB === 'cards') {
+    body = L.length ? `<div class="dex-grid">${L.map((d, i) => { const boss = String(d.type).indexOf('mob') !== 0;
+      return `<div class="dex-card ${boss ? 'boss' : ''} ${dexIsMe(d) ? 'me' : ''}" onclick="dexDetail(${i})">${dexIsHeroMe(d) ? '<span class="sp">👑</span>' : dexIsMe(d) ? '<span class="sp">✓</span>' : ''}<span class="no">No.${d.no}</span>
+        <div class="art">${dexArt(d)}</div><div class="nm">${esc(d.name)}</div><div class="hr">👑 ${esc(d.hero || '—')}</div></div>`; }).join('')}</div>`
+      : '<div class="sub">まだ倒した敵はいないよ</div>';
+  } else {
+    const P = {};
+    const who = (id, name) => (P[id] ||= { id, name, join: 0, hero: 0 });
+    L.forEach(d => {
+      (d.members || []).forEach(m => { const st = STUDENTS.find(s => String(s.id) === String(m.id)); who(String(m.id), st ? (st.nickname || st.name) : m.nick).join++; });
+      if (d.hero) { const st = STUDENTS.find(s => String(s.id) === String(d.heroId)) || studentByNick(d.hero); who(st ? String(st.id) : 'h:' + d.hero, st ? (st.nickname || st.name) : d.hero).hero++; }
+    });
+    const rows = Object.values(P).sort((a, b) => b.hero - a.hero || b.join - a.join);
+    const me = currentStudent ? String(currentStudent.id) : null;
+    body = rows.length ? `<div class="dex-rank">${rows.map((p, i) => `<div class="dex-row ${p.id === me ? 'me' : ''}"><span class="n">${i + 1}</span><span class="who">${esc(p.name)}</span><span class="c">👑 とどめ ${p.hero}回</span><span class="c">⚔ 討伐 ${p.join}回</span></div>`).join('')}</div>`
+      : '<div class="sub">まだ記録がないよ</div>';
+  }
+  document.getElementById('pm-sheet-body').innerHTML = `<h3>📖 討伐図鑑</h3>
+    <div class="sub">倒した敵 ${L.length}体(ボス ${bosses}・雑魚 ${L.length - bosses})</div>
+    ${currentStudent ? `<div class="dex-mine">あなたの討伐 <b>${myJoin}</b>回・とどめ <b>${myHero}</b>回</div>` : ''}
+    <div class="dex-tabs"><button class="${DEX_TAB === 'cards' ? 'on' : ''}" onclick="dexTab('cards')">図鑑</button><button class="${DEX_TAB === 'rank' ? 'on' : ''}" onclick="dexTab('rank')">討伐ランキング</button></div>
+    ${body}
+    <div class="sub" style="margin-top:8px">⚔ 討伐 = 倒されるまでに一度でも攻撃した敵の数(10/26以降に倒した敵から記録)。👑 とどめ = 最後の一撃を入れた回数</div>
+    <button class="pm-close" onclick="closeMember()">とじる</button>`;
+}
+function dexDetail(i){
+  const d = (DEX || [])[i]; if (!d) return;
+  const dt = d.at ? new Date(d.at) : null;
+  const mem = d.members ? (d.members.length ? d.members.map(m => { const st = STUDENTS.find(s => String(s.id) === String(m.id)); return `<div class="pm-row"><span>${esc(st ? (st.nickname || st.name) : m.nick)}${currentStudent && String(m.id) === String(currentStudent.id) ? '(あなた)' : ''}</span><b>${m.dmg.toLocaleString()}</b></div>`; }).join('') : '<div class="sub">記録なし</div>') : '<div class="sub">この敵の討伐メンバーは記録されていません(記録は10月26日以降に倒した敵から)</div>';
+  document.getElementById('pm-sheet-body').innerHTML = `<div class="dex-card ${String(d.type).indexOf('mob') !== 0 ? 'boss' : ''}" style="max-width:150px;margin:0 auto 8px;cursor:default"><div class="art">${dexArt(d)}</div></div>
+    <h3 style="text-align:center">${esc(d.name)}</h3>
+    <div class="sub" style="text-align:center">No.${d.no} ・ Lv${d.level} ・ HP ${Number(d.hp).toLocaleString()}${dt ? ` ・ ${dt.getMonth() + 1}/${dt.getDate()} 討伐` : ''}</div>
+    <div class="pm-row"><span>👑 とどめを刺した英雄</span><b style="font-family:inherit">${esc(d.hero || '—')}</b></div>
+    ${d.treasure ? `<div class="pm-row"><span>🎁 宝</span><span>${esc(d.treasure)}</span></div>` : ''}
+    <div style="margin-top:8px;font-size:12px;color:var(--gold)">⚔ 討伐した仲間(与えたダメージ)</div>${mem}
+    <button class="pm-close" onclick="renderDex()">← 図鑑にもどる</button>`;
+}
+
 /* 召喚の演出は summon.html(全画面)で再生する。魔法陣は来た人数の数だけ円が重なる */
 /* 今日自習室に来た子だけ:今週の召喚をその場で見て帰れる(ダメージなし・記録なし) */
 async function previewSummon(){
