@@ -210,6 +210,8 @@ function reset(){
 function intro(n, name){ n = CFG.n || n; txt('t1', `${CFG.when||''}自習室の仲間 ${n}人の力で…`); $('t2').style.fontSize = name.length >= 8 ? '21px' : ''; at(600, ()=>txt('t2', `${name} を召喚！`)); }
 function ending(move, dmg, eff, d0){ if(CFG.dmg != null) dmg = CFG.dmg; if(CFG.eff != null && eff) eff = CFG.eff;
   at(d0+3600, ()=>parent.postMessage({mqSummon:'done'}, '*'));
+  // 自習室の「召喚して帰る」:ダメージは出さず、月曜日の発動を予告する
+  if (CFG.preview) { at(d0, ()=>txt('t3', move)); at(d0+300, ()=>{ const e=$('dmg'); e.style.fontSize='22px'; e.textContent='この力は月曜日、ボスに放たれる！'; e.classList.add('on'); }); at(d0+1500, ()=>$('hint').textContent='タップでとじる'); return; }
   at(d0, ()=>txt('t3', move)); at(d0+200, ()=>countUp(dmg, 1100)); if(eff) at(d0+1400, ()=>txt('eff', '✨ '+eff));
   at(d0+1500, ()=>$('hint').textContent='タップでとじる');
 }

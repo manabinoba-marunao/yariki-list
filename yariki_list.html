@@ -4999,7 +4999,8 @@ function renderSummon(){
     <div class="summon-ladder">${ladder}</div>
     <div class="summon-note" style="margin:0 0 6px;font-size:13px;color:#fff">今週 <b>${r.n}</b>人・<b>${Math.floor(r.minutes/60)}</b>時間${r.minutes%60 ? (r.minutes%60) + '分' : ''}${t ? `　→ ${t.icon}<b>${t.name}</b> を召喚できる！` : ''}</div>
     ${r.n ? `<div class="summon-names">${r.people.map(p => `<span class="${p.nebari ? 'nb' : ''}">${p.nebari ? '🔥' : ''}${esc(p.name)} <b>${hm(p.min)}</b></span>`).join('')}</div>` : ''}
-    <button class="summon-btn" disabled>${r.n ? `🌙 来週の月曜に、自動で召喚されるよ！` : '今週はまだだれも来ていない…自習室でQRチェックインしよう'}</button>
+    ${t && currentStudent && roomTodayIds().has(String(currentStudent.id)) ? `<button class="summon-btn" onclick="previewSummon()">${t.icon} ${t.name}を召喚して帰る！</button><div class="summon-note" style="margin-top:4px">今日来たあなたは、いまの召喚獣を見られるよ(ボスへの攻撃は月曜日)</div>` : ''}
+    <button class="summon-btn" disabled style="margin-top:6px">${r.n ? `🌙 来週の月曜に、自動で召喚されるよ！` : '今週はまだだれも来ていない…自習室でQRチェックインしよう'}</button>
     ${lastHtml}
     <div class="summon-note">${nxt ? `あと<b>${nxt.min - r.n}</b>人来れば ${nxt.icon}<b>${nxt.name}</b>！<br>` : ''}みんなの自習時間が長いほど、召喚獣は強くなる<br>🔥 ねばりボーナス:1日2時間をこえた分は1.5倍(4時間まで)。最後までいる人が召喚獣を強くする！</div>`;
 }
@@ -5056,7 +5057,14 @@ function replaySummon(ws, eff){
   summonFx(t, Number(m[2]) || 0, Number(log.damage) || 0, eff || (t.effect === 'cure' ? '来た仲間はみんな元気になった！' : ''), `${md(ws)}〜${md(sdAdd(ws, 6))} の`);
 }
 /* 召喚の演出は summon.html(全画面)で再生する。魔法陣は来た人数の数だけ円が重なる */
-function summonFx(t, n, dmg, eff, when){
+/* 今日自習室に来た子だけ:今週の召喚をその場で見て帰れる(ダメージなし・記録なし) */
+async function previewSummon(){
+  await loadVisits();
+  const today = jstToday(), ws = weekStartOf(today), r = roomRange(ws, today), t = summonTier(r.n);
+  if (!t) { showToast('今週はまだ召喚できないよ'); return; }
+  summonFx(t, r.n, null, '', '今週の', { preview: true });
+}
+function summonFx(t, n, dmg, eff, when, opt){
   const old = document.getElementById('summon-fx'); if (old) old.remove();
   const el = document.createElement('div'); el.id = 'summon-fx';
   el.style.cssText = 'position:fixed;inset:0;z-index:400;background:#03020f';
@@ -5064,7 +5072,7 @@ function summonFx(t, n, dmg, eff, when){
   fr.style.cssText = 'border:0;width:100%;height:100%;display:block;background:#03020f';
   el.appendChild(fr); document.body.appendChild(el);
   const boss = (typeof yarikiBossArt === 'function') ? yarikiBossArt() : {};
-  const msg = { mqSummon:'play', k:t.key, n, dmg, eff: eff || (t.effect === 'cure' ? '来た仲間はみんな元気になった！' : ''), when, boss };
+  const msg = { mqSummon:'play', k:t.key, n, dmg, eff: eff || (t.effect === 'cure' ? '来た仲間はみんな元気になった！' : ''), when, boss, preview: !!(opt && opt.preview) };
   let sent = false; const send = () => { if (!sent) { sent = true; try { fr.contentWindow.postMessage(msg, '*'); } catch(e){} } };
   const close = () => { el.remove(); removeEventListener('message', onMsg); };
   const onMsg = e => { if (e.source !== fr.contentWindow) return; const d = e.data || {}; if (d.mqSummon === 'ready') send(); if (d.mqSummon === 'close' || d.mqSummon === 'done') close(); };
