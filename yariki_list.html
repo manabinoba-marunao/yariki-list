@@ -5080,7 +5080,8 @@ function renderSummon(){
   const nxt = SUMMONS.slice().reverse().find(x => x.min > r.n);
   const ladder = SUMMONS.slice().reverse().map(x => `<div class="sl ${r.n >= x.min ? 'got' : ''} ${t && t.key === x.key ? 'now' : ''}"><i style="${x.key==='bigowl'?'font-size:26px':''}">${x.icon}</i>${x.name}<br>${x.min}人〜</div>`).join('');
   const last = summonLogFor(sdAdd(ws, -7));
-  const lastHtml = last ? `<button class="summon-btn" style="margin-top:8px;background:#2a2a4a;box-shadow:none;font-size:12px" onclick="replaySummon('${sdAdd(ws, -7)}')">▶ 先週の召喚をもう一度見る</button>` : '';
+  // 月曜の召喚は1回しか見られない(レア感)。もう一度見るボタンは出さない
+  const lastHtml = last ? `<div class="summon-note" style="margin-top:6px">先週の召喚:${esc((/^自習室の召喚:(.+?)\(/.exec(last.nickname||'')||[])[1]||'')} が ${(Number(last.damage)||0).toLocaleString()} ダメージを与えた！</div>` : '';
   box.innerHTML = `<div class="summon-h"><b>🚪 今週の自習室の召喚</b><span>${md(ws)}〜${md(sdAdd(ws, 6))}</span></div>
     <div class="summon-ladder">${ladder}</div>
     <div class="summon-note" style="margin:0 0 6px;font-size:13px;color:#fff">今週 <b>${r.n}</b>人・<b>${Math.floor(r.minutes/60)}</b>時間${r.minutes%60 ? (r.minutes%60) + '分' : ''}${t ? `　→ ${t.icon}<b>${t.name}</b> を召喚できる！` : ''}</div>
