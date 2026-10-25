@@ -4915,8 +4915,8 @@ function roomBlock(){
    月曜に最初にだれかがアプリを開いたとき、先週の分が自動で発動。その週のうちに開いた全員に1回ずつ演出を見せる。
    威力 = 1週間の自習ポイント × 5 × 召喚獣の倍率(召喚獣ごとに上限:フクロウくん3千・巨大フクロウ6千・塾長1万・ロケット3万)。自習ポイント=自習時間(分)。1日2時間をこえた分は「ねばりボーナス」で1.5倍(1人1日4時間まで) */
 const SUMMONS = [
-  { min:8, key:'rocket',  icon:'🚀', name:'マル直羅針盤ロケット', mult:3,   cap:30000, move:'殻をつき破る！',           effect:'cure', effText:'来た仲間の状態異常がとけた！' },
-  { min:5, key:'teacher', icon:'🧑‍🏫', name:'塾長',                 mult:2,   cap:10000, move:'カメハメハ大王に放った塾長カメハメ波！', effect:'cure', effText:'来た仲間の状態異常がとけた！' },
+  { min:10, key:'rocket',  icon:'🚀', name:'マル直羅針盤ロケット', mult:3,   cap:30000, move:'殻をつき破る！',           effect:'cure', effText:'来た仲間の状態異常がとけた！' },
+  { min:8, key:'teacher', icon:'🧑‍🏫', name:'塾長',                 mult:2,   cap:10000, move:'カメハメハ大王に放った塾長カメハメ波！', effect:'cure', effText:'来た仲間の状態異常がとけた！' },
   { min:3, key:'bigowl',  icon:'🦉', name:'巨大フクロウくん',     mult:1.5, cap:6000,  move:'闇の暗殺者の 不苦労斬り！', effect:'' },
   { min:1, key:'owl',     icon:'🦉', name:'フクロウくん',         mult:1,   cap:3000,  move:'不苦労羽手裏剣！',         effect:'' },
 ];
