@@ -410,8 +410,8 @@ td.td-name { padding-left: 16px; text-align: left; }
 .summon-h { display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-family:var(--font-game); }
 .summon-h b { color:var(--gold); font-size:13px; letter-spacing:.06em; }
 .summon-h span { font-size:11px; color:#b8b8e0; }
-.summon-ladder { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin:10px 0 8px; }
-.sl { text-align:center; padding:6px 2px; border-radius:8px; border:1px solid #3a3a6a; color:#8888bb; font-size:9.5px; line-height:1.35; letter-spacing:-.03em; word-break:keep-all; }
+.summon-ladder { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; margin:10px 0 8px; }
+.sl { overflow-wrap:anywhere; word-break:break-all; text-align:center; padding:6px 2px; border-radius:8px; border:1px solid #3a3a6a; color:#8888bb; font-size:9.5px; line-height:1.35; letter-spacing:-.03em; word-break:keep-all; }
 .sl i { display:block; font-style:normal; font-size:20px; filter:grayscale(1); opacity:.5; }
 .sl.got { border-color:var(--gold); color:#fff; background:rgba(255,215,0,.08); }
 .sl.got i { filter:none; opacity:1; }
@@ -426,7 +426,10 @@ td.td-name { padding-left: 16px; text-align: left; }
 .summon-note { font-size:11px; color:#9a9ac8; text-align:center; margin-top:6px; line-height:1.6; }
 .log-summon { color:#7fe0ff; text-shadow:0 0 6px #3fb8ff; }
 /* マルとバッジ */
-.pm-bdg { font-size:12px; line-height:1; margin-top:2px; min-height:12px; letter-spacing:-1px; }
+.pm-medal { position:absolute; left:50%; top:30px; transform:translateX(-50%); z-index:3; line-height:0; filter:drop-shadow(0 1px 2px rgba(0,0,0,.6)); }
+.pm-medal svg { display:block; }
+.pm { padding-bottom:6px; }
+.pm-name { margin-top:14px !important; }
 .pm-room { position:absolute; right:4px; top:22px; font-size:12px; }
 .bd-sec { margin-top:10px; padding-top:10px; border-top:1px solid var(--rpg-border); }
 .bd-maru { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; font-size:12px; color:#b8b8e0; }
@@ -436,7 +439,8 @@ td.td-name { padding-left: 16px; text-align: left; }
 .bd-item { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:8px; background:rgba(255,255,255,.04); border:1px solid #3a3a6a; font-size:12px; }
 .bd-item.t3 { border-color:#d4a514; background:rgba(242,201,76,.10); }
 .bd-item.t4 { border-color:#8b6bff; background:rgba(139,107,255,.12); }
-.bd-item .ic { font-size:20px; width:24px; text-align:center; }
+.bd-item .ic { width:34px; text-align:center; line-height:0; }
+.bd-item .ic svg { display:inline-block; }
 .bd-item .nm { flex:1; color:#fff; }
 .bd-item .nm small { display:block; color:#8888bb; font-size:10px; }
 .bd-item .eq { padding:5px 10px; border-radius:8px; border:1px solid var(--gold); background:transparent; color:var(--gold); font-size:11px; font-family:var(--font-game); cursor:pointer; }
@@ -2711,17 +2715,16 @@ function renderParty() {
     const fx = def && sm.status !== 'pumpkin' ? `<div class="pm-fx">${def.icon}</div>` : '';
     return `<button class="pm ${def ? 'st-' + sm.status : ''} ${p.id === myId ? 'me' : ''}" onclick="openMember('${p.id}')">
       ${def ? '<span class="pm-bubble">たすけて！</span>' : ''}${fx}
-      <div class="pm-body"><span class="pm-face">${face}</span><span class="pm-wpn ${w.cls}">${weaponIcon(w, {held:true})}</span></div>
+      <div class="pm-body"><span class="pm-face">${face}</span><span class="pm-wpn ${w.cls}">${weaponIcon(w, {held:true})}</span>${(typeof equippedBadges === 'function' && equippedBadges(p.id)[0]) ? `<span class="pm-medal">${medalSVG(equippedBadges(p.id)[0], 20)}</span>` : ''}</div>
       ${typeof roomTodayIds === 'function' && roomTodayIds().has(p.id) ? '<span class="pm-room" title="今日 自習室に来た">🚪</span>' : ''}
       <div class="pm-name">${esc(name)}</div>
-      <div class="pm-bdg">${typeof equippedBadges === 'function' ? equippedBadges(p.id).map(b => b.icon).join('') : ''}</div>
       <div class="pm-dmg ${total ? '' : 'zero'}">${total ? total.toLocaleString() : '—'}</div>
     </button>`;
   }).join('');
   const note = document.getElementById('party-note');
   if (note) {
     const myCandies = MY_STATUS ? (Number(MY_STATUS.candies) || 0) : 0;
-    note.innerHTML = myId ? `タップすると、ダメージ・状態・マルとバッジが見られるよ　あなたのお菓子：🍬 × ${myCandies}` : 'タップすると、ダメージ・状態・マルとバッジが見られるよ';
+    note.innerHTML = myId ? `タップすると、ダメージ・状態・マルとメダルが見られるよ　あなたのお菓子：🍬 × ${myCandies}` : 'タップすると、ダメージ・状態・マルとメダルが見られるよ';
   }
 }
 
@@ -4975,16 +4978,16 @@ function renderSummon(){
   box.style.display = 'block';
   const today = jstToday(), ws = weekStartOf(today), r = roomRange(ws, today), t = summonTier(r.n), power = summonPower(r);
   const nxt = SUMMONS.slice().reverse().find(x => x.min > r.n);
-  const ladder = SUMMONS.slice().reverse().map(x => `<div class="sl ${r.n >= x.min ? 'got' : ''} ${t && t.key === x.key ? 'now' : ''}"><i style="${x.key==='bigowl'?'font-size:26px':''}">${x.icon}</i>${x.name}<br>${x.min}人〜<br><span style="opacity:.8">目安${x.cap >= 10000 ? (x.cap/10000) + '万' : x.cap.toLocaleString()}</span></div>`).join('');
+  const ladder = SUMMONS.slice().reverse().map(x => `<div class="sl ${r.n >= x.min ? 'got' : ''} ${t && t.key === x.key ? 'now' : ''}"><i style="${x.key==='bigowl'?'font-size:26px':''}">${x.icon}</i>${x.name}<br>${x.min}人〜</div>`).join('');
   const last = summonLogFor(sdAdd(ws, -7));
-  const lastHtml = last ? `<button class="summon-btn" style="margin-top:8px;background:#2a2a4a;box-shadow:none;font-size:12px" onclick="replaySummon('${sdAdd(ws, -7)}')">▶ 先週の召喚をもう一度見る(${(Number(last.damage)||0).toLocaleString()}ダメージ)</button>` : '';
+  const lastHtml = last ? `<button class="summon-btn" style="margin-top:8px;background:#2a2a4a;box-shadow:none;font-size:12px" onclick="replaySummon('${sdAdd(ws, -7)}')">▶ 先週の召喚をもう一度見る</button>` : '';
   box.innerHTML = `<div class="summon-h"><b>🚪 今週の自習室の召喚</b><span>${md(ws)}〜${md(sdAdd(ws, 6))}</span></div>
     <div class="summon-ladder">${ladder}</div>
-    <div class="summon-note" style="margin:0 0 6px;font-size:13px;color:#fff">今週 <b>${r.n}</b>人・<b>${Math.floor(r.minutes/60)}</b>時間${r.minutes%60 ? (r.minutes%60) + '分' : ''}${t ? `　→ ${t.icon}<b>${t.name}</b> <b style="color:#7fe0ff">${power.toLocaleString()}</b>ダメージ${power >= t.cap ? '<span style="color:#ffd700">(目安こえ！)</span>' : ''}` : ''}</div>
+    <div class="summon-note" style="margin:0 0 6px;font-size:13px;color:#fff">今週 <b>${r.n}</b>人・<b>${Math.floor(r.minutes/60)}</b>時間${r.minutes%60 ? (r.minutes%60) + '分' : ''}${t ? `　→ ${t.icon}<b>${t.name}</b> を召喚できる！` : ''}</div>
     ${r.n ? `<div class="summon-names">${r.people.map(p => `<span class="${p.nebari ? 'nb' : ''}">${p.nebari ? '🔥' : ''}${esc(p.name)} <b>${hm(p.min)}</b></span>`).join('')}</div>` : ''}
     <button class="summon-btn" disabled>${r.n ? `🌙 来週の月曜に、自動で召喚されるよ！` : '今週はまだだれも来ていない…自習室でQRチェックインしよう'}</button>
     ${lastHtml}
-    <div class="summon-note">${nxt ? `あと<b>${nxt.min - r.n}</b>人来れば ${nxt.icon}<b>${nxt.name}</b>(×${nxt.mult})！　` : ''}自習1分 = ${SUMMON_PER_MIN}ダメージ × 召喚獣の倍率<br>🔥 ねばりボーナス:1日2時間をこえた分は1.5倍(4時間まで)。最後までいる人が召喚獣を強くする！</div>`;
+    <div class="summon-note">${nxt ? `あと<b>${nxt.min - r.n}</b>人来れば ${nxt.icon}<b>${nxt.name}</b>！<br>` : ''}みんなの自習時間が長いほど、召喚獣は強くなる<br>🔥 ねばりボーナス:1日2時間をこえた分は1.5倍(4時間まで)。最後までいる人が召喚獣を強くする！</div>`;
 }
 /* 先週の分を発動(月曜に最初に開いた人の端末で1回だけ)して、まだ見ていない人には演出を見せる */
 let SUMMON_CHECKING = false;
@@ -5056,8 +5059,43 @@ function summonFx(t, n, dmg, eff, when){
   setTimeout(() => { if (document.getElementById('summon-fx') === el) close(); }, 20000);   // 念のため
 }
 
-/* マルとバッジ:マル単で区分(英検5級など)のセットをマルにするとバッジ。自分のキャラに3つまで装備できる */
-const EQUIP_MAX = 3;
+/* メダル:級・年度などが読めるメダル(金・銀・銅・マル)。リボンの色は区分ごと */
+const MEDAL_METAL = {
+  3:['#fff6c2','#f2c94c','#b8860b','#7a5a08'], 2:['#ffffff','#d5dce4','#8d99a6','#56616d'],
+  1:['#ffe0c2','#d48a4c','#8a4f1f','#5e3210'], 4:['#ffe1e8','#ff6b8a','#c0284f','#7a1030'] };
+function medalInfo(b){
+  const id = String(b.id || '');
+  if (id.startsWith('m:')) return { top:'マル', big:id.slice(2), rib:['#e60012','#ffffff'] };
+  const [subj, course, ...g] = id.slice(2).split('/'); const grp = g.join('/');
+  if (course === '英検' || course === '並び替え') {
+    const m = /英検(準?\d)級(プラス)?/.exec(grp) || [];
+    const big = m[1] ? m[1] + (m[2] ? '+' : '級') : (/共通テスト/.test(grp) ? '共テ' : grp.slice(0,3));
+    return { top: course === '並び替え' ? '並び替え' : '英検', big: big.replace(/^準(\d)級$/, '準$1'), rib: course === '並び替え' ? ['#6b4bd6','#ffd700'] : ['#2a6fd6','#e60012'] };
+  }
+  if (course === '共通テスト') { const y = /(\d{4})年度/.exec(grp); return { top:'共通テスト', big: y ? y[1] : '創作', rib:['#00a03c','#acc800'] }; }
+  if (/教科書/.test(grp)) return { top:'教科書', big: grp.replace(/\s*教科書.*/, ''), rib:['#ee6c00','#ffd700'] };
+  if (/まいにち英単語/.test(grp)) return { top:'まい単3000', big: /小学/.test(grp) ? '小学' : '中学', rib:['#e85d9a','#ffd1e3'] };
+  if (/必須/.test(grp)) return { top:'必須単語', big:'500', rib:['#0e8a8a','#9fe7e7'] };
+  if (/不規則/.test(grp)) return { top:'不規則', big:'動詞', rib:['#0e8a8a','#9fe7e7'] };
+  if (subj && subj !== '英語') return { top: subj, big: grp.replace(/\s/g,'').slice(0,3), rib:['#6b4bd6','#b9a2ff'] };
+  return { top: course || '', big: grp.slice(0,3), rib:['#6b4bd6','#b9a2ff'] };
+}
+let MEDAL_N = 0;
+function medalSVG(b, px, noRibbon){
+  const t = MEDAL_METAL[b.tier] || MEDAL_METAL[1], I = medalInfo(b), u = 'md' + (++MEDAL_N);
+  const big = String(I.big), bs = big.length >= 4 ? 10.5 : big.length === 3 ? 12 : 15, top = String(I.top), ts = top.length >= 5 ? 4.8 : 6;
+  const rib = noRibbon ? '' : `<polygon points="13,0 25,0 33,38 21,38" fill="${I.rib[0]}"/><polygon points="35,0 47,0 39,38 27,38" fill="${I.rib[1]}"/><polygon points="13,0 25,0 26,5 14,5" fill="rgba(0,0,0,.18)"/><polygon points="35,0 47,0 46,5 34,5" fill="rgba(0,0,0,.18)"/>`;
+  const star = b.tier === 3 ? `<path d="M47 36 l1.6 3.6 3.6 1.6 -3.6 1.6 -1.6 3.6 -1.6 -3.6 -3.6 -1.6 3.6 -1.6z" fill="#fff"/>` : '';
+  return `<svg class="medal" viewBox="0 ${noRibbon ? 30 : 0} 60 ${noRibbon ? 50 : 80}" width="${px}" height="${Math.round(px * (noRibbon ? 50 : 80) / 60)}" xmlns="http://www.w3.org/2000/svg" aria-label="${top}${big}">
+    <defs><radialGradient id="${u}" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="${t[0]}"/><stop offset=".45" stop-color="${t[1]}"/><stop offset="1" stop-color="${t[2]}"/></radialGradient></defs>
+    ${rib}<circle cx="30" cy="55" r="22" fill="url(#${u})" stroke="${t[3]}" stroke-width="2"/>
+    <circle cx="30" cy="55" r="17.5" fill="none" stroke="${t[3]}" stroke-opacity=".55" stroke-width="1" stroke-dasharray="2 1.5"/>
+    <text x="30" y="45" text-anchor="middle" font-size="${ts}" font-weight="800" fill="${t[3]}" font-family="'Hiragino Sans','Noto Sans JP',sans-serif">${top}</text>
+    <text x="30" y="${63 - (15 - bs) * .2}" text-anchor="middle" font-size="${bs}" font-weight="900" fill="${t[3]}" font-family="'Hiragino Sans','Noto Sans JP',sans-serif">${big}</text>${star}</svg>`;
+}
+
+/* マルとバッジ:マル単で区分(英検5級など)のセットをマルにするとメダル。自分のキャラの首に1つかけられる */
+const EQUIP_MAX = 1;
 function badgesOf(id){ const m = MQB[String(id)]; return m && Array.isArray(m.badges) ? m.badges : []; }
 function equippedBadges(id){
   const m = MQB[String(id)]; if (!m) return [];
@@ -5067,15 +5105,15 @@ function equippedBadges(id){
 }
 function badgeSection(id){
   const m = MQB[String(id)], mine = currentStudent && String(currentStudent.id) === String(id);
-  if (!m) return `<div class="bd-sec"><div class="bd-empty">🏅 マルとバッジ:まだマル単の記録が届いていないよ。${mine ? 'マル単でテストをすると、ここに出るよ！' : ''}</div></div>`;
+  if (!m) return `<div class="bd-sec"><div class="bd-empty">🏅 マルとメダル:まだマル単の記録が届いていないよ。${mine ? 'マル単でテストをすると、ここに出るよ！' : ''}</div></div>`;
   const all = badgesOf(id), eq = new Set(equippedBadges(id).map(b => b.id));
   const subj = Object.entries(m.subj || {}).map(([k, n]) => `${esc(k)} ${n}`).join('・');
-  const list = all.length ? all.map(b => `<div class="bd-item t${b.tier}"><span class="ic">${b.icon}</span><span class="nm">${esc(b.name)}<small>${b.tier === 4 ? `マル ${b.total}個 達成` : `${b.done}/${b.total} セットがマル${b.tier === 3 ? '(ぜんぶ！)' : ''}`}</small></span>${
-      mine ? `<button class="eq ${eq.has(b.id) ? 'on' : ''}" onclick="toggleEquip('${esc(b.id)}')">${eq.has(b.id) ? '装備中' : '装備する'}</button>` : (eq.has(b.id) ? '<span class="eqd">装備中</span>' : '')}</div>`).join('')
-    : `<div class="bd-empty">区分(英検5級など)のセットを3割マルで🥉、6割で🥈、ぜんぶで🥇のバッジ！</div>`;
+  const list = all.length ? all.map(b => `<div class="bd-item t${b.tier}"><span class="ic">${medalSVG(b, 30)}</span><span class="nm">${esc(b.name)}<small>${b.tier === 4 ? `マル ${b.total}個 達成` : `${b.done}/${b.total} セットがマル${b.tier === 3 ? '(ぜんぶ！)' : ''}`}</small></span>${
+      mine ? `<button class="eq ${eq.has(b.id) ? 'on' : ''}" onclick="toggleEquip('${esc(b.id)}')">${eq.has(b.id) ? '首にかけ中' : 'かける'}</button>` : (eq.has(b.id) ? '<span class="eqd">装備中</span>' : '')}</div>`).join('')
+    : `<div class="bd-empty">区分(英検5級など)のセットを3割マルで銅、6割で銀、ぜんぶで金のメダル！</div>`;
   return `<div class="bd-sec">
     <div class="bd-maru"><span class="mr">マル</span><b>${Number(m.maru) || 0}</b>個${subj ? `<span>(${subj})</span>` : ''}</div>
-    ${mine && all.length ? `<div class="bd-empty" style="margin-top:4px">バッジは${EQUIP_MAX}つまで装備できるよ。装備すると仲間の画面で名前の下に出る！</div>` : ''}
+    ${mine && all.length ? `<div class="bd-empty" style="margin-top:4px">メダルを1つ選んで首にかけよう。仲間の画面でキャラの首に出るよ！</div>` : ''}
     <div class="bd-list">${list}</div></div>`;
 }
 async function toggleEquip(bid){
@@ -5083,7 +5121,7 @@ async function toggleEquip(bid){
   const id = String(currentStudent.id), m = MQB[id]; if (!m) return;
   let eq = Array.isArray(m.equip) ? m.equip.slice() : equippedBadges(id).map(b => b.id);
   if (eq.includes(bid)) eq = eq.filter(x => x !== bid);
-  else { if (eq.length >= EQUIP_MAX) { showToast(`装備できるのは${EQUIP_MAX}つまで。どれかをはずしてね`); return; } eq.push(bid); }
+  else eq = [bid];   // メダルは1つだけ(かけかえ)
   m.equip = eq; m.at = Date.now();
   openMember(id); renderParty();
   try {
@@ -5094,7 +5132,7 @@ async function toggleEquip(bid){
     MQB[id] = obj.mq;
     if (typeof sdSid !== 'undefined' && String(sdSid) === id && SD) { SD.mq = obj.mq; try { localStorage.setItem(sdKeyName(sdSid), JSON.stringify(SD)); } catch(e) {} }
     const w = await api('saveStudy', { studentId: currentStudent.id, data: JSON.stringify(obj) });
-    showToast(w && w.ok ? '装備を変えたよ！' : '保存できませんでした(通信エラー)');
+    showToast(w && w.ok ? 'メダルをかけかえたよ！' : '保存できませんでした(通信エラー)');
   } catch(e) { showToast('保存できませんでした(通信エラー)'); }
 }
 </script>
