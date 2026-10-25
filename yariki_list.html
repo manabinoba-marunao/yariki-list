@@ -418,6 +418,9 @@ td.td-name { padding-left: 16px; text-align: left; }
 .sl.now { box-shadow:0 0 10px rgba(255,215,0,.45); }
 .summon-names { display:flex; flex-wrap:wrap; gap:4px; justify-content:center; margin:2px 0 8px; }
 .summon-names span { font-size:11px; padding:1px 8px; border-radius:999px; background:rgba(255,255,255,.08); color:#e8e6ff; }
+.summon-names span b { font-weight:400; color:#b8b8e0; font-size:10px; }
+.summon-names span.nb { background:rgba(255,120,40,.18); border:1px solid rgba(255,150,60,.6); }
+.summon-names span.nb b { color:#ffc48a; }
 .summon-btn { width:100%; padding:12px; border:none; border-radius:10px; background:linear-gradient(135deg,#7b5cff,#c04bff); color:#fff; font-family:var(--font-game); font-size:15px; font-weight:700; letter-spacing:.04em; box-shadow:0 0 14px rgba(160,90,255,.5); cursor:pointer; }
 .summon-btn:disabled { background:#2a2a4a; box-shadow:none; color:#8888bb; font-size:12px; }
 .summon-note { font-size:11px; color:#9a9ac8; text-align:center; margin-top:6px; line-height:1.6; }
@@ -4870,14 +4873,16 @@ function roomBlock(){
 /* ==== MAL QUEST:自習室の召喚 と マルのバッジ ==== */
 /* 召喚:1週間(月〜日)に自習室に来た人数で召喚獣が決まり、自習時間で威力が決まる。
    月曜に最初にだれかがアプリを開いたとき、先週の分が自動で発動。その週のうちに開いた全員に1回ずつ演出を見せる。
-   威力 = 1週間の自習時間(分。1人1日2時間まで)× 5 × 召喚獣の倍率 */
+   威力 = 1週間の自習ポイント × 5 × 召喚獣の倍率。自習ポイント=自習時間(分)。1日2時間をこえた分は「ねばりボーナス」で1.5倍(1人1日4時間まで) */
 const SUMMONS = [
   { min:8, key:'rocket',  icon:'🚀', name:'羅針盤ロケット', mult:3,   move:'殻をつき破る！',     effect:'cure', effText:'来た仲間の状態異常がとけた！' },
   { min:5, key:'teacher', icon:'🧑‍🏫', name:'塾長',         mult:2,   move:'ナイショの話',       effect:'cure', effText:'来た仲間の状態異常がとけた！' },
   { min:3, key:'bigowl',  icon:'🦉', name:'巨大フクロウ',   mult:1.5, move:'大風！',             effect:'' },
   { min:1, key:'owl',     icon:'🦉', name:'フクロウくん',   mult:1,   move:'はばたき',           effect:'' },
 ];
-const SUMMON_CAP_MIN = 120;     // 1人1日あたり数える上限(分)
+const SUMMON_CAP_MIN = 240;     // 1人1日あたり数える上限(分)
+const NEBARI_FROM = 120;        // この分数をこえた分は ねばりボーナス
+const NEBARI_MULT = 1.5;
 const SUMMON_PER_MIN = 5;       // 1分あたりのダメージ(HP12万に合わせて調整)
 const SUMMON_NO_OUT_MIN = 60;   // 退室のQRを読まずに帰った日は60分として数える
 let MQX_AT = 0, MQX_BUSY = false;
@@ -4903,10 +4908,12 @@ function roomRange(from, to){
     if (!m && !v.out) m = v.date === today && v.inMs ? Math.max(0, (Date.now() - Number(v.inMs)) / 6e4) : (v.date < today ? SUMMON_NO_OUT_MIN : 0);
     const key = k + '|' + v.date; byDay[key] = (byDay[key] || 0) + m; names[k] ||= v.name;
   });
-  const per = {};
-  Object.entries(byDay).forEach(([key, m]) => { const k = key.split('|')[0]; per[k] = (per[k] || 0) + Math.min(SUMMON_CAP_MIN, Math.round(m)); });
-  const people = Object.keys(names).map(k => ({ name: names[k], min: per[k] || 0 }));
-  return { n: people.length, people, minutes: people.reduce((a, p) => a + p.min, 0) };
+  const per = {}, pts = {}, neb = {};
+  Object.entries(byDay).forEach(([key, m0]) => { const k = key.split('|')[0], m = Math.min(SUMMON_CAP_MIN, Math.round(m0));
+    per[k] = (per[k] || 0) + m; pts[k] = (pts[k] || 0) + Math.min(m, NEBARI_FROM) + Math.max(0, m - NEBARI_FROM) * NEBARI_MULT;
+    if (m > NEBARI_FROM) neb[k] = true; });
+  const people = Object.keys(names).map(k => ({ name: names[k], min: per[k] || 0, pts: pts[k] || 0, nebari: !!neb[k] })).sort((a, b) => b.min - a.min);
+  return { n: people.length, people, minutes: people.reduce((a, p) => a + p.min, 0), pts: people.reduce((a, p) => a + p.pts, 0) };
 }
 function roomToday(){ const t = jstToday(); return roomRange(t, t); }
 function idsOf(r){
@@ -4917,7 +4924,8 @@ function idsOf(r){
 }
 function roomTodayIds(){ return idsOf(roomToday()); }
 function summonTier(n){ return SUMMONS.find(t => n >= t.min) || null; }
-function summonPower(r){ const t = summonTier(r.n); return t ? Math.round(r.minutes * SUMMON_PER_MIN * t.mult) : 0; }
+function summonPower(r){ const t = summonTier(r.n); return t ? Math.round((r.pts ?? r.minutes) * SUMMON_PER_MIN * t.mult) : 0; }
+function hm(m){ m = Math.round(m); return m >= 60 ? `${Math.floor(m/60)}時間${m%60 ? m%60 + '分' : ''}` : `${m}分`; }
 function summonLogFor(ws){ return (DAMAGE_LOG || []).find(l => String(l.nickname || l.name || '').includes('[' + ws + ']')); }
 function renderSummon(){
   const box = document.getElementById('summon-wrap'); if (!box) return;
@@ -4931,10 +4939,10 @@ function renderSummon(){
   box.innerHTML = `<div class="summon-h"><b>🚪 今週の自習室の召喚</b><span>${md(ws)}〜${md(sdAdd(ws, 6))}</span></div>
     <div class="summon-ladder">${ladder}</div>
     <div class="summon-note" style="margin:0 0 6px;font-size:13px;color:#fff">今週 <b>${r.n}</b>人・<b>${Math.floor(r.minutes/60)}</b>時間${r.minutes%60 ? (r.minutes%60) + '分' : ''}${t ? `　→ ${t.icon}<b>${t.name}</b> <b style="color:#7fe0ff">${power.toLocaleString()}</b>ダメージ` : ''}</div>
-    ${r.n ? `<div class="summon-names">${r.people.map(p => `<span>${esc(p.name)}</span>`).join('')}</div>` : ''}
+    ${r.n ? `<div class="summon-names">${r.people.map(p => `<span class="${p.nebari ? 'nb' : ''}">${p.nebari ? '🔥' : ''}${esc(p.name)} <b>${hm(p.min)}</b></span>`).join('')}</div>` : ''}
     <button class="summon-btn" disabled>${r.n ? `🌙 来週の月曜に、自動で召喚されるよ！` : '今週はまだだれも来ていない…自習室でQRチェックインしよう'}</button>
     ${lastHtml}
-    <div class="summon-note">${nxt ? `あと<b>${nxt.min - r.n}</b>人来れば ${nxt.icon}<b>${nxt.name}</b>(×${nxt.mult})！　` : ''}自習1分 = ${SUMMON_PER_MIN}ダメージ(1人1日2時間まで)× 召喚獣の倍率</div>`;
+    <div class="summon-note">${nxt ? `あと<b>${nxt.min - r.n}</b>人来れば ${nxt.icon}<b>${nxt.name}</b>(×${nxt.mult})！　` : ''}自習1分 = ${SUMMON_PER_MIN}ダメージ × 召喚獣の倍率<br>🔥 ねばりボーナス:1日2時間をこえた分は1.5倍(4時間まで)。最後までいる人が召喚獣を強くする！</div>`;
 }
 /* 先週の分を発動(月曜に最初に開いた人の端末で1回だけ)して、まだ見ていない人には演出を見せる */
 let SUMMON_CHECKING = false;
