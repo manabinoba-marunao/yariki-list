@@ -4873,12 +4873,12 @@ function roomBlock(){
 /* ==== MAL QUEST:自習室の召喚 と マルのバッジ ==== */
 /* 召喚:1週間(月〜日)に自習室に来た人数で召喚獣が決まり、自習時間で威力が決まる。
    月曜に最初にだれかがアプリを開いたとき、先週の分が自動で発動。その週のうちに開いた全員に1回ずつ演出を見せる。
-   威力 = 1週間の自習ポイント × 5 × 召喚獣の倍率。自習ポイント=自習時間(分)。1日2時間をこえた分は「ねばりボーナス」で1.5倍(1人1日4時間まで) */
+   威力 = 1週間の自習ポイント × 5 × 召喚獣の倍率(召喚獣ごとに上限:フクロウくん3千・巨大フクロウ6千・塾長1万・ロケット3万)。自習ポイント=自習時間(分)。1日2時間をこえた分は「ねばりボーナス」で1.5倍(1人1日4時間まで) */
 const SUMMONS = [
-  { min:8, key:'rocket',  icon:'🚀', name:'羅針盤ロケット', mult:3,   move:'殻をつき破る！',     effect:'cure', effText:'来た仲間の状態異常がとけた！' },
-  { min:5, key:'teacher', icon:'🧑‍🏫', name:'塾長',         mult:2,   move:'ナイショの話',       effect:'cure', effText:'来た仲間の状態異常がとけた！' },
-  { min:3, key:'bigowl',  icon:'🦉', name:'巨大フクロウ',   mult:1.5, move:'大風！',             effect:'' },
-  { min:1, key:'owl',     icon:'🦉', name:'フクロウくん',   mult:1,   move:'はばたき',           effect:'' },
+  { min:8, key:'rocket',  icon:'🚀', name:'羅針盤ロケット', mult:3,   cap:30000, move:'殻をつき破る！',     effect:'cure', effText:'来た仲間の状態異常がとけた！' },
+  { min:5, key:'teacher', icon:'🧑‍🏫', name:'塾長',         mult:2,   cap:10000, move:'ナイショの話',       effect:'cure', effText:'来た仲間の状態異常がとけた！' },
+  { min:3, key:'bigowl',  icon:'🦉', name:'巨大フクロウ',   mult:1.5, cap:6000,  move:'大風！',             effect:'' },
+  { min:1, key:'owl',     icon:'🦉', name:'フクロウくん',   mult:1,   cap:3000,  move:'はばたき',           effect:'' },
 ];
 const SUMMON_CAP_MIN = 240;     // 1人1日あたり数える上限(分)
 const NEBARI_FROM = 120;        // この分数をこえた分は ねばりボーナス
@@ -4924,7 +4924,8 @@ function idsOf(r){
 }
 function roomTodayIds(){ return idsOf(roomToday()); }
 function summonTier(n){ return SUMMONS.find(t => n >= t.min) || null; }
-function summonPower(r){ const t = summonTier(r.n); return t ? Math.round((r.pts ?? r.minutes) * SUMMON_PER_MIN * t.mult) : 0; }
+function summonRaw(r){ const t = summonTier(r.n); return t ? Math.round((r.pts ?? r.minutes) * SUMMON_PER_MIN * t.mult) : 0; }
+function summonPower(r){ const t = summonTier(r.n); return t ? Math.min(t.cap || Infinity, summonRaw(r)) : 0; }   // 召喚獣ごとに上限あり
 function hm(m){ m = Math.round(m); return m >= 60 ? `${Math.floor(m/60)}時間${m%60 ? m%60 + '分' : ''}` : `${m}分`; }
 function summonLogFor(ws){ return (DAMAGE_LOG || []).find(l => String(l.nickname || l.name || '').includes('[' + ws + ']')); }
 function renderSummon(){
@@ -4933,12 +4934,12 @@ function renderSummon(){
   box.style.display = 'block';
   const today = jstToday(), ws = weekStartOf(today), r = roomRange(ws, today), t = summonTier(r.n), power = summonPower(r);
   const nxt = SUMMONS.slice().reverse().find(x => x.min > r.n);
-  const ladder = SUMMONS.slice().reverse().map(x => `<div class="sl ${r.n >= x.min ? 'got' : ''} ${t && t.key === x.key ? 'now' : ''}"><i style="${x.key==='bigowl'?'font-size:26px':''}">${x.icon}</i>${x.name}<br>${x.min}人〜</div>`).join('');
+  const ladder = SUMMONS.slice().reverse().map(x => `<div class="sl ${r.n >= x.min ? 'got' : ''} ${t && t.key === x.key ? 'now' : ''}"><i style="${x.key==='bigowl'?'font-size:26px':''}">${x.icon}</i>${x.name}<br>${x.min}人〜<br><span style="opacity:.8">最大${x.cap >= 10000 ? (x.cap/10000) + '万' : x.cap.toLocaleString()}</span></div>`).join('');
   const last = summonLogFor(sdAdd(ws, -7));
   const lastHtml = last ? `<button class="summon-btn" style="margin-top:8px;background:#2a2a4a;box-shadow:none;font-size:12px" onclick="replaySummon('${sdAdd(ws, -7)}')">▶ 先週の召喚をもう一度見る(${(Number(last.damage)||0).toLocaleString()}ダメージ)</button>` : '';
   box.innerHTML = `<div class="summon-h"><b>🚪 今週の自習室の召喚</b><span>${md(ws)}〜${md(sdAdd(ws, 6))}</span></div>
     <div class="summon-ladder">${ladder}</div>
-    <div class="summon-note" style="margin:0 0 6px;font-size:13px;color:#fff">今週 <b>${r.n}</b>人・<b>${Math.floor(r.minutes/60)}</b>時間${r.minutes%60 ? (r.minutes%60) + '分' : ''}${t ? `　→ ${t.icon}<b>${t.name}</b> <b style="color:#7fe0ff">${power.toLocaleString()}</b>ダメージ` : ''}</div>
+    <div class="summon-note" style="margin:0 0 6px;font-size:13px;color:#fff">今週 <b>${r.n}</b>人・<b>${Math.floor(r.minutes/60)}</b>時間${r.minutes%60 ? (r.minutes%60) + '分' : ''}${t ? `　→ ${t.icon}<b>${t.name}</b> <b style="color:#7fe0ff">${power.toLocaleString()}</b>ダメージ${power >= t.cap ? '<span style="color:#ffd700">(MAX！)</span>' : ''}` : ''}</div>
     ${r.n ? `<div class="summon-names">${r.people.map(p => `<span class="${p.nebari ? 'nb' : ''}">${p.nebari ? '🔥' : ''}${esc(p.name)} <b>${hm(p.min)}</b></span>`).join('')}</div>` : ''}
     <button class="summon-btn" disabled>${r.n ? `🌙 来週の月曜に、自動で召喚されるよ！` : '今週はまだだれも来ていない…自習室でQRチェックインしよう'}</button>
     ${lastHtml}
