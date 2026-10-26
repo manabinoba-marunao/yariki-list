@@ -457,6 +457,33 @@ td.td-name { padding-left: 16px; text-align: left; }
 .dex-row .who { flex:1; }
 .dex-row .c { font-family:var(--mono); color:var(--gold); white-space:nowrap; font-size:12px; }
 .dex-row.me { background:rgba(255,215,0,.08); border-radius:6px; }
+/* かぶりもの */
+.pm-hat { position:absolute; left:50%; top:-25px; transform:translateX(-50%); font-size:27px; line-height:1; z-index:2; pointer-events:none; filter:drop-shadow(0 2px 2px rgba(0,0,0,.65)); }
+.pm-hat.r2 { filter:drop-shadow(0 0 5px rgba(255,215,0,.85)) drop-shadow(0 2px 2px rgba(0,0,0,.6)); }
+.pm-hat.r3 { filter:drop-shadow(0 0 7px #ffd700) drop-shadow(0 0 3px #fff); animation:hat-glow 2s ease-in-out infinite; }
+@keyframes hat-glow { 0%,100%{transform:translateX(-50%) scale(1)} 50%{transform:translateX(-50%) translateY(-2px) scale(1.08)} }
+.pm.has-hat .pm-bubble { top:-14px; }
+.hat-tag { font-size:13px; margin-left:2px; }
+.hat-head { display:flex; align-items:center; gap:8px; font-size:12px; color:#b8b8e0; margin-bottom:4px; }
+.hat-head b { font-family:var(--mono); font-size:18px; color:var(--gold); }
+.hat-off { margin-left:auto; padding:4px 10px; border-radius:8px; border:1px solid #6a6a9a; background:transparent; color:#c8c8f0; font-size:11px; font-family:var(--font-game); cursor:pointer; }
+.hat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(92px,1fr)); gap:6px; margin-top:8px; max-height:38vh; overflow:auto; }
+.hat-cell { display:flex; flex-direction:column; align-items:center; gap:2px; padding:8px 4px; border-radius:10px; border:1px solid #3a3a6a; background:rgba(255,255,255,.04); color:#fff; font-family:var(--font-game); text-align:center; }
+.hat-cell .hi { font-size:28px; line-height:1.1; }
+.hat-cell .hn { font-size:11px; font-weight:700; }
+.hat-cell .hs { font-size:9.5px; color:#8888bb; line-height:1.35; }
+.hat-cell.got { cursor:pointer; }
+.hat-cell.got.r2 { border-color:#d4a514; }
+.hat-cell.got.r3 { border-color:#ffd700; background:rgba(255,215,0,.10); box-shadow:0 0 8px rgba(255,215,0,.35); }
+.hat-cell.got.on { background:var(--gold); border-color:var(--gold); }
+.hat-cell.got.on .hn, .hat-cell.got.on .hs { color:#1c1c38; }
+.hat-cell.lock .hi { filter:brightness(0); opacity:.35; }
+.hat-cell.lock .hn { color:#6a6a9a; }
+.hat-now { display:flex; align-items:center; gap:10px; }
+.hat-now b { color:#fff; font-size:13px; }
+.hat-now small { display:block; color:#8888bb; font-size:10.5px; line-height:1.5; }
+.hat-big { font-size:34px; line-height:1; }
+.hat-big.r3 { filter:drop-shadow(0 0 6px #ffd700); }
 /* マルとバッジ */
 .pm-medal { position:absolute; left:50%; top:30px; transform:translateX(-50%); z-index:3; line-height:0; filter:drop-shadow(0 1px 2px rgba(0,0,0,.6)); }
 .pm-medal svg { display:block; }
@@ -2758,9 +2785,10 @@ function renderParty() {
     const FACE_ST = { pumpkin:'🎃', bat:'🦇', cat:'🐈‍⬛', ghost:'👻' };   // 変身系は顔そのものが変わる
     const face = def && FACE_ST[sm.status] ? FACE_ST[sm.status] : esc(Array.from(name)[0] || '？');
     const fx = def && !FACE_ST[sm.status] ? `<div class="pm-fx">${def.icon}</div>` : '';
-    return `<button class="pm ${def ? 'st-' + sm.status : ''} ${p.id === myId ? 'me' : ''}" onclick="openMember('${p.id}')">
+    const hat = typeof wornHat === 'function' ? wornHat(p.id) : null;
+    return `<button class="pm ${def ? 'st-' + sm.status : ''} ${p.id === myId ? 'me' : ''} ${hat ? 'has-hat' : ''}" onclick="openMember('${p.id}')">
       ${def ? '<span class="pm-bubble">たすけて！</span>' : ''}${fx}
-      <div class="pm-body"><span class="pm-face">${face}</span><span class="pm-wpn ${w.cls}">${weaponIcon(w, {held:true})}</span>${(typeof equippedBadges === 'function' && equippedBadges(p.id)[0]) ? `<span class="pm-medal">${medalSVG(equippedBadges(p.id)[0], 20)}</span>` : ''}</div>
+      <div class="pm-body">${hat ? `<span class="pm-hat r${hat.rank}" title="${esc(hat.name)}">${hat.icon}</span>` : ''}<span class="pm-face">${face}</span><span class="pm-wpn ${w.cls}">${weaponIcon(w, {held:true})}</span>${(typeof equippedBadges === 'function' && equippedBadges(p.id)[0]) ? `<span class="pm-medal">${medalSVG(equippedBadges(p.id)[0], 20)}</span>` : ''}</div>
       ${typeof roomTodayIds === 'function' && roomTodayIds().has(p.id) ? '<span class="pm-room" title="今日 自習室に来た">🚪</span>' : ''}
       <div class="pm-name">${esc(name)}</div>
       <div class="pm-dmg ${total ? '' : 'zero'}">${total ? total.toLocaleString() : '—'}</div>
@@ -2769,7 +2797,7 @@ function renderParty() {
   const note = document.getElementById('party-note');
   if (note) {
     const myCandies = MY_STATUS ? (Number(MY_STATUS.candies) || 0) : 0;
-    note.innerHTML = myId ? `タップすると、ダメージ・状態・マルとメダルが見られるよ　あなたのお菓子：🍬 × ${myCandies}` : 'タップすると、ダメージ・状態・マルとメダルが見られるよ';
+    note.innerHTML = myId ? `タップすると、ダメージ・状態・かぶりもの・メダルが見られるよ　あなたのお菓子：🍬 × ${myCandies}` : 'タップすると、ダメージ・状態・かぶりもの・メダルが見られるよ';
   }
 }
 
@@ -2795,6 +2823,7 @@ function openMember(id) {
     <div class="pm-row"><span>🔮 今日の魔法(マル単)</span><b>${p.magic.toLocaleString()}</b></div>
     <div class="pm-row"><span>今月の合計(⚔${calcMonthDmg(p.id).toLocaleString()} + 🔮${calcMonthMagic(p.id).toLocaleString()})</span><b>${calcMonthTotal(p.id).toLocaleString()}</b></div>
     ${stHtml}
+    ${typeof hatSection === 'function' ? hatSection(p.id) : ''}
     ${typeof badgeSection === 'function' ? badgeSection(p.id) : ''}
     <button class="pm-close" onclick="closeMember()">とじる</button>`;
   document.getElementById('pm-sheet').classList.add('show');
@@ -3422,7 +3451,7 @@ function renderBossView() {
       <div class="rank-num ${numClass}">${numText}</div>
       <div class="rank-avatar">${weaponIcon(weaponFor(info.lv))}</div>
       <div class="rank-body">
-        <div class="rank-name">${displayName}${statusTagById(s.id)}</div>
+        <div class="rank-name">${displayName}${typeof hatTag === 'function' ? hatTag(s.id) : ''}${statusTagById(s.id)}</div>
         <div class="rank-sub" style="color:#8888bb;font-size:10px;">${title}</div>
         <div class="dmg-bar-wrap">
           <div class="dmg-bar-track"><div class="dmg-bar-fill" style="width:${pct}%"></div></div>
@@ -5574,6 +5603,73 @@ function medalSVG(b, px, noRibbon){
     <text x="30" y="${63 - (15 - bs) * .2}" text-anchor="middle" font-size="${bs}" font-weight="900" fill="${t[3]}" font-family="'Hiragino Sans','Noto Sans JP',sans-serif">${big}</text>${star}</svg>`;
 }
 
+/* ==== かぶりもの:マル単で単元のセットをぜんぶマルにすると手に入る。ボス戦の仲間の頭にのる(攻撃力には関係なし) ====
+   マル単から mq.gdone(ぜんぶマルになった「教科/区分/単元」の一覧)が届く。かぶっているものは mq.hat */
+const HATS = [
+  { id:'globe',   icon:'🌏', name:'地球のかぶりもの',     cond:'社会「世界地図」をぜんぶマル',          rank:2, re:/^社会\/地図・地名\/世界地図$/ },
+  { id:'fuji',    icon:'🗻', name:'富士山ハット',         cond:'社会「日本地図」をぜんぶマル',          rank:2, re:/^社会\/地図・地名\/日本地図$/ },
+  { id:'crown',   icon:'👑', name:'王冠',                 cond:'社会「首都」をぜんぶマル',              rank:2, re:/^社会\/地図・地名\/首都$/ },
+  { id:'castle',  icon:'🏯', name:'お城のかぶりもの',     cond:'社会「都道府県」をぜんぶマル',          rank:1, re:/^社会\/地図・地名\/都道府県$/ },
+  { id:'capitol', icon:'🏛️', name:'県庁ハット',           cond:'社会「県庁所在地」をぜんぶマル',        rank:1, re:/^社会\/地図・地名\/県庁所在地$/ },
+  { id:'compass', icon:'🧭', name:'羅針盤ぼうし',         cond:'社会「世界の国々」をぜんぶマル',        rank:1, re:/^社会\/地図・地名\/世界の国々$/ },
+  { id:'scroll',  icon:'📜', name:'巻物ハット',           cond:'社会の歴史(日本史・世界史)の単元をぜんぶマル', rank:1, re:/^社会\/[^/]+\/(歴史|日本史|世界史)$/ },
+  { id:'scales',  icon:'⚖️', name:'てんびんハット',       cond:'社会の公民・公共の単元をぜんぶマル',    rank:1, re:/^社会\/[^/]+\/(公民|公共)$/ },
+  { id:'dragon',  icon:'🐉', name:'龍のかぶりもの',       cond:'漢検「1級」をぜんぶマル',               rank:3, re:/^国語\/漢検\/1級/ },
+  { id:'brush',   icon:'🖌️', name:'筆のかぶりもの',       cond:'漢検「準1級」をぜんぶマル',             rank:2, re:/^国語\/漢検\/準1級/ },
+  { id:'kanji',   icon:'🀄', name:'漢字ハット',           cond:'漢検の級を1つぜんぶマル(10級〜2級)',   rank:1, re:/^国語\/漢検\/(10|[2-9])級|^国語\/漢検\/準2級/ },
+  { id:'koi',     icon:'🎏', name:'こいのぼりハット',     cond:'国語の慣用句・四字熟語・ことわざ・故事成語の単元をぜんぶマル', rank:1, re:/^国語\/[^/]+\/(慣用句|四字熟語|ことわざ|故事成語)$/ },
+  { id:'sakura',  icon:'🌸', name:'桜のかんざし',         cond:'国語「古文単語」をぜんぶマル',          rank:1, re:/^国語\/[^/]+\/古文単語$/ },
+  { id:'eagle',   icon:'🦅', name:'ワシのかぶりもの',     cond:'英検「準1級」をぜんぶマル',             rank:3, re:/^英語\/英検\/英検準1級$/ },
+  { id:'grad',    icon:'🎓', name:'角帽',                 cond:'英検「2級」をぜんぶマル',               rank:2, re:/^英語\/英検\/英検2級$/ },
+  { id:'star',    icon:'🌟', name:'スターハット',         cond:'英検「準2級プラス」をぜんぶマル',       rank:2, re:/^英語\/英検\/英検準2級プラス$/ },
+  { id:'silk',    icon:'🎩', name:'シルクハット',         cond:'英検「準2級」をぜんぶマル',             rank:1, re:/^英語\/英検\/英検準2級$/ },
+  { id:'cap',     icon:'🧢', name:'キャップ',             cond:'英検「3級」をぜんぶマル',               rank:1, re:/^英語\/英検\/英検3級$/ },
+  { id:'chick2',  icon:'🐥', name:'ひよこ(大)',           cond:'英検「4級」をぜんぶマル',               rank:1, re:/^英語\/英検\/英検4級$/ },
+  { id:'chick',   icon:'🐣', name:'ひよこ',               cond:'英検「5級」をぜんぶマル',               rank:1, re:/^英語\/英検\/英検5級$/ },
+  { id:'owl',     icon:'🦉', name:'フクロウのかぶりもの', cond:'共通テストの年度を1つぜんぶマル',       rank:2, re:/^英語\/共通テスト\// },
+  { id:'tree',    icon:'🌳', name:'大樹のかぶりもの',     cond:'まいにち英単語3000「中学編」をぜんぶマル', rank:3, re:/^英語\/[^/]+\/まいにち英単語3000 中学編$/ },
+  { id:'sprout',  icon:'🌱', name:'若葉のかぶりもの',     cond:'まいにち英単語3000「小学編」をぜんぶマル', rank:2, re:/^英語\/[^/]+\/まいにち英単語3000 小学編$/ },
+  { id:'book',    icon:'📘', name:'教科書ハット',         cond:'英語の教科書(中1・中2・中3)を1学年ぜんぶマル', rank:2, re:/^英語\/中学\/中[123] 教科書$/ },
+  { id:'100',     icon:'💯', name:'100点ハット',          cond:'「必須単語・連語500」をぜんぶマル',     rank:1, re:/^英語\/[^/]+\/必須単語・連語500$/ },
+  { id:'puzzle',  icon:'🧩', name:'パズルのかぶりもの',   cond:'並び替えの級を1つぜんぶマル',           rank:1, re:/^英語\/並び替え\// },
+  { id:'plane',   icon:'✈️', name:'飛行機のかぶりもの',   cond:'「AIEクラスWORLD」をぜんぶマル',        rank:1, re:/^英語\/AIE\// },
+  { id:'ruler',   icon:'📐', name:'じょうぎハット',       cond:'数学の単元を1つぜんぶマル',             rank:1, re:/^数学\// },
+  { id:'flask',   icon:'🧪', name:'フラスコハット',       cond:'理科の単元を1つぜんぶマル',             rank:1, re:/^理科\// },
+];
+const HAT_RANK = { 1:'ふつう', 2:'レア', 3:'伝説' };
+function hatsOf(id){ const m = MQB[String(id)]; const g = m && Array.isArray(m.gdone) ? m.gdone : []; return HATS.filter(h => g.some(k => h.re.test(k))); }
+function wornHat(id){
+  const m = MQB[String(id)]; if (!m) return null;
+  const own = hatsOf(id); if (!own.length) return null;
+  if (typeof m.hat === 'string') return m.hat === '' ? null : (own.find(h => h.id === m.hat) || null);
+  return own.slice().sort((a, b) => b.rank - a.rank)[0];   // まだ選んでいなければ、いちばんレアなもの
+}
+function hatTag(id){ const h = wornHat(id); return h ? ` <span class="hat-tag" title="${esc(h.name)}">${h.icon}</span>` : ''; }
+function hatSection(id){
+  const mine = currentStudent && String(currentStudent.id) === String(id);
+  const own = hatsOf(id), w = wornHat(id), ownIds = new Set(own.map(h => h.id));
+  if (!mine) {
+    if (!w) return '';
+    return `<div class="bd-sec"><div class="hat-now"><span class="hat-big r${w.rank}">${w.icon}</span><div><b>${esc(w.name)}</b><small>${HAT_RANK[w.rank]}・マル単で${esc(w.cond)}にして手に入れた</small></div></div>
+      ${own.length > 1 ? `<div class="bd-empty" style="margin-top:4px">ほかにも ${own.slice(0).filter(h => h !== w).map(h => h.icon).join(' ')} を持っているよ</div>` : ''}</div>`;
+  }
+  const list = HATS.slice().sort((a, b) => ownIds.has(b.id) - ownIds.has(a.id)).map(h => ownIds.has(h.id)
+    ? `<button class="hat-cell got r${h.rank} ${w && w.id === h.id ? 'on' : ''}" onclick="wearHat('${h.id}')" title="${esc(h.name)}"><span class="hi">${h.icon}</span><span class="hn">${esc(h.name)}</span><span class="hs">${w && w.id === h.id ? 'かぶり中' : 'かぶる'}</span></button>`
+    : `<div class="hat-cell lock r${h.rank}" title="${esc(h.cond)}"><span class="hi">${h.icon}</span><span class="hn">？？？</span><span class="hs">${esc(h.cond)}</span></div>`).join('');
+  return `<div class="bd-sec">
+    <div class="hat-head">🎩 かぶりもの <b>${own.length}</b> / ${HATS.length}${w ? `<button class="hat-off" onclick="wearHat('')">ぬぐ</button>` : ''}</div>
+    <div class="bd-empty">マル単で単元のセットをぜんぶマルにすると手に入るよ。かぶると、ボス戦の仲間の画面で頭にのる！(攻撃力は変わりません)</div>
+    <div class="hat-grid">${list}</div></div>`;
+}
+async function wearHat(hid){
+  if (!currentStudent) return;
+  const id = String(currentStudent.id), m = MQB[id]; if (!m) return;
+  const cur = wornHat(id);
+  const next = hid === '' ? '' : (cur && cur.id === hid ? '' : hid);   // もう一度押すとぬぐ
+  m.hat = next; openMember(id); renderParty(); if (typeof renderBossView === 'function') renderBossView();
+  const ok = await writeMQ({ hat: next });
+  showToast(ok ? (next ? `${(HATS.find(h => h.id === next) || {}).icon || ''} をかぶったよ！` : 'かぶりものをぬいだよ') : '保存できませんでした(通信エラー)');
+}
 /* マルとバッジ:マル単で区分(英検5級など)のセットをマルにするとメダル。自分のキャラの首に1つかけられる */
 const EQUIP_MAX = 1;
 function badgesOf(id){ const m = MQB[String(id)]; return m && Array.isArray(m.badges) ? m.badges : []; }
