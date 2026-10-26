@@ -1142,6 +1142,7 @@ td.td-name { padding-left: 16px; text-align: left; }
           <div class="hp-track"><div class="hp-fill" id="boss-hp-bar" style="width:100%"></div></div>
         </div>
       </div>
+      <div id="final-shield" style="display:none"></div>
       <div id="hero-banner" style="display:none;
         background:linear-gradient(135deg,rgba(255,215,0,.15),rgba(170,68,255,.15));
         border:1px solid var(--gold);border-radius:8px;padding:8px 12px;
@@ -1706,6 +1707,9 @@ async function submitRecord() {
         const hpRes = await api('updateBossHp', { damage: dmg, heroName: nickname, heroId: currentStudent.id });
         setTimeout(loadGacha, 1500);
         if (hpRes.ok && typeof hpRes.currentHp === 'number') BOSS_DATA.currentHp = hpRes.currentHp;
+        if (hpRes.ok && hpRes.shield) { const was = BOSS_DATA.shield && BOSS_DATA.shield.missing; BOSS_DATA.shield = hpRes.shield; renderFinalShield();
+          if (was && hpRes.shield.missing < was) setTimeout(() => showToast(hpRes.shield.missing ? `🔮 結界がひとつ割れた！のこり ${hpRes.shield.missing}人` : '✨ 結界が消えた！全員の力がそろった！', 4500), 2500);
+          else if (hpRes.shield.missing && hpRes.currentHp <= hpRes.shield.floor) setTimeout(() => showToast(`🔮 結界にはね返された！まだ戦っていない仲間 ${hpRes.shield.missing}人をつれてこよう`, 4500), 2500); }
 
         // ボス討伐！（トドメを刺した本人）
         if (hpRes.ok && hpRes.defeated) {
@@ -3239,8 +3243,26 @@ function renderBossHp() {
   if (maxEl) maxEl.textContent = '???';
 }
 
+/* ==== ハロウィンの大魔王:結界(全員そろうまで倒れない)と夜の回復 ==== */
+function renderFinalShield(){
+  const el = document.getElementById('final-shield'); if (!el) return;
+  const sh = BOSS_DATA && BOSS_DATA.type === 'boss_final' ? BOSS_DATA.shield : null;
+  if (!sh) { el.style.display = 'none'; return; }
+  let isT = false; try { isT = localStorage.getItem('yariki_teacher_ok') === '1'; } catch(e) {}
+  const meMissing = currentStudent && sh.names && sh.missing && (sh.names || []).includes(currentStudent.nickname || currentStudent.name);
+  el.style.cssText = 'margin:0 0 10px;padding:9px 12px;border-radius:8px;text-align:center;font-size:12px;line-height:1.6;' +
+    (sh.missing ? 'background:linear-gradient(135deg,rgba(120,40,200,.25),rgba(255,120,0,.15));border:1px solid #b46bff;color:#f3e6ff' : 'background:rgba(255,215,0,.12);border:1px solid var(--gold);color:var(--gold)');
+  el.innerHTML = sh.missing
+    ? `🔮 <b>大魔王の結界</b>:まだ今月戦っていない仲間が <b style="font-size:15px">${sh.missing}人</b><br>全員の力がそろうまで、大魔王は倒れない！${meMissing ? '<br><b style="color:#ffd76b">きみの一撃で結界がひとつ割れる！</b>' : ''}${isT && sh.names && sh.names.length ? `<br><span style="opacity:.8">👨‍🏫 ${sh.names.map(esc).join('・')}</span>` : ''}`
+    : '✨ 全員の力がそろった！結界が消えた。いまなら大魔王を倒せる！';
+  const h = BOSS_DATA.heal;
+  if (h && h.amount > 0) { let seen = null; try { seen = localStorage.getItem('final_heal_' + h.date); } catch(e) {}
+    if (!seen) { try { localStorage.setItem('final_heal_' + h.date, '1'); } catch(e) {}
+      setTimeout(() => showToast(`🌙 夜のあいだに大魔王が ${Number(h.amount).toLocaleString()} 回復した…${h.halloween ? '🎃ハロウィンの魔力で2倍！' : ''}`, 5500), 1200); } }
+}
 function renderBossView() {
   if (!BOSS_DATA) return;
+  renderFinalShield();
   const now = new Date();
   // 期間の終了日から残り日数を計算
   let daysLeft = 0;
