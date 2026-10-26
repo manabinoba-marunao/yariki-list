@@ -2525,7 +2525,9 @@ function showBossIntro() {
   art.className = 'bi-art';
   nm.classList.remove('show'); sub.classList.remove('show'); skip.classList.remove('show');
   nm.textContent = BOSS_DATA.name || '大魔王';
-  sub.textContent = 'が現れた！ 全員の力を合わせて倒せ！';
+  const revive = BOSS_DATA.type === 'boss_final';
+  const warn = ov.querySelector('.bi-warning'); if (warn) warn.textContent = revive ? '🎃 HALLOWEEN 🎃' : '⚠ WARNING ⚠';
+  sub.innerHTML = revive ? 'ハロウィンが近づき、夜の闇から魔力が集まる…<br><b>ハロウィンの魔力でよみがえった！</b><br>もう一度、全員の力を合わせて倒せ！' : 'が現れた！ 全員の力を合わせて倒せ！';
   if (BOSS_DATA.imageUrl && String(BOSS_DATA.imageUrl).trim() !== '') {
     art.innerHTML = '<img src="' + BOSS_DATA.imageUrl + '" alt="">';
     art.firstChild.onerror = () => { art.innerHTML = svgHtml(); };
@@ -3189,7 +3191,7 @@ async function loadBossData() {
     const onBossView = document.getElementById('view-boss').classList.contains('active');
     const isBossType = BOSS_DATA && String(BOSS_DATA.type || '').indexOf('mob') !== 0 && !BOSS_DATA.defeated;
     if (onBossView && isBossType) {
-      const introKey = `boss_intro_seen_${BOSS_DATA.name}`;
+      const introKey = `boss_intro_seen_${BOSS_DATA.type === 'boss_final' ? 'revive_' : ''}${BOSS_DATA.name}`;
       if (!localStorage.getItem(introKey)) {
         localStorage.setItem(introKey, '1');
         if (defeatScheduled) pendingBossIntro = true;
@@ -3281,13 +3283,13 @@ function renderFinalShield(){
   const meMissing = currentStudent && sh.names && sh.missing && (sh.names || []).includes(currentStudent.nickname || currentStudent.name);
   el.style.cssText = 'margin:0 0 10px;padding:9px 12px;border-radius:8px;text-align:center;font-size:12px;line-height:1.6;' +
     (sh.missing ? 'background:linear-gradient(135deg,rgba(120,40,200,.25),rgba(255,120,0,.15));border:1px solid #b46bff;color:#f3e6ff' : 'background:rgba(255,215,0,.12);border:1px solid var(--gold);color:var(--gold)');
-  el.innerHTML = sh.missing
+  el.innerHTML = '<div style="color:#ffb347;font-weight:bold;margin-bottom:3px">🎃 ハロウィンの魔力でよみがえった！</div>' + (sh.missing
     ? `🔮 <b>大魔王の結界</b>:まだ今月戦っていない仲間が <b style="font-size:15px">${sh.missing}人</b><br>全員の力がそろうまで、大魔王は倒れない！${meMissing ? '<br><b style="color:#ffd76b">きみの一撃で結界がひとつ割れる！</b>' : ''}${isT && sh.names && sh.names.length ? `<br><span style="opacity:.8">👨‍🏫 ${sh.names.map(esc).join('・')}</span>` : ''}`
-    : '✨ 全員の力がそろった！結界が消えた。いまなら大魔王を倒せる！';
+    : '✨ 全員の力がそろった！結界が消えた。いまなら大魔王を倒せる！');
   const h = BOSS_DATA.heal;
   if (h && h.amount > 0) { let seen = null; try { seen = localStorage.getItem('final_heal_' + h.date); } catch(e) {}
     if (!seen) { try { localStorage.setItem('final_heal_' + h.date, '1'); } catch(e) {}
-      setTimeout(() => showToast(`🌙 夜のあいだに大魔王が ${Number(h.amount).toLocaleString()} 回復した…${h.halloween ? '🎃ハロウィンの魔力で2倍！' : ''}`, 5500), 1200); } }
+      setTimeout(() => showToast(`🎃 ハロウィンが近づき…夜のあいだに、大魔王がハロウィンの魔力で ${Number(h.amount).toLocaleString()} 回復した！${h.halloween ? '(今夜はハロウィン前夜、魔力2倍！)' : ''}`, 6000), 1200); } }
 }
 function renderBossView() {
   if (!BOSS_DATA) return;
