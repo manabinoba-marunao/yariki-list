@@ -1736,7 +1736,7 @@ async function submitRecord() {
         if (hpRes.ok && typeof hpRes.currentHp === 'number') BOSS_DATA.currentHp = hpRes.currentHp;
         if (hpRes.ok && hpRes.shield) { const was = BOSS_DATA.shield && BOSS_DATA.shield.missing; BOSS_DATA.shield = hpRes.shield; renderFinalShield();
           if (was && hpRes.shield.missing < was) setTimeout(() => showToast(hpRes.shield.missing ? `🔮 結界がひとつ割れた！のこり ${hpRes.shield.missing}人` : '✨ 結界が消えた！全員の力がそろった！', 4500), 2500);
-          else if (hpRes.shield.missing && hpRes.currentHp <= hpRes.shield.floor) setTimeout(() => showToast(`🔮 結界にはね返された！まだ戦っていない仲間 ${hpRes.shield.missing}人をつれてこよう`, 4500), 2500); }
+          else if (hpRes.shield.missing && hpRes.currentHp <= hpRes.shield.floor) setTimeout(() => showToast(`🔮 結界にはね返された！まだ力が届いていない仲間が ${hpRes.shield.missing}人いる…みんなで力を合わせよう`, 4500), 2500); }
 
         // ボス討伐！（トドメを刺した本人）
         if (hpRes.ok && hpRes.defeated) {
@@ -3280,11 +3280,13 @@ function renderFinalShield(){
   const sh = BOSS_DATA && BOSS_DATA.type === 'boss_final' ? BOSS_DATA.shield : null;
   if (!sh) { el.style.display = 'none'; return; }
   let isT = false; try { isT = localStorage.getItem('yariki_teacher_ok') === '1'; } catch(e) {}
-  const meMissing = currentStudent && sh.names && sh.missing && (sh.names || []).includes(currentStudent.nickname || currentStudent.name);
+  const need = sh.need || 1000;
+  const meRow = currentStudent && Array.isArray(sh.list) ? sh.list.find(m => String(m.id) === String(currentStudent.id)) : null;
+  const meMissing = !!meRow || (!sh.list && currentStudent && (sh.names || []).includes(currentStudent.nickname || currentStudent.name));
   el.style.cssText = 'margin:0 0 10px;padding:9px 12px;border-radius:8px;text-align:center;font-size:12px;line-height:1.6;' +
     (sh.missing ? 'background:linear-gradient(135deg,rgba(120,40,200,.25),rgba(255,120,0,.15));border:1px solid #b46bff;color:#f3e6ff' : 'background:rgba(255,215,0,.12);border:1px solid var(--gold);color:var(--gold)');
   el.innerHTML = '<div style="color:#ffb347;font-weight:bold;margin-bottom:3px">🎃 ハロウィンの魔力でよみがえった！</div>' + (sh.missing
-    ? `🔮 <b>大魔王の結界</b>:まだ今月戦っていない仲間が <b style="font-size:15px">${sh.missing}人</b><br>全員の力がそろうまで、大魔王は倒れない！${meMissing ? '<br><b style="color:#ffd76b">きみの一撃で結界がひとつ割れる！</b>' : ''}${isT && sh.names && sh.names.length ? `<br><span style="opacity:.8">👨‍🏫 ${sh.names.map(esc).join('・')}</span>` : ''}`
+    ? `🔮 <b>大魔王の結界</b>:今月 ${need.toLocaleString()}ダメージにまだ届いていない仲間が <b style="font-size:15px">${sh.missing}人</b><br>全員の力がそろうまで、大魔王は倒れない！<br><span style="opacity:.85">やりきリストの習慣でもマル単でもOK</span>${meMissing ? `<br><b style="color:#ffd76b">きみはあと ${Math.max(1, need - (meRow ? Number(meRow.dmg) || 0 : 0)).toLocaleString()} ダメージで、結界がひとつ割れる！</b>` : ''}${isT && sh.missing ? `<br><span style="opacity:.8">👨‍🏫 ${(sh.list || (sh.names || []).map(n => ({ name: n }))).map(m => esc(m.name) + (m.dmg != null ? `(${Number(m.dmg).toLocaleString()})` : '')).join('・')}</span>` : ''}`
     : '✨ 全員の力がそろった！結界が消えた。いまなら大魔王を倒せる！');
   const h = BOSS_DATA.heal;
   if (h && h.amount > 0) { let seen = null; try { seen = localStorage.getItem('final_heal_' + h.date); } catch(e) {}
