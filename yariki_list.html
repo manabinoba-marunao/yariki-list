@@ -4945,13 +4945,16 @@ async function summonReconcile(date){
   const m = /^自習室の召喚:(.+?)\((\d+)人\)/.exec(base.nickname || base.name || '') || [];
   const t = SUMMONS.find(x => x.name === m[1]); if (!t) return null;
   const tag = `{${ws}}`;
-  const now = (DAMAGE_LOG || []).filter(l => { const n = String(l.nickname || l.name || ''); return n === String(base.nickname || base.name) || (n.startsWith('召喚のなおし') && n.includes(tag)); })
-    .reduce((a, l) => a + (Number(l.damage) || 0), 0);
+  // いまの合計は共有の'room'記録から(ログは直近100件しか読めず、流れたあとだと全部をもう一度足してしまうため)
+  let o; try { o = await roomRec(); } catch(e) { return null; }
+  const fr = o.mq.fired[ws] || {}, fx = SUMMON_FIXED_OR(ws, fr, base);
+  const now = fx + (Number(fr.adj) || 0);
   const want = summonPowerFixed(roomRange(ws, sdAdd(ws, 6)), t);
   const diff = want - now;
   if (!diff) return { diff: 0 };
   const sd = await api('saveDamage', { studentId: 'room', nickname: `召喚のなおし:${t.name}${tag}`, damage: diff, isCrit: false, habitsDone: '召喚' });
   if (!sd || !sd.ok) return { error: true };
+  try { o = await roomRec(); const f2 = o.mq.fired[ws] = o.mq.fired[ws] || {}; f2.adj = (Number(f2.adj) || 0) + diff; await roomSave(o); } catch(e) {}
   try { await api('updateBossHp', { damage: diff, heroName: '自習室の仲間' }); } catch(e) {}
   return { diff, name: t.name, want };
 }
@@ -5166,8 +5169,8 @@ async function writeMQ(patch){
 /* ==== みんなで召喚ボタン:今日教室にいる全員(QRで退室していない人)が押すと、今週の召喚が成立 ==== */
 function presentIds(){
   const ids = new Set(); if (!VISITS || !VISITS.visits || typeof rosterStudents !== 'function') return ids;
-  // QRで退室していない人。ただし入室から6時間以上たっている人(退室のQRを忘れて帰った人)は数えない
-  const t = jstToday(), names = VISITS.visits.filter(v => v.date === t && !v.out && (!v.inMs || Date.now() - Number(v.inMs) < 6*3600e3)).map(v => v.name);
+  // QRで退室していない人(朝から一日中いる日もあるので時間では切らない。退室のQRを忘れて帰った子は、先生画面で退室にするか、先生ボタンで成立させる)
+  const t = jstToday(), names = VISITS.visits.filter(v => v.date === t && !v.out).map(v => v.name);
   rosterStudents().forEach(st => { if (names.some(n => nameMatch(st, n))) ids.add(String(st.id)); });
   return ids;
 }
@@ -5183,6 +5186,22 @@ async function voteSummon(btn){
   const ok = await writeMQ({ vote: { ws, date: today, at: Date.now() } });
   if (!ok) { showToast('送れませんでした(通信エラー)'); renderSummon(); return; }
   await checkSummonOK();
+}
+/* 先生用:退室のQRを忘れた子がいるときなど、いまの人数で成立させる */
+async function teacherSummonOK(btn){
+  if (!confirm('いま教室にいる人で、今週の召喚を成立させますか？')) return;
+  if (btn) { btn.disabled = true; btn.textContent = '送っています…'; }
+  await Promise.all([loadVisits(), loadMQB()]);
+  const today = jstToday(), ws = weekStartOf(today), r = roomRange(ws, today);
+  const okObj = { ws, at: Date.now(), date: today, n: r.n, voters: presentIds().size, byTeacher: true };
+  try {
+    const g = await api('getStudy', { studentId: 'teacher' });
+    let obj = {}; try { obj = g && g.data ? JSON.parse(g.data) : {}; } catch(e) {}
+    obj.mq = Object.assign({}, obj.mq || {}, { summonOK: okObj }); MQB['teacher'] = obj.mq;
+    const w = await api('saveStudy', { studentId: 'teacher', data: JSON.stringify(obj) });
+    showToast(w && w.ok ? '今週の召喚を成立させました' : '保存できませんでした');
+  } catch(e) { showToast('保存できませんでした'); }
+  renderSummon();
 }
 /* 教室にいる全員が押していたら成立させる(押した人の端末で) */
 async function checkSummonOK(){
@@ -5233,7 +5252,28 @@ function summonRaw(r){ const t = summonTier(r.n); return t ? Math.round((r.pts ?
 const SUMMON_OVER = 0.25;   // 目安をこえた分は1/4だけ足す(最後の1分まで力になる)
 function summonPower(r){ const t = summonTier(r.n); if (!t) return 0; const raw = summonRaw(r); return raw <= t.cap ? raw : Math.round(t.cap + (raw - t.cap) * SUMMON_OVER); }
 function hm(m){ m = Math.round(m); return m >= 60 ? `${Math.floor(m/60)}時間${m%60 ? m%60 + '分' : ''}` : `${m}分`; }
-function summonLogFor(ws){ return (DAMAGE_LOG || []).find(l => String(l.nickname || l.name || '').includes('[' + ws + ']')); }
+/* 発動済みの週の記録。ログは直近100件しか読めないので、それだけで判定すると流れたあと二重発動してしまう → 共有の'room'記録にも残す */
+const SUMMON_FIRED_FIXED = { '2026-10-19': { nickname: '自習室の召喚:巨大フクロウくん(7人)[2026-10-19]', damage: 10552, date: '2026-10-26' } };
+function SUMMON_FIXED_OR(ws, fr, base){ return Number((SUMMON_FIRED_FIXED[ws] || {}).damage ?? fr.damage ?? base.damage) || 0; }
+function summonFiredRec(ws){ const m = MQB['room']; const f = m && m.fired && m.fired[ws]; return SUMMON_FIRED_FIXED[ws] || (f && f.nickname ? f : null); }
+function summonLogFor(ws){
+  const l = (DAMAGE_LOG || []).find(l => String(l.nickname || l.name || '').includes('[' + ws + ']'));
+  if (l) return l;
+  const f = summonFiredRec(ws); return f ? { nickname: f.nickname, damage: f.damage, isCrit: false, date: f.date, habitsDone: '召喚' } : null;
+}
+async function roomRec(){ const g = await api('getStudy', { studentId: 'room' }); let o = {}; try { o = g && g.data ? JSON.parse(g.data) : {}; } catch(e) {} if (!o || typeof o !== 'object') o = {}; o.mq = o.mq || {}; o.mq.fired = o.mq.fired || {}; MQB['room'] = o.mq; return o; }
+async function roomSave(o){ const w = await api('saveStudy', { studentId: 'room', data: JSON.stringify(o) }); return !!(w && w.ok); }
+/* 発動の権利を取る:'room'に予約を書いて少し待ち、読み直して自分の予約が残っていたら発動 */
+async function claimSummon(ws){
+  const me = 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  let o = await roomRec(); const cur = o.mq.fired[ws];
+  if (cur && (cur.nickname || Date.now() - (cur.claimAt || 0) < 10 * 60000)) return false;   // 発動済み・ほかの端末が発動中
+  o.mq.fired[ws] = { claim: me, claimAt: Date.now() };
+  if (!(await roomSave(o))) return false;
+  await new Promise(r => setTimeout(r, 2500 + Math.random() * 1500));
+  o = await roomRec(); const c2 = o.mq.fired[ws];
+  return !!(c2 && c2.claim === me && !c2.nickname) ? me : false;
+}
 function summonVoteHtml(ws, today, r, t){
   if (!r.n) return `<button class="summon-btn" disabled>今週はまだだれも来ていない…自習室でQRチェックインしよう</button>`;
   const me = currentStudent ? String(currentStudent.id) : null, okObj = summonOK(ws);
@@ -5251,7 +5291,9 @@ function summonVoteHtml(ws, today, r, t){
   if (me && present.has(me)) {
     if (voted.has(me)) { btn = `<button class="summon-btn" disabled>✓ 押した！ あと${present.size - vin.length}人を待っています</button>`; VOTE_POLL = setTimeout(checkSummonOK, 15000); }
     else btn = `<button class="summon-btn" onclick="voteSummon(this)">🔮 召喚する！(${vin.length}/${present.size}人)</button>`;
-  } else btn = `<button class="summon-btn" disabled>まだ召喚は成立していない…</button>`;
+  } else btn = `<button class="summon-btn" disabled>${present.size ? `教室にいる仲間が押しているところ…(${vin.length}/${present.size}人)` : 'いま教室にはだれもいない'}</button>`;
+  let isT = false; try { isT = localStorage.getItem('yariki_teacher_ok') === '1'; } catch(e) {}
+  if (isT && present.size) btn += `<button class="summon-btn" style="margin-top:6px;background:#2a2a4a;box-shadow:none;font-size:12px" onclick="teacherSummonOK(this)">👨‍🏫 先生:いま教室にいる${present.size}人で成立させる</button>`;
   return `${present.size ? `<div class="summon-vote">いま教室にいる仲間<div class="summon-names">${chips}</div></div>` : ''}${btn}
     <div class="summon-note" style="margin-top:4px">教室にいる全員が「召喚する」を押すと、今週の召喚が成立！ 最後まで残った仲間で力を合わせよう(QRで退室した人は数えない)</div>`;
 }
@@ -5285,18 +5327,23 @@ async function summonWeeklyCheck(){
     if (ws < '2026-10-19') return;   // QRの記録はこの週から
     try { const lr = await api('getDamageLog', { days: 30 }); if (lr && lr.ok && Array.isArray(lr.logs)) DAMAGE_LOG = lr.logs; } catch(e) {}
     let log = summonLogFor(ws), fresh = null;
-    if (!log) await loadMQB();   // 召喚ボタンの成立と、自習時間のなおしを読んでから数える
+    if (!log) { await loadMQB(); log = summonLogFor(ws); }   // 召喚ボタンの成立・自習時間のなおし・発動済みの記録を読んでから数える
     const r = roomRange(ws, we), t = summonTier(r.n);
     const established = ws <= '2026-10-19' || !!summonOK(ws);   // 召喚ボタンで成立した週だけ(最初の週は例外)
     if (!log && t && established) {
       let lock = null; try { lock = localStorage.getItem('summon_fire_' + ws); } catch(e) {}
       if (lock && Date.now() - Number(lock) < 120000) return;
       try { localStorage.setItem('summon_fire_' + ws, String(Date.now())); } catch(e) {}
+      const claim = await claimSummon(ws);
+      if (!claim) { log = summonLogFor(ws); if (!log) return; }
+    }
+    if (!log && t && established) {
       const dmg = summonPower(r), nickname = `自習室の召喚:${t.name}(${r.n}人)[${ws}]`;
       const base = { nickname, damage: dmg, isCrit: false, habitsDone: '召喚' };
+      // 先に「発動済み」を記録(これ以降どの端末も撃たない)
+      try { const o = await roomRec(); o.mq.fired[ws] = { nickname, damage: dmg, date: jstToday(), at: Date.now() }; await roomSave(o); } catch(e) {}
       let sd = await api('saveDamage', Object.assign({ studentId: 'room' }, base));
       if ((!sd || !sd.ok) && currentStudent) sd = await api('saveDamage', Object.assign({ studentId: currentStudent.id }, base));
-      if (!sd || !sd.ok) { try { localStorage.removeItem('summon_fire_' + ws); } catch(e) {} return; }
       log = { nickname, damage: dmg, isCrit: false, date: TODAY, habitsDone: '召喚' };
       DAMAGE_LOG.unshift(log); TODAY_DMG = (TODAY_DMG || 0) + dmg; MONTH_DMG = (MONTH_DMG || 0) + dmg;
       let eff = '';
