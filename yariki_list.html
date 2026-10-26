@@ -427,6 +427,9 @@ td.td-name { padding-left: 16px; text-align: left; }
 .summon-ok small { display:block; font-size:11px; color:#d6ccff; text-shadow:none; margin-top:2px; }
 .summon-vote { font-size:11px; color:#b8b8e0; text-align:center; margin-bottom:6px; }
 .summon-vote .summon-names span.vt { background:rgba(255,215,0,.18); border:1px solid rgba(255,215,0,.7); color:#fff; }
+.summon-test { margin:8px 0 0; padding:8px; border:1px dashed #8888bb; border-radius:10px; font-size:11px; color:#b8b8e0; text-align:center; }
+.summon-test div { display:flex; gap:6px; margin-top:6px; }
+.summon-test button { flex:1; padding:8px 4px; border-radius:8px; border:1px solid #4a4a7a; background:#1c1a3e; color:#fff; font-size:12px; font-weight:700; cursor:pointer; }
 .summon-help { display:block; margin:8px auto 0; padding:5px 14px; border-radius:999px; border:1px solid rgba(255,215,0,.6); background:rgba(255,215,0,.1); color:var(--gold); font-size:12px; font-weight:700; cursor:pointer; }
 .summon-note { font-size:11px; color:#9a9ac8; text-align:center; margin-top:6px; line-height:1.6; }
 .log-summon { color:#7fe0ff; text-shadow:0 0 6px #3fb8ff; }
@@ -4143,6 +4146,25 @@ function mqStrike(o){
 .room-list span.in{border-color:#1f8a5b;background:#e8f5ef}
 .room-list small{font-weight:500;color:var(--ink2)}
 .room-list button{margin-left:6px;font:700 11px var(--font);padding:2px 8px;border-radius:999px;border:1.5px solid #c0392b;color:#c0392b;background:#fff;cursor:pointer}
+.rf-open{display:block;width:100%;margin-top:10px;padding:8px;border-radius:8px;border:1.5px solid #d7deec;background:#fff;color:#143070;font:700 12px var(--font);cursor:pointer}
+.rf-open.warn{border-color:#f59e0b;background:#fff7e6;color:#b45309}
+#roomfix{position:fixed;inset:0;z-index:500;background:rgba(10,15,30,.55);display:flex;align-items:flex-end;justify-content:center}
+#roomfix .rf-box{background:#fff;color:#1a1a1a;width:100%;max-width:560px;max-height:88vh;overflow:auto;border-radius:16px 16px 0 0;padding:14px 14px 24px;font-family:var(--font)}
+#roomfix .rf-h{display:flex;align-items:center;justify-content:space-between;position:sticky;top:-14px;background:#fff;padding:4px 0 8px}
+#roomfix .rf-h b{font-size:16px}
+#roomfix .rf-h button{border:none;background:#eef1f7;border-radius:8px;padding:6px 12px;font:700 12px var(--font);cursor:pointer}
+#roomfix .rf-note{font-size:12px;color:#6b6760;line-height:1.6;margin:0 0 8px}
+#roomfix .rf-all{display:block;font-size:12px;margin-bottom:8px}
+#roomfix .rf-row{border:1.5px solid #e5e1d8;border-radius:10px;padding:8px 10px;margin-bottom:8px;font-size:13px}
+#roomfix .rf-row.sus{border-color:#f59e0b;background:#fffbf0}
+#roomfix .rf-row.fixed{border-color:#2a6b4e;background:#f2faf5}
+#roomfix .rf-who small,#roomfix .rf-t small{color:#6b6760;margin-left:6px;font-size:11px}
+#roomfix .rf-t{margin:3px 0 6px}
+#roomfix .rf-t em{color:#b91c1c;font-style:normal;font-weight:700}
+#roomfix .rf-in{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px}
+#roomfix .rf-in input{font:600 15px var(--font);padding:5px 6px;border:1.5px solid #d7deec;border-radius:8px}
+#roomfix .rf-in button{font:700 12px var(--font);padding:7px 12px;border-radius:8px;border:none;background:#143070;color:#fff;cursor:pointer}
+#roomfix .rf-in button.undo{background:#eef1f7;color:#143070}
 .room-add{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px;font-size:12px;font-weight:700}
 .room-add select{font:600 13px var(--font);padding:6px;border:1.5px solid #d7deec;border-radius:8px;max-width:100%}
 .room-add button{font:700 12px var(--font);padding:7px 12px;border-radius:8px;border:none;background:#143070;color:#fff;cursor:pointer}
@@ -4222,6 +4244,8 @@ function sdSave(){
 async function sdPush(){
   if(sdSid==null||sdSyncState==='off') return;
   const mqNew = typeof MQB !== 'undefined' ? MQB[String(sdSid)] : null; if(mqNew && (!SD.mq || (mqNew.at||0) >= (SD.mq.at||0))) SD.mq = mqNew;   // マル単から届いたバッジを消さない
+  // 先生が直した自習時間(roomFix)は、塾にある最新のものを残す(生徒の端末の古いデータで消さない)
+  try{ const cur = await api('getStudy', {studentId: sdSid}); if(cur && cur.ok){ let o = null; try{ o = cur.data ? JSON.parse(cur.data) : null; }catch(e){} if(o && o.roomFix) SD.roomFix = o.roomFix; else if(o) delete SD.roomFix; } }catch(e){}
   const r = await api('saveStudy', {studentId: sdSid, data: JSON.stringify(SD)});
   sdSyncState = r && r.ok ? 'cloud' : 'off';
   const el=document.getElementById('sv-sync'); if(el) el.textContent = sdSyncLabel();
@@ -4836,7 +4860,103 @@ async function roomAct(action, name, grade){
   }catch(e){ showToast('記録できませんでした:'+(e.message||'自習室アプリの更新が必要かも')); }
 }
 async function loadVisits(){
-  try{ const r = await fetch(JISHU_URL, {method:'POST', body: JSON.stringify({action:'getVisits', days:14})}).then(x=>x.json()); if(r && r.ok) VISITS = r; }catch(e){}
+  try{ const r = await fetch(JISHU_URL, {method:'POST', body: JSON.stringify({action:'getVisits', days:14})}).then(x=>x.json()); if(r && r.ok){ VISITS = r; applyRoomFix(); } }catch(e){}
+}
+/* ==== 自習時間のなおし:退室のQRを忘れて、気づいたら何時間もたっていた…を先生が直す ====
+   なおしは その生徒の学習データのセル(roomFix)に保存し、来室記録を読んだあとに上書きする。
+   召喚・ダッシュボード・7日の自習時間など、自習時間を使うところはすべて直した時間で数える。 */
+let ROOMFIX = {};   // 来室のキー → {out:'HH:MM', sid}
+function visitKey(v){ return `${v.date}|${nName(v.name)}|${v.inMs || v.in || ''}`; }
+function hhmmOf(ms){ const d = new Date(Number(ms) + 9*3600e3); return String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0'); }
+function toMin(hm){ const m = /^(\d{1,2}):(\d{2})/.exec(String(hm || '')); return m ? (+m[1]) * 60 + (+m[2]) : null; }
+function visitIn(v){ return v.in ? String(v.in).slice(0,5) : (v.inMs ? hhmmOf(v.inMs) : ''); }
+function collectRoomFix(sid, obj){
+  if (!obj || !obj.roomFix) return;
+  Object.entries(obj.roomFix).forEach(([k, f]) => { if (f && f.out) ROOMFIX[k] = { out: f.out, sid: String(sid) }; });
+}
+function applyRoomFix(){
+  if (!VISITS || !VISITS.visits) return;
+  VISITS.visits.forEach(v => {
+    const f = ROOMFIX[visitKey(v)]; if (!f) return;
+    if (!v.fixed) { v.origOut = v.out || ''; v.origMin = v.min; }
+    const a = toMin(visitIn(v)), b = toMin(f.out); if (a == null || b == null || b <= a) return;
+    v.out = f.out; v.min = b - a; v.fixed = true;
+  });
+}
+function studentOfVisit(v){ return STUDENTS.find(s => nameMatch(s, v.name)) || null; }
+/* 生徒の学習データのセルに roomFix を書きこむ(out が null なら なおしを取り消す) */
+async function saveRoomFix(v, out){
+  const st = studentOfVisit(v);
+  if (!st) { showToast(v.name + ' さんがやりきリストの生徒と結びつきません(名前を確認してください)'); return false; }
+  const id = String(st.id), key = visitKey(v);
+  try {
+    const r = await api('getStudy', { studentId: st.id });
+    let obj = {}; try { obj = r && r.data ? JSON.parse(r.data) : {}; } catch(e) { obj = {}; }
+    if (!obj || typeof obj !== 'object') obj = {};
+    obj.roomFix = Object.assign({}, obj.roomFix || {});
+    if (out) obj.roomFix[key] = { out, at: Date.now() }; else delete obj.roomFix[key];
+    // 古いなおし(30日より前)はそうじ
+    const old = sdAdd(jstToday(), -30); Object.keys(obj.roomFix).forEach(k => { if (k.split('|')[0] < old) delete obj.roomFix[k]; });
+    const w = await api('saveStudy', { studentId: st.id, data: JSON.stringify(obj) });
+    if (!w || !w.ok) throw new Error('save');
+    if (TEAM && TEAM[id]) TEAM[id].roomFix = obj.roomFix;
+    if (typeof sdSid !== 'undefined' && String(sdSid) === id && SD) { SD.roomFix = obj.roomFix; try { localStorage.setItem(sdKeyName(sdSid), JSON.stringify(SD)); } catch(e) {} }
+    if (out) ROOMFIX[key] = { out, sid: id }; else delete ROOMFIX[key];
+    return true;
+  } catch(e) { showToast('保存できませんでした(通信エラー)'); return false; }
+}
+/* 「退室」ボタン:入室から3時間以上たっていたら、実際に帰った時間を聞く */
+async function roomOut(key){
+  const v = (VISITS && VISITS.visits || []).find(x => visitKey(x) === key); if (!v) return;
+  const inT = visitIn(v), long = v.inMs && Date.now() - Number(v.inMs) > 3*3600e3;
+  let out = '';
+  if (long) {
+    const ans = prompt(`${v.name} さん(${inT} 入室)\n入室から${hm((Date.now() - Number(v.inMs)) / 6e4)}たっています。\n\n実際に帰った時間を入れてください(例 18:30)。\nいま帰るなら空のままOK`, '');
+    if (ans === null) return;
+    out = ans.trim().replace(/[０-９：]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/^(\d{1,2})(\d{2})$/, '$1:$2');
+    if (out && (toMin(out) == null || toMin(out) <= toMin(inT))) { alert('時間の形がちがうか、入室より前になっています(例 18:30)'); return; }
+    if (out) out = out.replace(/^(\d):/, '0$1:');
+  } else if (!confirm(v.name + ' さんを退室にしますか？')) return;
+  showToast('記録しています…');
+  try{ const r = await fetch(JISHU_URL, {method:'POST', body: JSON.stringify({action:'teacherCheckOut', name: v.name})}).then(x=>x.json());
+    if(!r.ok) throw new Error(r.error||'');
+  }catch(e){ showToast('記録できませんでした:'+(e.message||'自習室アプリの更新が必要かも')); return; }
+  if (out) await saveRoomFix(v, out);
+  await loadVisits(); renderStudyDash(); showToast(v.name + ' さん 退室しました' + (out ? `(${out} に直しました)` : ''));
+}
+/* なおし画面:この14日の来室を一覧にして、退室時間を直す */
+let FIX_ALL = false;
+function rfId(k){ return 'rf-' + [...String(k)].map(c => c.codePointAt(0).toString(36)).join('-'); }
+function fixSuspect(v){
+  const today = jstToday();
+  if (!v.out) return v.date < today || (v.inMs && Date.now() - Number(v.inMs) > 4*3600e3);
+  return !v.fixed && (v.min || 0) > 240;
+}
+function openRoomFix(){
+  let el = document.getElementById('roomfix'); if (!el) { el = document.createElement('div'); el.id = 'roomfix'; document.body.appendChild(el); }
+  const L = (VISITS && VISITS.visits || []).slice().sort((a, b) => b.date.localeCompare(a.date) || (Number(b.inMs)||0) - (Number(a.inMs)||0));
+  const sus = L.filter(v => fixSuspect(v) || v.fixed), list = FIX_ALL ? L : sus;
+  el.innerHTML = `<div class="rf-box"><div class="rf-h"><b>✏️ 自習時間のなおし</b><button onclick="document.getElementById('roomfix').remove()">とじる</button></div>
+    <p class="rf-note">退室のQRを忘れた日は、実際に帰った時間を入れてください。召喚の強さ・ダッシュボードの自習時間は、直した時間で数えます。<br>⚠ = 退室なし、または4時間をこえている記録</p>
+    <label class="rf-all"><input type="checkbox" ${FIX_ALL ? 'checked' : ''} onchange="FIX_ALL=this.checked;openRoomFix()"> この14日の来室をぜんぶ表示</label>
+    ${list.length ? list.map(v => { const k = visitKey(v), inT = visitIn(v);
+      return `<div class="rf-row ${fixSuspect(v) ? 'sus' : ''} ${v.fixed ? 'fixed' : ''}">
+        <div class="rf-who">${fixSuspect(v) ? '⚠ ' : v.fixed ? '✅ ' : ''}<b>${esc_(v.name)}</b> <small>${sdLabel(v.date)}</small></div>
+        <div class="rf-t">${inT}〜${v.out || '<em>退室なし</em>'}${v.min != null && v.out ? `(${fmtMin(v.min)})` : ''}${v.fixed ? `<small>もとは ${v.origOut || '退室なし'}${v.origMin != null && v.origOut ? `(${fmtMin(v.origMin)})` : ''}</small>` : ''}</div>
+        <div class="rf-in"><span>帰った時間</span><input type="time" id="${rfId(k)}" value="${v.fixed ? v.out : ''}" min="${inT}">
+          <button onclick="fixSave(${esc_(JSON.stringify(k))}, this)">保存</button>${v.fixed ? `<button class="undo" onclick="fixSave(${esc_(JSON.stringify(k))}, this, true)">元にもどす</button>` : ''}</div>
+      </div>`; }).join('') : '<p class="rf-note" style="text-align:center;padding:16px 0">直したほうがよさそうな記録はありません 👍</p>'}
+  </div>`;
+}
+async function fixSave(key, btn, undo){
+  const v = (VISITS && VISITS.visits || []).find(x => visitKey(x) === key); if (!v) return;
+  const inp = document.getElementById(rfId(key)), out = undo ? null : (inp && inp.value);
+  if (!undo) { if (!out) { showToast('帰った時間を入れてね'); return; }
+    if (toMin(out) <= toMin(visitIn(v))) { showToast('入室(' + visitIn(v) + ')より後の時間にしてね'); return; } }
+  btn.disabled = true; btn.textContent = '保存中…';
+  const ok = await saveRoomFix(v, out);
+  if (ok) { await loadVisits(); showToast(undo ? '元にもどしました' : `${v.name} さん ${out} 退室に直しました`); }
+  openRoomFix(); if (typeof renderStudyDash === 'function') renderStudyDash();
 }
 function dTestDate(d){ const t = STUDY_TESTS.find(x=>x.id===(d.test||{}).id); return t ? t.start : (d.test||{}).date || null; }
 function dMinutes(d, from, to){ return (d.sessions||[]).filter(x=>{ const k=sdKey(x.a); return k>=from && k<=to; }).reduce((a,x)=>a+(x.b-x.a)/6e4,0); }
@@ -4863,7 +4983,7 @@ async function loadDash(force){
   DASH.loading = true; renderStudyDash();
   const [a] = await Promise.all([api('getAllStudy', {}), loadVisits()]);
   DASH.loading = false;
-  if(a && a.ok && a.data){ TEAM = {}; Object.entries(a.data).forEach(([k,v])=>{ try{ TEAM[k]=JSON.parse(v); }catch(e){} }); DASH.at = Date.now(); DASH.err = null; }
+  if(a && a.ok && a.data){ TEAM = {}; ROOMFIX = {}; Object.entries(a.data).forEach(([k,v])=>{ try{ TEAM[k]=JSON.parse(v); collectRoomFix(k, TEAM[k]); }catch(e){} }); applyRoomFix(); DASH.at = Date.now(); DASH.err = null; }
   else DASH.err = '読み込めませんでした';
   renderStudyDash();
 }
@@ -4926,7 +5046,8 @@ function roomBlock(){
   const wk = sdAdd(t,-6), week = VISITS.visits.filter(v=>v.date>=wk);
   const ppl = new Set(week.map(v=>nName(v.name))).size, wmin = week.reduce((a,v)=>a+(v.min||0),0);
   return `<div class="room"><div class="room-h"><b>🚪 今日の自習室</b><span>${list.length}人(いま ${list.filter(v=>!v.out).length}人)</span><span class="sv-note">この7日:のべ${new Set(week.map(v=>v.date+nName(v.name))).size}回・${ppl}人・${fmtMin(wmin)}</span></div>
-    ${list.length?`<div class="room-list">${list.map(v=>`<span class="${v.out?'':'in'}">${esc_(v.name)} <small>${esc_(v.grade||'')} ${v.in}〜${v.out||'在室'}${v.min!=null?`(${fmtMin(v.min)})`:''}${v.rsv&&v.rsv.startsWith('なし')?' 予約なし':''}</small>${v.out?'':`<button onclick="event.stopPropagation();roomAct('teacherCheckOut', ${esc_(JSON.stringify(v.name))})">退室</button>`}</span>`).join('')}</div>`:'<div class="sv-note">今日はまだだれも来ていません</div>'}
+    ${list.length?`<div class="room-list">${list.map(v=>`<span class="${v.out?'':'in'}">${esc_(v.name)} <small>${esc_(v.grade||'')} ${v.in}〜${v.out||'在室'}${v.min!=null?`(${fmtMin(v.min)})`:''}${v.rsv&&v.rsv.startsWith('なし')?' 予約なし':''}</small>${v.fixed?' <small>✏️直した</small>':''}${v.out?'':`<button onclick="event.stopPropagation();roomOut(${esc_(JSON.stringify(visitKey(v)))})">退室</button>`}</span>`).join('')}</div>`:'<div class="sv-note">今日はまだだれも来ていません</div>'}
+    ${(()=>{ const n = VISITS.visits.filter(fixSuspect).length; return `<button class="rf-open ${n?'warn':''}" onclick="openRoomFix()">✏️ 自習時間のなおし${n?`(⚠ ${n}件)`:''}</button>`; })()}
     <div class="room-add"><span>📱スマホがない子:</span><select id="room-who"><option value="">生徒を選ぶ</option>${rosterStudents().filter(s=>!list.some(v=>!v.out&&nameMatch(s,v.name))).map(s=>`<option value="${esc_(s.nickname||s.name)}" data-g="${esc_(s.grade||'')}">${esc_(s.name)}${s.nickname&&s.nickname!==s.name?'('+esc_(s.nickname)+')':''} ${esc_(s.grade||'')}</option>`).join('')}</select><button onclick="const o=document.getElementById('room-who').selectedOptions[0];roomAct('teacherCheckIn', o.value, o.dataset.g)">入室を記録</button></div>
   </div>`;
 }
@@ -4990,7 +5111,7 @@ function mqExtrasLoad(force){
     loadMQB(),
   ]).finally(() => { MQX_BUSY = false; renderParty(); renderSummon(); });
 }
-function loadMQB(){ return api('getAllStudy', {}).then(a => { if (a && a.ok && a.data) Object.entries(a.data).forEach(([k, v]) => { try { const o = JSON.parse(v); if (o && o.mq) MQB[k] = o.mq; } catch(e){} }); }).catch(() => {}); }
+function loadMQB(){ return api('getAllStudy', {}).then(a => { if (a && a.ok && a.data) { ROOMFIX = {}; Object.entries(a.data).forEach(([k, v]) => { try { const o = JSON.parse(v); if (o && o.mq) MQB[k] = o.mq; collectRoomFix(k, o); } catch(e){} }); applyRoomFix(); } }).catch(() => {}); }
 /* 自分の学習データのセルに mq の項目を足して保存(メダル・召喚ボタンで使う) */
 async function writeMQ(patch){
   if (!currentStudent) return false;
@@ -5110,6 +5231,7 @@ function renderSummon(){
   const lastHtml = last ? `<div class="summon-note" style="margin-top:6px">先週の召喚:${esc((/^自習室の召喚:(.+?)\(/.exec(last.nickname||'')||[])[1]||'')} が ${(Number(last.damage)||0).toLocaleString()} ダメージを与えた！</div>` : '';
   box.innerHTML = `<div class="summon-h"><b>🚪 今週の自習室の召喚</b><span>${md(ws)}〜${md(sdAdd(ws, 6))}</span></div>
     <button class="summon-help" onclick="explainSummon()">❓ 自習室の召喚ってなに？</button>
+    ${isTester(currentStudent) ? `<div class="summon-test">🧪 テスト用:先週の召喚をカットイン付きで見る<div><button onclick="testSummon(false)">中高生の見え方</button><button onclick="testSummon(true)">小学生の見え方</button></div></div>` : ''}
     <div class="summon-ladder">${ladder}</div>
     <div class="summon-note" style="margin:0 0 6px;font-size:13px;color:#fff">今週 <b>${r.n}</b>人・<b>${Math.floor(r.minutes/60)}</b>時間${r.minutes%60 ? (r.minutes%60) + '分' : ''}${t ? `　→ ${t.icon}<b>${t.name}</b> を召喚できる！` : ''}</div>
     ${r.n ? `<div class="summon-names">${r.people.map(p => `<span class="${p.nebari ? 'nb' : ''}">${p.nebari ? '🔥' : ''}${esc(p.name)} <b>${hm(p.min)}</b></span>`).join('')}</div>` : ''}
@@ -5127,8 +5249,8 @@ async function summonWeeklyCheck(){
     if (ws < '2026-10-19') return;   // QRの記録はこの週から
     try { const lr = await api('getDamageLog', { days: 30 }); if (lr && lr.ok && Array.isArray(lr.logs)) DAMAGE_LOG = lr.logs; } catch(e) {}
     let log = summonLogFor(ws), fresh = null;
+    if (!log) await loadMQB();   // 召喚ボタンの成立と、自習時間のなおしを読んでから数える
     const r = roomRange(ws, we), t = summonTier(r.n);
-    if (!log && t) await loadMQB();
     const established = ws <= '2026-10-19' || !!summonOK(ws);   // 召喚ボタンで成立した週だけ(最初の週は例外)
     if (!log && t && established) {
       let lock = null; try { lock = localStorage.getItem('summon_fire_' + ws); } catch(e) {}
@@ -5177,7 +5299,7 @@ function isKidViewer(){ return !!(currentStudent && String(currentStudent.grade 
 /* カットインのデータ。joinedSkip:その週に来た子(小学生以外)には出さない。only:説明だけ(召喚の演出なし) */
 function summonStory(ws, o){
   o = o || {};
-  const me = currentStudent ? String(currentStudent.id) : null, kid = isKidViewer() || !!o.kid;
+  const me = currentStudent ? String(currentStudent.id) : null, kid = o.kid != null ? !!o.kid : isKidViewer();
   const log = ws ? summonLogFor(ws) : null;
   const tiers = SUMMONS.slice().reverse();
   if (!log) return o.only ? { kid: true, only: true, tiers: tiers.map(x => ({ icon:x.icon, name:x.name, min:x.min })) } : null;
@@ -5192,6 +5314,16 @@ function summonStory(ws, o){
     ok: ok ? { date: sdLabel(ok.date || sdAdd(ws, 5)), voters: ok.voters || 0 } : null,
     tiers: tiers.map(x => ({ icon:x.icon, name:x.name, min:x.min, now: x.key === t.key })),
     beast: { icon: t.icon, name: t.name }, dmg: Number(log.damage) || 0 };
+}
+/* テストアカウント用:先週の召喚を、来ていない人が見るのと同じカットイン付きで何度でも再生(ダメージ・記録なし) */
+async function testSummon(kid){
+  try { await loadVisits(); await loadMQB(); const lr = await api('getDamageLog', { days: 30 }); if (lr && lr.ok && Array.isArray(lr.logs)) DAMAGE_LOG = lr.logs; } catch(e) {}
+  const ws = sdAdd(weekStartOf(jstToday()), -7), log = summonLogFor(ws);
+  if (!log) { showToast('先週の召喚の記録がまだないよ'); return; }
+  const m = /^自習室の召喚:(.+?)\((\d+)人\)/.exec(log.nickname || log.name || '') || [];
+  const t = SUMMONS.find(x => x.name === m[1]) || SUMMONS[SUMMONS.length - 1];
+  const story = summonStory(ws, { kid });
+  summonFx(t, Number(m[2]) || 0, Number(log.damage) || 0, t.effect === 'cure' ? '来た仲間はみんな元気になった！' : '', `${md(ws)}〜${md(sdAdd(ws, 6))} の`, { story });
 }
 /* 「❓召喚ってなに？」:いつでも説明だけ見られる(先週の召喚があればそのおはなしも) */
 async function explainSummon(){
