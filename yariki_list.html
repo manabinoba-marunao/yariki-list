@@ -457,33 +457,37 @@ td.td-name { padding-left: 16px; text-align: left; }
 .dex-row .who { flex:1; }
 .dex-row .c { font-family:var(--mono); color:var(--gold); white-space:nowrap; font-size:12px; }
 .dex-row.me { background:rgba(255,215,0,.08); border-radius:6px; }
-/* かぶりもの */
-.pm-hat { position:absolute; left:50%; top:-25px; transform:translateX(-50%); font-size:27px; line-height:1; z-index:2; pointer-events:none; filter:drop-shadow(0 2px 2px rgba(0,0,0,.65)); }
-.pm-hat.r2 { filter:drop-shadow(0 0 5px rgba(255,215,0,.85)) drop-shadow(0 2px 2px rgba(0,0,0,.6)); }
-.pm-hat.r3 { filter:drop-shadow(0 0 7px #ffd700) drop-shadow(0 0 3px #fff); animation:hat-glow 2s ease-in-out infinite; }
-@keyframes hat-glow { 0%,100%{transform:translateX(-50%) scale(1)} 50%{transform:translateX(-50%) translateY(-2px) scale(1.08)} }
-.pm.has-hat .pm-bubble { top:-14px; }
-.hat-tag { font-size:13px; margin-left:2px; }
+/* かぶりもの:頭(46pxの丸)に合わせて描いた絵を、100×100で重ねる */
+.pm.has-hat { padding-top:40px; }
+.pm-hat { position:absolute; left:-27px; top:-39px; width:100px; height:100px; z-index:2; pointer-events:none; filter:drop-shadow(0 2px 2px rgba(0,0,0,.55)); }
+.pm-hat svg { display:block; width:100px; height:100px; overflow:visible; }
+.pm-hat.r2 { filter:drop-shadow(0 0 4px rgba(255,215,0,.75)) drop-shadow(0 2px 2px rgba(0,0,0,.5)); }
+.pm-hat.r3 { filter:drop-shadow(0 0 6px #ffd700) drop-shadow(0 0 2px #fff); animation:hat-glow 2.2s ease-in-out infinite; }
+@keyframes hat-glow { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-1.5px)} }
+.pm.has-hat .pm-bubble { top:-6px; }
+.pm.has-hat .pm-face { transform:translateY(5px); font-size:16px; }
+.pm.has-hat .pm-medal { z-index:3; }
+.hat-tag { display:inline-block; vertical-align:-6px; margin-left:3px; line-height:0; }
 .hat-head { display:flex; align-items:center; gap:8px; font-size:12px; color:#b8b8e0; margin-bottom:4px; }
 .hat-head b { font-family:var(--mono); font-size:18px; color:var(--gold); }
 .hat-off { margin-left:auto; padding:4px 10px; border-radius:8px; border:1px solid #6a6a9a; background:transparent; color:#c8c8f0; font-size:11px; font-family:var(--font-game); cursor:pointer; }
-.hat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(92px,1fr)); gap:6px; margin-top:8px; max-height:38vh; overflow:auto; }
-.hat-cell { display:flex; flex-direction:column; align-items:center; gap:2px; padding:8px 4px; border-radius:10px; border:1px solid #3a3a6a; background:rgba(255,255,255,.04); color:#fff; font-family:var(--font-game); text-align:center; }
-.hat-cell .hi { font-size:28px; line-height:1.1; }
+.hat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:6px; margin-top:8px; max-height:40vh; overflow:auto; }
+.hat-cell { display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 4px 8px; border-radius:10px; border:1px solid #3a3a6a; background:rgba(255,255,255,.04); color:#fff; font-family:var(--font-game); text-align:center; }
+.hat-cell .hi { line-height:0; }
 .hat-cell .hn { font-size:11px; font-weight:700; }
 .hat-cell .hs { font-size:9.5px; color:#8888bb; line-height:1.35; }
 .hat-cell.got { cursor:pointer; }
 .hat-cell.got.r2 { border-color:#d4a514; }
 .hat-cell.got.r3 { border-color:#ffd700; background:rgba(255,215,0,.10); box-shadow:0 0 8px rgba(255,215,0,.35); }
-.hat-cell.got.on { background:var(--gold); border-color:var(--gold); }
-.hat-cell.got.on .hn, .hat-cell.got.on .hs { color:#1c1c38; }
-.hat-cell.lock .hi { filter:brightness(0); opacity:.35; }
+.hat-cell.got.on { background:rgba(255,215,0,.22); border-color:var(--gold); border-width:2px; }
+.hat-cell.got.on .hs { color:var(--gold); font-weight:700; }
+.hat-cell.lock .hi svg { filter:brightness(0); opacity:.4; }
 .hat-cell.lock .hn { color:#6a6a9a; }
 .hat-now { display:flex; align-items:center; gap:10px; }
 .hat-now b { color:#fff; font-size:13px; }
 .hat-now small { display:block; color:#8888bb; font-size:10.5px; line-height:1.5; }
-.hat-big { font-size:34px; line-height:1; }
-.hat-big.r3 { filter:drop-shadow(0 0 6px #ffd700); }
+.hat-big { line-height:0; }
+.hat-big.r3 svg { filter:drop-shadow(0 0 5px #ffd700); }
 /* マルとバッジ */
 .pm-medal { position:absolute; left:50%; top:30px; transform:translateX(-50%); z-index:3; line-height:0; filter:drop-shadow(0 1px 2px rgba(0,0,0,.6)); }
 .pm-medal svg { display:block; }
@@ -2774,6 +2778,7 @@ function todayParty() {
   return Object.values(map).sort((a,b) => (b.hit+b.magic) - (a.hit+a.magic));
 }
 
+const FACE_ST_ALL = { pumpkin:'🎃', bat:'🦇', cat:'🐈‍⬛', ghost:'👻' };
 function renderParty() {
   const box = document.getElementById('party'); if (!box) return;
   const list = todayParty();
@@ -2784,13 +2789,14 @@ function renderParty() {
     const w = weaponFor(levelOf(p.id));
     const sm = STATUS_MAP[p.id]; const def = sm && sm.status ? STATUS_DEFS[sm.status] : null;
     const total = p.hit + p.magic;
-    const FACE_ST = { pumpkin:'🎃', bat:'🦇', cat:'🐈‍⬛', ghost:'👻' };   // 変身系は顔そのものが変わる
+    const FACE_ST = FACE_ST_ALL;   // 変身系は顔そのものが変わる
     const face = def && FACE_ST[sm.status] ? FACE_ST[sm.status] : esc(Array.from(name)[0] || '？');
     const fx = def && !FACE_ST[sm.status] ? `<div class="pm-fx">${def.icon}</div>` : '';
-    const hat = typeof wornHat === 'function' ? wornHat(p.id) : null;
+    const hat0 = typeof wornHat === 'function' ? wornHat(p.id) : null;
+    const hat = hat0 && !(def && FACE_ST_ALL[sm.status]) ? hat0 : null;   // 変身中は、変身の顔を優先
     return `<button class="pm ${def ? 'st-' + sm.status : ''} ${p.id === myId ? 'me' : ''} ${hat ? 'has-hat' : ''}" onclick="openMember('${p.id}')">
       ${def ? '<span class="pm-bubble">たすけて！</span>' : ''}${fx}
-      <div class="pm-body">${hat ? `<span class="pm-hat r${hat.rank}" title="${esc(hat.name)}">${hat.icon}</span>` : ''}<span class="pm-face">${face}</span><span class="pm-wpn ${w.cls}">${weaponIcon(w, {held:true})}</span>${(typeof equippedBadges === 'function' && equippedBadges(p.id)[0]) ? `<span class="pm-medal">${medalSVG(equippedBadges(p.id)[0], 20)}</span>` : ''}</div>
+      <div class="pm-body">${hat ? `<span class="pm-hat r${hat.rank}" title="${esc(hat.name)}">${hatSVG(hat)}</span>` : ''}<span class="pm-face">${face}</span><span class="pm-wpn ${w.cls}">${weaponIcon(w, {held:true})}</span>${(typeof equippedBadges === 'function' && equippedBadges(p.id)[0]) ? `<span class="pm-medal">${medalSVG(equippedBadges(p.id)[0], 20)}</span>` : ''}</div>
       ${typeof roomTodayIds === 'function' && roomTodayIds().has(p.id) ? '<span class="pm-room" title="今日 自習室に来た">🚪</span>' : ''}
       <div class="pm-name">${esc(name)}</div>
       <div class="pm-dmg ${total ? '' : 'zero'}">${total ? total.toLocaleString() : '—'}</div>
@@ -5608,58 +5614,213 @@ function medalSVG(b, px, noRibbon){
 }
 
 /* ==== かぶりもの:マル単で単元のセットをぜんぶマルにすると手に入る。ボス戦の仲間の頭にのる(攻撃力には関係なし) ====
-   マル単から mq.gdone(ぜんぶマルになった「教科/区分/単元」の一覧)が届く。かぶっているものは mq.hat */
+   マル単から mq.gdone(ぜんぶマルになった「教科/区分/単元」の一覧)と mq.maru が届く。かぶっているものは mq.hat
+   絵は 100×100 の座標で、頭(黒丸)は 中心(50,62)・半径23。上は y=39 が頭のてっぺん */
 const HATS = [
-  { id:'globe',   icon:'🌏', name:'地球のかぶりもの',     cond:'社会「世界地図」をぜんぶマル',          rank:2, re:/^社会\/地図・地名\/世界地図$/ },
-  { id:'fuji',    icon:'🗻', name:'富士山ハット',         cond:'社会「日本地図」をぜんぶマル',          rank:2, re:/^社会\/地図・地名\/日本地図$/ },
-  { id:'crown',   icon:'👑', name:'王冠',                 cond:'社会「首都」をぜんぶマル',              rank:2, re:/^社会\/地図・地名\/首都$/ },
-  { id:'castle',  icon:'🏯', name:'お城のかぶりもの',     cond:'社会「都道府県」をぜんぶマル',          rank:1, re:/^社会\/地図・地名\/都道府県$/ },
-  { id:'capitol', icon:'🏛️', name:'県庁ハット',           cond:'社会「県庁所在地」をぜんぶマル',        rank:1, re:/^社会\/地図・地名\/県庁所在地$/ },
-  { id:'compass', icon:'🧭', name:'羅針盤ぼうし',         cond:'社会「世界の国々」をぜんぶマル',        rank:1, re:/^社会\/地図・地名\/世界の国々$/ },
-  { id:'scroll',  icon:'📜', name:'巻物ハット',           cond:'社会の歴史(日本史・世界史)の単元をぜんぶマル', rank:1, re:/^社会\/[^/]+\/(歴史|日本史|世界史)$/ },
-  { id:'scales',  icon:'⚖️', name:'てんびんハット',       cond:'社会の公民・公共の単元をぜんぶマル',    rank:1, re:/^社会\/[^/]+\/(公民|公共)$/ },
-  { id:'dragon',  icon:'🐉', name:'龍のかぶりもの',       cond:'漢検「1級」をぜんぶマル',               rank:3, re:/^国語\/漢検\/1級/ },
-  { id:'brush',   icon:'🖌️', name:'筆のかぶりもの',       cond:'漢検「準1級」をぜんぶマル',             rank:2, re:/^国語\/漢検\/準1級/ },
-  { id:'kanji',   icon:'🀄', name:'漢字ハット',           cond:'漢検の級を1つぜんぶマル(10級〜2級)',   rank:1, re:/^国語\/漢検\/(10|[2-9])級|^国語\/漢検\/準2級/ },
-  { id:'koi',     icon:'🎏', name:'こいのぼりハット',     cond:'国語の慣用句・四字熟語・ことわざ・故事成語の単元をぜんぶマル', rank:1, re:/^国語\/[^/]+\/(慣用句|四字熟語|ことわざ|故事成語)$/ },
-  { id:'sakura',  icon:'🌸', name:'桜のかんざし',         cond:'国語「古文単語」をぜんぶマル',          rank:1, re:/^国語\/[^/]+\/古文単語$/ },
-  { id:'eagle',   icon:'🦅', name:'ワシのかぶりもの',     cond:'英検「準1級」をぜんぶマル',             rank:3, re:/^英語\/英検\/英検準1級$/ },
-  { id:'grad',    icon:'🎓', name:'角帽',                 cond:'英検「2級」をぜんぶマル',               rank:2, re:/^英語\/英検\/英検2級$/ },
-  { id:'star',    icon:'🌟', name:'スターハット',         cond:'英検「準2級プラス」をぜんぶマル',       rank:2, re:/^英語\/英検\/英検準2級プラス$/ },
-  { id:'silk',    icon:'🎩', name:'シルクハット',         cond:'英検「準2級」をぜんぶマル',             rank:1, re:/^英語\/英検\/英検準2級$/ },
-  { id:'cap',     icon:'🧢', name:'キャップ',             cond:'英検「3級」をぜんぶマル',               rank:1, re:/^英語\/英検\/英検3級$/ },
-  { id:'chick2',  icon:'🐥', name:'ひよこ(大)',           cond:'英検「4級」をぜんぶマル',               rank:1, re:/^英語\/英検\/英検4級$/ },
-  { id:'chick',   icon:'🐣', name:'ひよこ',               cond:'英検「5級」をぜんぶマル',               rank:1, re:/^英語\/英検\/英検5級$/ },
-  { id:'owl',     icon:'🦉', name:'フクロウのかぶりもの', cond:'共通テストの年度を1つぜんぶマル',       rank:2, re:/^英語\/共通テスト\// },
-  { id:'tree',    icon:'🌳', name:'大樹のかぶりもの',     cond:'まいにち英単語3000「中学編」をぜんぶマル', rank:3, re:/^英語\/[^/]+\/まいにち英単語3000 中学編$/ },
-  { id:'sprout',  icon:'🌱', name:'若葉のかぶりもの',     cond:'まいにち英単語3000「小学編」をぜんぶマル', rank:2, re:/^英語\/[^/]+\/まいにち英単語3000 小学編$/ },
-  { id:'book',    icon:'📘', name:'教科書ハット',         cond:'英語の教科書(中1・中2・中3)を1学年ぜんぶマル', rank:2, re:/^英語\/中学\/中[123] 教科書$/ },
-  { id:'100',     icon:'💯', name:'100点ハット',          cond:'「必須単語・連語500」をぜんぶマル',     rank:1, re:/^英語\/[^/]+\/必須単語・連語500$/ },
-  { id:'puzzle',  icon:'🧩', name:'パズルのかぶりもの',   cond:'並び替えの級を1つぜんぶマル',           rank:1, re:/^英語\/並び替え\// },
-  { id:'plane',   icon:'✈️', name:'飛行機のかぶりもの',   cond:'「AIEクラスWORLD」をぜんぶマル',        rank:1, re:/^英語\/AIE\// },
-  { id:'ruler',   icon:'📐', name:'じょうぎハット',       cond:'数学の単元を1つぜんぶマル',             rank:1, re:/^数学\// },
-  { id:'flask',   icon:'🧪', name:'フラスコハット',       cond:'理科の単元を1つぜんぶマル',             rank:1, re:/^理科\// },
+  { id:'globe',   name:'地球のかぶりもの',   cond:'社会「世界地図」をぜんぶマル',   rank:2, re:/^社会\/地図・地名\/世界地図$/ },
+  { id:'fuji',    name:'富士山ハット',       cond:'社会「日本地図」をぜんぶマル',   rank:2, re:/^社会\/地図・地名\/日本地図$/ },
+  { id:'crown',   name:'王冠',               cond:'社会「首都」をぜんぶマル',       rank:2, re:/^社会\/地図・地名\/首都$/ },
+  { id:'aviator', name:'パイロット帽',       cond:'社会「世界の国々」をぜんぶマル', rank:1, re:/^社会\/地図・地名\/世界の国々$/ },
+  { id:'hinomaru',name:'日の丸はちまき',     cond:'社会「都道府県」をぜんぶマル',   rank:1, re:/^社会\/地図・地名\/都道府県$/ },
+  { id:'ekicho',  name:'駅長さんの帽子',     cond:'社会「県庁所在地」をぜんぶマル', rank:1, re:/^社会\/地図・地名\/県庁所在地$/ },
+  { id:'mage',    name:'ちょんまげ',         cond:'社会の歴史(日本史・世界史)の単元をぜんぶマル', rank:1, re:/^社会\/[^/]+\/(歴史|日本史|世界史)$/ },
+  { id:'dragon',  name:'龍のかぶと',         cond:'漢検「1級」をぜんぶマル',        rank:3, re:/^国語\/漢検\/1級/ },
+  { id:'kitsune', name:'きつねのお面',       cond:'漢検「準1級」をぜんぶマル',      rank:2, re:/^国語\/漢検\/準1級/ },
+  { id:'kanji',   name:'「漢」のはちまき',   cond:'漢検の級を1つぜんぶマル(10級〜2級)', rank:1, re:/^国語\/漢検\/((10|[2-9])級|準2級)/ },
+  { id:'eboshi',  name:'烏帽子(えぼし)',     cond:'国語「古文単語」をぜんぶマル',   rank:1, re:/^国語\/[^/]+\/古文単語$/ },
+  { id:'wing',    name:'翼のかぶと',         cond:'英検「準1級」をぜんぶマル',      rank:3, re:/^英語\/英検\/英検準1級$/ },
+  { id:'grad',    name:'角帽',               cond:'英検「2級」をぜんぶマル',        rank:2, re:/^英語\/英検\/英検2級$/ },
+  { id:'tiara',   name:'星のティアラ',       cond:'英検「準2級プラス」をぜんぶマル', rank:2, re:/^英語\/英検\/英検準2級プラス$/ },
+  { id:'silk',    name:'シルクハット',       cond:'英検「準2級」をぜんぶマル',      rank:1, re:/^英語\/英検\/英検準2級$/ },
+  { id:'cap',     name:'キャップ',           cond:'英検「3級」をぜんぶマル',        rank:1, re:/^英語\/英検\/英検3級$/ },
+  { id:'usagi',   name:'うさみみ',           cond:'英検「4級」をぜんぶマル',        rank:1, re:/^英語\/英検\/英検4級$/ },
+  { id:'chick',   name:'頭にひよこ',         cond:'英検「5級」をぜんぶマル',        rank:1, re:/^英語\/英検\/英検5級$/ },
+  { id:'owl',     name:'フクロウのフード',   cond:'共通テストの年度を1つぜんぶマル', rank:2, re:/^英語\/共通テスト\// },
+  { id:'laurel',  name:'金の月桂冠',         cond:'まいにち英単語3000「中学編」をぜんぶマル', rank:3, re:/^英語\/[^/]+\/まいにち英単語3000 中学編$/ },
+  { id:'sprout',  name:'頭から若葉',         cond:'まいにち英単語3000「小学編」をぜんぶマル', rank:2, re:/^英語\/[^/]+\/まいにち英単語3000 小学編$/ },
+  { id:'gakubo',  name:'学生帽',             cond:'英語の教科書(中1・中2・中3)を1学年ぜんぶマル', rank:2, re:/^英語\/中学\/中[123] 教科書$/ },
+  { id:'neko',    name:'ねこみみ',           cond:'並び替えの級を1つぜんぶマル',    rank:1, re:/^英語\/並び替え\// },
+  { id:'phones',  name:'ヘッドホン',         cond:'「AIEクラスWORLD」をぜんぶマル', rank:1, re:/^英語\/AIE\// },
+  { id:'halo',    name:'∞の天使の輪',        cond:'数学の単元を1つぜんぶマル',      rank:1, re:/^数学\// },
+  { id:'goggles', name:'実験ゴーグル',       cond:'理科の単元を1つぜんぶマル',      rank:1, re:/^理科\// },
+  { id:'wizard',  name:'魔法使いの帽子',     cond:'マル単でマルを50個あつめる',     rank:3, maru:50 },
 ];
 const HAT_RANK = { 1:'ふつう', 2:'レア', 3:'伝説' };
-function hatsOf(id){ const m = MQB[String(id)]; const g = m && Array.isArray(m.gdone) ? m.gdone : []; return HATS.filter(h => g.some(k => h.re.test(k))); }
+let HAT_N = 0;
+/* 頭の上半分にぴったり沿う形(帽子の本体) */
+const HAT_DOME = (y1, dip) => `M27.4,${y1} A23,23 0 0 1 72.6,${y1} Q50,${y1 - dip} 27.4,${y1}Z`;
+function hatArt(id){
+  const u = 'h' + (++HAT_N);
+  const star = (cx, cy, r, f) => { let p = ''; for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .45 : r; p += `${(cx + Math.cos(a) * rr).toFixed(1)},${(cy + Math.sin(a) * rr).toFixed(1)} `; } return `<polygon points="${p}" fill="${f}" stroke="#7a5a08" stroke-width=".6" stroke-linejoin="round"/>`; };
+  const A = {
+  globe: `<defs><radialGradient id="${u}o" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#7fd0ff"/><stop offset=".6" stop-color="#1f7fd6"/><stop offset="1" stop-color="#0b3f86"/></radialGradient>
+      <clipPath id="${u}c"><circle cx="50" cy="56" r="34"/></clipPath><mask id="${u}m"><rect width="100" height="100" fill="#fff"/><circle cx="50" cy="64" r="19.5" fill="#000"/></mask></defs>
+    <g mask="url(#${u}m)"><circle cx="50" cy="56" r="34" fill="url(#${u}o)"/>
+      <g clip-path="url(#${u}c)" fill="#4cc56b" stroke="#2e8a46" stroke-width=".8">
+        <path d="M18,34 Q28,22 40,26 Q44,34 36,40 Q30,44 26,52 Q18,50 16,42Z"/><path d="M56,24 Q70,20 80,30 Q78,38 70,38 Q64,44 58,40 Q52,32 56,24Z"/>
+        <path d="M74,48 Q84,50 86,62 Q80,72 74,66 Q70,58 74,48Z"/><path d="M20,66 Q28,64 30,72 Q28,82 22,84 Q16,76 20,66Z"/><path d="M54,84 Q66,82 70,90 L52,92Z"/></g>
+      <ellipse cx="38" cy="34" rx="10" ry="5" fill="#fff" opacity=".35" transform="rotate(-25 38 34)"/></g>
+    <circle cx="50" cy="64" r="19.5" fill="none" stroke="#0b3f86" stroke-width="1.6"/><circle cx="50" cy="56" r="34" fill="none" stroke="#0b3f86" stroke-width="1.2"/>`,
+  fuji: `<defs><linearGradient id="${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6a8fd8"/><stop offset="1" stop-color="#2f4f9a"/></linearGradient></defs>
+    <path d="M24,50 L42,14 Q50,10 58,14 L76,50 Q50,42 24,50Z" fill="url(#${u})" stroke="#1d3270" stroke-width="1.2" stroke-linejoin="round"/>
+    <path d="M37,24 L42,14 Q50,10 58,14 L63,24 L58,22 L55,27 L50,22 L45,28 L42,22Z" fill="#fff" stroke="#c9d6ef" stroke-width=".6"/>
+    <path d="M24,50 Q50,42 76,50 L76,46 Q50,38 24,46Z" fill="#e8463a"/>`,
+  crown: `<defs><linearGradient id="${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff2a8"/><stop offset=".5" stop-color="#f2c12e"/><stop offset="1" stop-color="#b8860b"/></linearGradient></defs>
+    <path d="M30,46 L28,22 L39,33 L50,16 L61,33 L72,22 L70,46 Q50,41 30,46Z" fill="url(#${u})" stroke="#7a5a08" stroke-width="1.2" stroke-linejoin="round"/>
+    <path d="M30,46 Q50,41 70,46 L70,41 Q50,36 30,41Z" fill="#c0283c" stroke="#7a5a08" stroke-width=".8"/>
+    <circle cx="28" cy="21" r="2.6" fill="#fff6c2" stroke="#7a5a08" stroke-width=".6"/><circle cx="50" cy="15" r="3" fill="#fff6c2" stroke="#7a5a08" stroke-width=".6"/><circle cx="72" cy="21" r="2.6" fill="#fff6c2" stroke="#7a5a08" stroke-width=".6"/>
+    <circle cx="50" cy="32" r="3.4" fill="#2a7de1" stroke="#fff" stroke-width=".8"/><circle cx="39" cy="38" r="2" fill="#2ea86b"/><circle cx="61" cy="38" r="2" fill="#2ea86b"/>`,
+  aviator: `<path d="${HAT_DOME(58, 10)}" fill="#8a5a2b" stroke="#4a2c10" stroke-width="1.2"/>
+    <path d="M27.6,56 Q24,66 30,74 L36,72 Q32,64 33,56Z M72.4,56 Q76,66 70,74 L64,72 Q68,64 67,56Z" fill="#8a5a2b" stroke="#4a2c10" stroke-width="1"/>
+    <path d="M50,39 L50,50" stroke="#4a2c10" stroke-width=".8"/>
+    <rect x="27" y="44" width="46" height="5" rx="2.5" fill="#3a2a1a"/>
+    <circle cx="40" cy="44" r="7" fill="#9fe3ff" stroke="#c9a227" stroke-width="2.2"/><circle cx="60" cy="44" r="7" fill="#9fe3ff" stroke="#c9a227" stroke-width="2.2"/>
+    <path d="M36,41 L39,39 M56,41 L59,39" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>`,
+  hinomaru: `<defs><clipPath id="${u}"><circle cx="50" cy="62" r="24.5"/></clipPath></defs>
+    <rect x="20" y="44" width="60" height="9" fill="#fff" stroke="#bbb" stroke-width=".8" clip-path="url(#${u})"/>
+    <circle cx="50" cy="48.5" r="3.4" fill="#e60012"/>
+    <path d="M72,47 Q82,42 86,48 Q80,50 74,50Z M72,51 Q80,56 84,62 Q78,60 72,53Z" fill="#fff" stroke="#bbb" stroke-width=".8"/>`,
+  ekicho: hatKepi(u, '#1d2b5a', '#e8463a', '#f2c12e'),
+  gakubo: hatKepi(u, '#151515', '#151515', '#f2c12e', true),
+  mage: `<path d="${HAT_DOME(48, 4)}" fill="#1a1a1a"/>
+    <path d="M36,44 Q50,40 64,44" fill="none" stroke="#444" stroke-width=".8"/>
+    <path d="M44,38 Q46,33 52,32 L66,29 Q69,29 68,32 L54,37 Q48,39 44,38Z" fill="#1a1a1a" stroke="#000" stroke-width=".6"/>
+    <path d="M49,33 L50.5,38" stroke="#fff" stroke-width="2"/>
+    <path d="M54,31.5 Q60,30.4 65,29.6" fill="none" stroke="#555" stroke-width=".7"/>`,
+  dragon: `<defs><linearGradient id="${u}g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff2a8"/><stop offset=".55" stop-color="#f2c12e"/><stop offset="1" stop-color="#a87508"/></linearGradient>
+      <linearGradient id="${u}k" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a8a6a"/><stop offset="1" stop-color="#0f3d2c"/></linearGradient></defs>
+    <path d="M47,46 Q34,30 26,8 Q38,22 50,38Z M53,46 Q66,30 74,8 Q62,22 50,38Z" fill="url(#${u}g)" stroke="#7a5a08" stroke-width="1" stroke-linejoin="round"/>
+    <path d="${HAT_DOME(54, 6)}" fill="url(#${u}k)" stroke="#0a2a1e" stroke-width="1.2"/>
+    <path d="M27.6,54 Q22,60 22,68 L30,66 Q30,60 33,54Z M72.4,54 Q78,60 78,68 L70,66 Q70,60 67,54Z" fill="url(#${u}k)" stroke="#0a2a1e" stroke-width="1"/>
+    <path d="M28,54 Q50,47 72,54" fill="none" stroke="#f2c12e" stroke-width="2"/>
+    <circle cx="50" cy="44" r="4" fill="#e8463a" stroke="#f2c12e" stroke-width="1.4"/>`,
+  kitsune: `<g transform="rotate(24 70 42)">
+    <path d="M58,30 L60,18 L66,26 L74,26 L80,18 L82,30 Q84,44 70,50 Q56,44 58,30Z" fill="#fff" stroke="#c03030" stroke-width="1.2" stroke-linejoin="round"/>
+    <path d="M60.5,21 L63,27 L61,28Z M79.5,21 L77,27 L79,28Z" fill="#e8463a"/>
+    <path d="M62,33 Q65,31 67,34 M73,34 Q75,31 78,33" fill="none" stroke="#c03030" stroke-width="1.6" stroke-linecap="round"/>
+    <path d="M64,30 Q65,28 67,30 M73,30 Q75,28 76,30" fill="none" stroke="#e8463a" stroke-width="1"/>
+    <circle cx="70" cy="46" r="1.4" fill="#1a1a1a"/></g>
+    <path d="M30,52 Q50,44 66,44" fill="none" stroke="#c03030" stroke-width="1.2"/>`,
+  kanji: `<defs><clipPath id="${u}"><circle cx="50" cy="62" r="24.5"/></clipPath></defs>
+    <rect x="20" y="44" width="60" height="9" fill="#fff" stroke="#bbb" stroke-width=".8" clip-path="url(#${u})"/>
+    <text x="50" y="51.6" text-anchor="middle" font-size="8" font-weight="900" fill="#c0283c" font-family="'Hiragino Mincho ProN','Yu Mincho','Noto Serif JP',serif">漢</text>
+    <path d="M72,47 Q82,42 86,48 Q80,50 74,50Z M72,51 Q80,56 84,62 Q78,60 72,53Z" fill="#fff" stroke="#bbb" stroke-width=".8"/>`,
+  eboshi: `<defs><linearGradient id="${u}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3a3a3a"/><stop offset=".45" stop-color="#111"/><stop offset="1" stop-color="#000"/></linearGradient></defs>
+    <path d="M36,46 L38,14 Q44,6 54,8 Q62,10 58,18 L64,46 Q50,41 36,46Z" fill="url(#${u})" stroke="#000" stroke-width="1" stroke-linejoin="round"/>
+    <path d="M40,40 L42,18 M47,40 L48,14" stroke="#555" stroke-width=".6"/>
+    <path d="M36,46 Q50,41 64,46" fill="none" stroke="#666" stroke-width="1"/>`,
+  wing: `<defs><linearGradient id="${u}s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f8ff"/><stop offset=".5" stop-color="#b8c6dc"/><stop offset="1" stop-color="#6a7a94"/></linearGradient></defs>
+    <g fill="#fff" stroke="#8aa0c8" stroke-width=".9" stroke-linejoin="round">
+      <path d="M31,50 Q18,46 10,30 Q8,22 12,16 Q18,28 30,36Z"/><path d="M31,46 Q20,40 16,26 Q16,18 20,14 Q24,28 32,34Z"/><path d="M32,42 Q24,34 24,22 Q26,16 29,14 Q30,28 34,34Z"/>
+      <path d="M69,50 Q82,46 90,30 Q92,22 88,16 Q82,28 70,36Z"/><path d="M69,46 Q80,40 84,26 Q84,18 80,14 Q76,28 68,34Z"/><path d="M68,42 Q76,34 76,22 Q74,16 71,14 Q70,28 66,34Z"/></g>
+    <path d="${HAT_DOME(54, 6)}" fill="url(#${u}s)" stroke="#4a5a74" stroke-width="1.2"/>
+    <path d="M50,39 L50,52" stroke="#f2c12e" stroke-width="3"/><path d="M28,54 Q50,47 72,54" fill="none" stroke="#f2c12e" stroke-width="2"/>`,
+  grad: `<path d="${HAT_DOME(52, 6)}" fill="#1a1a2e" stroke="#000" stroke-width="1"/>
+    <polygon points="50,24 86,34 50,44 14,34" fill="#22223a" stroke="#000" stroke-width="1.2" stroke-linejoin="round"/>
+    <polygon points="50,25.5 82,34 50,42" fill="#2e2e4e"/>
+    <circle cx="50" cy="34" r="2" fill="#f2c12e"/><path d="M50,34 Q70,36 78,40 L78,52" fill="none" stroke="#f2c12e" stroke-width="1.6"/>
+    <path d="M75,52 L81,52 L80,60 L76,60Z" fill="#f2c12e"/>`,
+  tiara: `<path d="M30,48 Q50,36 70,48" fill="none" stroke="#e8c04a" stroke-width="2.6" stroke-linecap="round"/>
+    ${star(50, 32, 9, '#ffe14a')}${star(36, 39, 5.5, '#fff1a0')}${star(64, 39, 5.5, '#fff1a0')}
+    <circle cx="50" cy="32" r="1.6" fill="#fff"/>`,
+  silk: `<defs><linearGradient id="${u}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3a3a3a"/><stop offset=".35" stop-color="#151515"/><stop offset="1" stop-color="#000"/></linearGradient></defs>
+    <path d="M36,42 L37,10 Q50,6 63,10 L64,42Z" fill="url(#${u})" stroke="#000" stroke-width="1"/>
+    <ellipse cx="50" cy="10" rx="13" ry="3" fill="#2a2a2a" stroke="#000" stroke-width=".8"/>
+    <path d="M36.2,34 L63.8,34 L64,40 L36,40Z" fill="#c0283c"/>
+    <ellipse cx="50" cy="43" rx="25" ry="4.5" fill="#111" stroke="#000" stroke-width="1"/>`,
+  cap: `<path d="${HAT_DOME(50, 6)}" fill="#2a7de1" stroke="#134a8f" stroke-width="1.2"/>
+    <path d="M50,39 L50,48 M38,42 Q40,46 40,50 M62,42 Q60,46 60,50" stroke="#134a8f" stroke-width=".8" fill="none"/>
+    <circle cx="50" cy="39.5" r="2" fill="#134a8f"/>
+    <path d="M29,50 Q50,45 71,50 Q69,55.5 50,55.5 Q31,55.5 29,50Z" fill="#1a5fb8" stroke="#134a8f" stroke-width="1"/>
+    <text x="50" y="47.5" text-anchor="middle" font-size="6.5" font-weight="900" fill="#fff" font-family="'Hiragino Sans','Noto Sans JP',sans-serif">M</text>`,
+  usagi: `<ellipse cx="40" cy="22" rx="6" ry="17" fill="#fff" stroke="#c9c9d9" stroke-width="1" transform="rotate(-14 40 38)"/>
+    <ellipse cx="60" cy="22" rx="6" ry="17" fill="#fff" stroke="#c9c9d9" stroke-width="1" transform="rotate(14 60 38)"/>
+    <ellipse cx="40" cy="23" rx="3" ry="12" fill="#ffb6c8" transform="rotate(-14 40 38)"/><ellipse cx="60" cy="23" rx="3" ry="12" fill="#ffb6c8" transform="rotate(14 60 38)"/>
+    <path d="M29,52 A21.5,21.5 0 0 1 71,52" fill="none" stroke="#ff8fb0" stroke-width="3.2" stroke-linecap="round"/>`,
+  chick: `<ellipse cx="50" cy="34" rx="12" ry="9" fill="#ffd93b" stroke="#c99a00" stroke-width="1"/>
+    <circle cx="55" cy="25" r="7" fill="#ffe25a" stroke="#c99a00" stroke-width="1"/>
+    <path d="M61.5,24.5 L66,26 L61.5,27.5Z" fill="#ff8a1f"/><circle cx="57" cy="23.5" r="1.2" fill="#1a1a1a"/>
+    <path d="M42,33 Q46,30 48,35 Q45,37 42,33Z" fill="#f2c12e"/><path d="M53,18 Q54,14 56,17" fill="none" stroke="#c99a00" stroke-width="1"/>
+    <ellipse cx="58.5" cy="26.5" rx="1.6" ry="1" fill="#ff9aa8" opacity=".8"/>`,
+  owl: `<defs><mask id="${u}m"><rect width="100" height="100" fill="#fff"/><circle cx="50" cy="64" r="19.5" fill="#000"/></mask></defs>
+    <g mask="url(#${u}m)"><path d="M20,62 Q18,36 30,28 L26,14 L38,24 Q50,20 62,24 L74,14 L70,28 Q82,36 80,62 Q80,86 50,90 Q20,86 20,62Z" fill="#8a5a2b" stroke="#4a2c10" stroke-width="1.2" stroke-linejoin="round"/>
+      <path d="M30,30 L28,19 L36,26Z M70,30 L72,19 L64,26Z" fill="#5a3a1a"/></g>
+    <circle cx="40" cy="34" r="6" fill="#fff" stroke="#4a2c10" stroke-width="1"/><circle cx="60" cy="34" r="6" fill="#fff" stroke="#4a2c10" stroke-width="1"/>
+    <circle cx="41" cy="34.5" r="3" fill="#1a1a1a"/><circle cx="59" cy="34.5" r="3" fill="#1a1a1a"/><circle cx="42" cy="33.4" r="1" fill="#fff"/><circle cx="60" cy="33.4" r="1" fill="#fff"/>
+    <path d="M47.5,39 L52.5,39 L50,43.5Z" fill="#f2a12e"/>
+    <circle cx="50" cy="64" r="19.5" fill="none" stroke="#4a2c10" stroke-width="1.4"/>`,
+  laurel: `<defs><linearGradient id="${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff2a8"/><stop offset=".5" stop-color="#f2c12e"/><stop offset="1" stop-color="#a87508"/></linearGradient></defs>
+    ${[0,1,2,3,4,5].map(i => { const a = Math.PI * (1.02 + i * .085), x = 50 + Math.cos(a) * 24, y = 58 + Math.sin(a) * 24, r = a * 180 / Math.PI + 60; return `<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="3.2" ry="7" fill="url(#${u})" stroke="#7a5a08" stroke-width=".6" transform="rotate(${r.toFixed(0)} ${x.toFixed(1)} ${y.toFixed(1)})"/>`; }).join('')}
+    ${[0,1,2,3,4,5].map(i => { const a = Math.PI * (1.98 - i * .085), x = 50 + Math.cos(a) * 24, y = 58 + Math.sin(a) * 24, r = a * 180 / Math.PI - 60; return `<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="3.2" ry="7" fill="url(#${u})" stroke="#7a5a08" stroke-width=".6" transform="rotate(${r.toFixed(0)} ${x.toFixed(1)} ${y.toFixed(1)})"/>`; }).join('')}
+    <path d="M27,60 A23.5,23.5 0 0 1 73,60" fill="none" stroke="#a87508" stroke-width="1.4"/>`,
+  sprout: `<path d="M50,40 Q49,30 50,24" fill="none" stroke="#3a9a3a" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M50,26 Q38,14 30,22 Q38,32 50,26Z" fill="#6ad46a" stroke="#2e7a2e" stroke-width="1"/><path d="M50,26 Q62,12 72,20 Q62,32 50,26Z" fill="#7ee07e" stroke="#2e7a2e" stroke-width="1"/>
+    <path d="M50,26 Q40,20 33,22 M50,26 Q60,18 69,20" fill="none" stroke="#2e7a2e" stroke-width=".7"/>`,
+  neko: `<path d="M29,48 L30,24 L44,40Z" fill="#3a3a3a" stroke="#111" stroke-width="1" stroke-linejoin="round"/><path d="M71,48 L70,24 L56,40Z" fill="#3a3a3a" stroke="#111" stroke-width="1" stroke-linejoin="round"/>
+    <path d="M32,42 L32.5,30 L40,39Z M68,42 L67.5,30 L60,39Z" fill="#ffb6c8"/>
+    <path d="M29,52 A21.5,21.5 0 0 1 71,52" fill="none" stroke="#3a3a3a" stroke-width="3" stroke-linecap="round"/>`,
+  phones: `<path d="M24,62 A26,26 0 0 1 76,62" fill="none" stroke="#e8463a" stroke-width="4.5" stroke-linecap="round"/>
+    <path d="M24,62 A26,26 0 0 1 76,62" fill="none" stroke="#ff8a7a" stroke-width="1.4" stroke-linecap="round" transform="translate(0 -1.2)"/>
+    <rect x="17" y="54" width="11" height="17" rx="5" fill="#2a2a3a" stroke="#000" stroke-width="1"/><rect x="72" y="54" width="11" height="17" rx="5" fill="#2a2a3a" stroke="#000" stroke-width="1"/>
+    <rect x="20" y="57" width="5" height="11" rx="2.5" fill="#e8463a"/><rect x="75" y="57" width="5" height="11" rx="2.5" fill="#e8463a"/>`,
+  halo: `<ellipse cx="50" cy="28" rx="18" ry="5" fill="none" stroke="#ffe14a" stroke-width="3"/>
+    <ellipse cx="50" cy="28" rx="18" ry="5" fill="none" stroke="#fff8c0" stroke-width="1" transform="translate(0 -.8)"/>
+    <text x="50" y="22" text-anchor="middle" font-size="10" font-weight="900" fill="#ffe14a" stroke="#7a5a08" stroke-width=".5" font-family="system-ui,sans-serif">∞</text>`,
+  goggles: `<path d="M27,50 Q50,42 73,50" fill="none" stroke="#2a2a3a" stroke-width="4"/>
+    <circle cx="40" cy="45" r="8" fill="#7fe0d0" fill-opacity=".85" stroke="#f28c28" stroke-width="2.6"/><circle cx="60" cy="45" r="8" fill="#7fe0d0" fill-opacity=".85" stroke="#f28c28" stroke-width="2.6"/>
+    <rect x="47" y="43" width="6" height="3" rx="1.5" fill="#f28c28"/>
+    <path d="M35,42 L38,39 M55,42 L58,39" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>`,
+  wizard: `<defs><linearGradient id="${u}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9a6bff"/><stop offset="1" stop-color="#3a1a8a"/></linearGradient></defs>
+    <path d="M33,42 L48,8 Q56,2 64,10 Q58,8 56,14 L67,42Z" fill="url(#${u})" stroke="#1f0c52" stroke-width="1" stroke-linejoin="round"/>
+    ${star(52, 26, 4, '#ffe14a')}${star(60, 36, 2.6, '#fff1a0')}${star(45, 34, 2.2, '#fff1a0')}
+    <path d="M33.5,38 Q50,34 66.5,38 L67,42 Q50,38 33,42Z" fill="#ffd34a"/>
+    <ellipse cx="50" cy="43" rx="26" ry="5" fill="#4a2aa0" stroke="#1f0c52" stroke-width="1"/>`,
+  };
+  return A[id] || '';
+}
+/* つばのある帽子(駅長さん・学生帽) */
+function hatKepi(u, body, band, badge, plain){
+  return `<g transform="translate(0 -3)"><path d="M29,50 L31,33 Q50,28 69,33 L71,50 Q50,45 29,50Z" fill="${body}" stroke="#000" stroke-width="1" stroke-linejoin="round"/>
+    <ellipse cx="50" cy="33" rx="19" ry="3.2" fill="${body}" stroke="#000" stroke-width=".8"/>
+    <path d="M29.6,45 Q50,40 70.4,45 L71,50 Q50,45 29,50Z" fill="${band}" stroke="#000" stroke-width=".6"/>
+    ${plain ? `<path d="M29.6,45 Q50,40 70.4,45" fill="none" stroke="#444" stroke-width="1"/>` : ''}
+    <path d="M30,50 Q50,45 70,50 Q66,55.5 50,55.5 Q34,55.5 30,50Z" fill="#111" stroke="#000" stroke-width=".8"/>
+    <path d="M36,51.5 Q50,48.5 64,51.5" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="1"/>
+    ${plain ? `<path d="M50,36 L53,39 L50,42 L47,39Z" fill="${badge}" stroke="#7a5a08" stroke-width=".5"/>`
+            : `<path d="M44,39 Q47,36 50,38 Q53,36 56,39 Q53,40 50,41 Q47,40 44,39Z" fill="${badge}"/><circle cx="50" cy="38.5" r="1.8" fill="${badge}" stroke="#7a5a08" stroke-width=".5"/>`}</g>`;
+}
+/* かぶりものの絵。head=true なら頭(丸)と頭文字もいっしょに描く(一覧や見本用) */
+function hatSVG(h, opt){
+  opt = opt || {};
+  const head = opt.head ? `<circle cx="50" cy="62" r="23" fill="#2e2e58" stroke="#4a4a7a" stroke-width="2"/>${opt.letter ? `<text x="50" y="68.5" text-anchor="middle" font-size="18" font-weight="700" fill="#e8e6ff" font-family="'Hiragino Sans','Noto Sans JP',sans-serif">${esc(opt.letter)}</text>` : ''}` : '';
+  const vb = opt.head ? '0 0 100 96' : '0 0 100 100';
+  return `<svg class="${opt.cls || ''}" viewBox="${vb}" ${opt.size ? `width="${opt.size}" height="${Math.round(opt.size * (opt.head ? .96 : 1))}"` : ''} xmlns="http://www.w3.org/2000/svg" aria-label="${esc(h.name)}">${head}${hatArt(h.id)}</svg>`;
+}
+function hatsOf(id){
+  const m = MQB[String(id)]; if (!m) return [];
+  const g = Array.isArray(m.gdone) ? m.gdone : [], maru = Number(m.maru) || 0;
+  return HATS.filter(h => h.maru ? maru >= h.maru : g.some(k => h.re.test(k)));
+}
 function wornHat(id){
   const m = MQB[String(id)]; if (!m) return null;
   const own = hatsOf(id); if (!own.length) return null;
   if (typeof m.hat === 'string') return m.hat === '' ? null : (own.find(h => h.id === m.hat) || null);
   return own.slice().sort((a, b) => b.rank - a.rank)[0];   // まだ選んでいなければ、いちばんレアなもの
 }
-function hatTag(id){ const h = wornHat(id); return h ? ` <span class="hat-tag" title="${esc(h.name)}">${h.icon}</span>` : ''; }
+function hatTag(id){ const h = wornHat(id); return h ? ` <span class="hat-tag" title="${esc(h.name)}">${hatSVG(h, { head:true, size:22 })}</span>` : ''; }
 function hatSection(id){
   const mine = currentStudent && String(currentStudent.id) === String(id);
   const own = hatsOf(id), w = wornHat(id), ownIds = new Set(own.map(h => h.id));
+  const letter = Array.from(studentNameById(id) || '？')[0];
   if (!mine) {
     if (!w) return '';
-    return `<div class="bd-sec"><div class="hat-now"><span class="hat-big r${w.rank}">${w.icon}</span><div><b>${esc(w.name)}</b><small>${HAT_RANK[w.rank]}・マル単で${esc(w.cond)}にして手に入れた</small></div></div>
-      ${own.length > 1 ? `<div class="bd-empty" style="margin-top:4px">ほかにも ${own.slice(0).filter(h => h !== w).map(h => h.icon).join(' ')} を持っているよ</div>` : ''}</div>`;
+    const others = own.filter(h => h !== w);
+    return `<div class="bd-sec"><div class="hat-now"><span class="hat-big r${w.rank}">${hatSVG(w, { head:true, size:56, letter })}</span><div><b>${esc(w.name)}</b><small>${HAT_RANK[w.rank]}・${esc(w.cond)}にして手に入れた</small></div></div>
+      ${others.length ? `<div class="bd-empty" style="margin-top:4px">ほかにも ${others.map(h => esc(h.name)).join('・')} を持っているよ</div>` : ''}</div>`;
   }
   const list = HATS.slice().sort((a, b) => ownIds.has(b.id) - ownIds.has(a.id)).map(h => ownIds.has(h.id)
-    ? `<button class="hat-cell got r${h.rank} ${w && w.id === h.id ? 'on' : ''}" onclick="wearHat('${h.id}')" title="${esc(h.name)}"><span class="hi">${h.icon}</span><span class="hn">${esc(h.name)}</span><span class="hs">${w && w.id === h.id ? 'かぶり中' : 'かぶる'}</span></button>`
-    : `<div class="hat-cell lock r${h.rank}" title="${esc(h.cond)}"><span class="hi">${h.icon}</span><span class="hn">？？？</span><span class="hs">${esc(h.cond)}</span></div>`).join('');
+    ? `<button class="hat-cell got r${h.rank} ${w && w.id === h.id ? 'on' : ''}" onclick="wearHat('${h.id}')"><span class="hi">${hatSVG(h, { head:true, size:56, letter })}</span><span class="hn">${esc(h.name)}</span><span class="hs">${w && w.id === h.id ? 'かぶり中' : 'かぶる'}</span></button>`
+    : `<div class="hat-cell lock r${h.rank}"><span class="hi">${hatSVG(h, { size:56 })}</span><span class="hn">？？？</span><span class="hs">${esc(h.cond)}</span></div>`).join('');
   return `<div class="bd-sec">
     <div class="hat-head">🎩 かぶりもの <b>${own.length}</b> / ${HATS.length}${w ? `<button class="hat-off" onclick="wearHat('')">ぬぐ</button>` : ''}</div>
     <div class="bd-empty">マル単で単元のセットをぜんぶマルにすると手に入るよ。かぶると、ボス戦の仲間の画面で頭にのる！(攻撃力は変わりません)</div>
@@ -5672,7 +5833,7 @@ async function wearHat(hid){
   const next = hid === '' ? '' : (cur && cur.id === hid ? '' : hid);   // もう一度押すとぬぐ
   m.hat = next; openMember(id); renderParty(); if (typeof renderBossView === 'function') renderBossView();
   const ok = await writeMQ({ hat: next });
-  showToast(ok ? (next ? `${(HATS.find(h => h.id === next) || {}).icon || ''} をかぶったよ！` : 'かぶりものをぬいだよ') : '保存できませんでした(通信エラー)');
+  showToast(ok ? (next ? `${(HATS.find(h => h.id === next) || {}).name || ''}をかぶったよ！` : 'かぶりものをぬいだよ') : '保存できませんでした(通信エラー)');
 }
 /* マルとバッジ:マル単で区分(英検5級など)のセットをマルにするとメダル。自分のキャラの首に1つかけられる */
 const EQUIP_MAX = 1;
