@@ -61,7 +61,7 @@ function fixVisit_(b) {
     const outD = new Date(inD.getTime()); outD.setHours(+m[1], +m[2], 0, 0);   // 入室と同じ日のその時間
     if (outD <= inD) return { ok: false, error: '入室より前の時間です' };
     cellOut.setValue(outD);
-    cellMin.setValue(Math.round((outD - inD) / 60000));
+    cellMin.setValue(Math.min(typeof CHECK_MAX_MIN === 'number' ? CHECK_MAX_MIN : 360, Math.round((outD - inD) / 60000)));
     if (b.out) memo = (memo ? memo + ' / ' : '') + `退室を先生が修正(元 ${orig})`;
   } else {   // 元にもどす:もともと退室がなかった記録
     cellOut.clearContent(); cellMin.clearContent();
