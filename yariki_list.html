@@ -4872,13 +4872,16 @@ function toMin(hm){ const m = /^(\d{1,2}):(\d{2})/.exec(String(hm || '')); retur
 function visitIn(v){ return v.in ? String(v.in).slice(0,5) : (v.inMs ? hhmmOf(v.inMs) : ''); }
 function collectRoomFix(sid, obj){
   if (!obj || !obj.roomFix) return;
-  Object.entries(obj.roomFix).forEach(([k, f]) => { if (f && f.out) ROOMFIX[k] = { out: f.out, sid: String(sid) }; });
+  Object.entries(obj.roomFix).forEach(([k, f]) => { if (f && f.out) ROOMFIX[k] = { out: f.out, orig: f.orig, sid: String(sid) }; });
 }
 function applyRoomFix(){
   if (!VISITS || !VISITS.visits) return;
   VISITS.visits.forEach(v => {
     const f = ROOMFIX[visitKey(v)]; if (!f) return;
-    if (!v.fixed) { v.origOut = v.out || ''; v.origMin = v.min; }
+    if (!v.fixed) {
+      if (v.out && v.out === f.out && f.orig != null) { v.origOut = f.orig; v.origMin = null; }   // 自習室のシートもすでに直っているとき
+      else { v.origOut = v.out || ''; v.origMin = v.min; }
+    }
     const a = toMin(visitIn(v)), b = toMin(f.out); if (a == null || b == null || b <= a) return;
     v.out = f.out; v.min = b - a; v.fixed = true;
   });
@@ -4889,19 +4892,22 @@ async function saveRoomFix(v, out){
   const st = studentOfVisit(v);
   if (!st) { showToast(v.name + ' さんがやりきリストの生徒と結びつきません(名前を確認してください)'); return false; }
   const id = String(st.id), key = visitKey(v);
+  const orig = v.fixed ? (v.origOut || '') : (v.out || '');
+  // 自習室アプリのシート(来室)も書きかえる。自習室アプリが未更新なら、やりきリスト側だけで直す
+  try { await fetch(JISHU_URL, {method:'POST', body: JSON.stringify({action:'fixVisit', date: v.date, name: v.name, inMs: v.inMs || null, in: visitIn(v), out: out || ''})}).then(x=>x.json()); } catch(e) {}
   try {
     const r = await api('getStudy', { studentId: st.id });
     let obj = {}; try { obj = r && r.data ? JSON.parse(r.data) : {}; } catch(e) { obj = {}; }
     if (!obj || typeof obj !== 'object') obj = {};
     obj.roomFix = Object.assign({}, obj.roomFix || {});
-    if (out) obj.roomFix[key] = { out, at: Date.now() }; else delete obj.roomFix[key];
+    if (out) obj.roomFix[key] = { out, orig, at: Date.now() }; else delete obj.roomFix[key];
     // 古いなおし(30日より前)はそうじ
     const old = sdAdd(jstToday(), -30); Object.keys(obj.roomFix).forEach(k => { if (k.split('|')[0] < old) delete obj.roomFix[k]; });
     const w = await api('saveStudy', { studentId: st.id, data: JSON.stringify(obj) });
     if (!w || !w.ok) throw new Error('save');
     if (TEAM && TEAM[id]) TEAM[id].roomFix = obj.roomFix;
     if (typeof sdSid !== 'undefined' && String(sdSid) === id && SD) { SD.roomFix = obj.roomFix; try { localStorage.setItem(sdKeyName(sdSid), JSON.stringify(SD)); } catch(e) {} }
-    if (out) ROOMFIX[key] = { out, sid: id }; else delete ROOMFIX[key];
+    if (out) ROOMFIX[key] = { out, orig, sid: id }; else delete ROOMFIX[key];
     return true;
   } catch(e) { showToast('保存できませんでした(通信エラー)'); return false; }
 }
