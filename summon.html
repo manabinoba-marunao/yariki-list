@@ -117,6 +117,37 @@ h1{font-size:16px;margin:4px 0 0;color:var(--gold);letter-spacing:.06em}
 .count{position:absolute;z-index:9;left:0;right:0;top:40%;text-align:center;font-size:64px;font-weight:900;color:#fff;text-shadow:0 0 18px #ff7a2a,0 4px 0 #8a2a00;opacity:0}
 .count.go{animation:cnt .55s ease-out}
 @keyframes cnt{0%{opacity:0;transform:scale(2.2)}30%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(.8)}}
+/* 召喚の前のカットイン:先週来ていない人・小学生向けの「これまでのおはなし」 */
+#story{position:absolute;inset:0;z-index:30;display:none;flex-direction:column;background:radial-gradient(circle at 50% 30%,rgba(60,30,120,.97),rgba(6,5,26,.99) 75%);padding:7% 6% 4%}
+#story.on{display:flex}
+#story::before{content:'';position:absolute;inset:10px;border:1px solid rgba(255,215,0,.35);border-radius:12px;pointer-events:none}
+.sp{flex:1;display:flex;flex-direction:column;justify-content:center;gap:10px;text-align:center;animation:spin-in .45s cubic-bezier(.2,1.2,.4,1)}
+@keyframes spin-in{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:none}}
+.sp .tag{font-size:11px;letter-spacing:.25em;color:#b8a6ff}
+.sp h2{margin:0;font-size:23px;font-weight:900;color:var(--gold);text-shadow:0 0 12px rgba(255,215,0,.5);line-height:1.35}
+.sp h2.big{font-size:26px}
+.sp p{margin:0;font-size:15px;line-height:1.75;color:#f0ecff}
+.sp p small{font-size:12px;color:#b8b8e0}
+.sp b{color:var(--gold)}
+.sp .em{font-size:30px;line-height:1.2}
+.sp .chips{display:flex;flex-wrap:wrap;justify-content:center;gap:5px}
+.sp .chips span{font-size:12px;padding:2px 9px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18)}
+.sp .lad{display:flex;flex-direction:column;gap:5px;margin:2px auto 0;width:100%;max-width:300px}
+.sp .lad div{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;background:rgba(255,255,255,.06);font-size:13px;text-align:left}
+.sp .lad div i{font-style:normal;font-size:20px;width:26px;text-align:center}
+.sp .lad div span{margin-left:auto;font-size:11px;color:#b8b8e0}
+.sp .lad div.now{background:rgba(255,215,0,.18);border:1px solid var(--gold);box-shadow:0 0 12px rgba(255,215,0,.35)}
+.sp .lad div.now span{color:var(--gold)}
+.sp .step{display:flex;gap:10px;align-items:flex-start;text-align:left;font-size:14px;line-height:1.6;background:rgba(255,255,255,.06);border-radius:10px;padding:8px 10px}
+.sp .step i{font-style:normal;font-size:22px;line-height:1.2}
+.sp .cta{margin-top:4px;font-size:13px;color:#9ff0b0;line-height:1.6}
+.sp ruby rt{font-size:.5em;color:#d6ccff}
+.snav{display:flex;align-items:center;gap:8px;position:relative}
+.snav button{border:none;border-radius:10px;padding:10px 12px;font-size:13px;font-weight:700;cursor:pointer;background:transparent;color:#8888bb}
+.snav button.go{margin-left:auto;padding:11px 18px;background:linear-gradient(135deg,#7b5cff,#c04bff);color:#fff;box-shadow:0 0 14px rgba(160,90,255,.5);animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 22px rgba(200,120,255,.9)}}
+#sdots{flex:1;text-align:center;font-size:10px;letter-spacing:.3em;color:#6a6a9a}
+#sdots b{color:var(--gold)}
 #needle.shiver{animation:shiver .06s linear infinite}
 @keyframes shiver{0%{transform:translate(1.5px,0)}50%{transform:translate(-1.5px,1px)}100%{transform:translate(0,-1.5px)}}
 </style></head>
@@ -141,6 +172,7 @@ h1{font-size:16px;margin:4px 0 0;color:var(--gold);letter-spacing:.06em}
   <div class="txt" id="t3"></div><div class="txt" id="dmg"></div><div class="txt" id="eff"></div>
   <div class="flash" id="flash"></div>
   <div id="hint"></div>
+  <div id="story"><div class="sp" id="spage"></div><div class="snav"><button id="sskip">スキップ</button><span id="sdots"></span><button id="snext" class="go">つぎへ ▶</button></div></div>
 </div>
 <script>
 const $ = id => document.getElementById(id);
@@ -391,11 +423,66 @@ addEventListener('resize', size); size(); requestAnimationFrame(loop);
 /* やりきリストから呼ばれる:{mqSummon:'play', k, n, dmg, eff, when, boss:{imgUrl|svgHtml}} */
 let CFG = {}, T0 = 0;
 function bossSrc(b){ if(!b) return 'boss_oct.png'; if(b.imgUrl) return b.imgUrl; if(b.svgHtml) return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(b.svgHtml.includes('xmlns=') ? b.svgHtml : b.svgHtml.replace('<svg','<svg xmlns="http://www.w3.org/2000/svg"')); return 'boss_oct.png'; }
-function start(c){ CFG = c || {}; $('boss').src = bossSrc(CFG.boss); T0 = Date.now(); size(); (PLAY[CFG.k] || PLAY.owl)(); }
+/* ==== カットイン:先週の自習室に来ていない人へ「週末になにがあったか」、小学生へ「自習室ってなに？」 ====
+   story = { kid, only, range, n, time, people:[名前], ok:{date,voters}|null, tiers:[{icon,name,min,now}], beast:{icon,name}, dmg } */
+const es = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const JS = '<ruby>自習室<rt>じしゅうしつ</rt></ruby>';
+function storyPages(s){
+  const P = [], beast = s.beast ? `${s.beast.icon}<b>${es(s.beast.name)}</b>` : '召喚獣';
+  if (s.kid) P.push(`<div class="tag">はじめに</div><div class="em">🚪</div><h2>${JS}ってなに？</h2>
+    <p>授業がない時間に、マル直の教室に来て<br><b>自分で決めた勉強をする</b>こと。</p>
+    <div class="step"><i>📱</i><div>来たらQRコードで「入室」、帰るときに「退室」。勉強した時間が記録される</div></div>
+    <div class="step"><i>✨</i><div>その時間が <b>魔力(まりょく)</b> になってたまり、週に1回、<b>召喚獣(しょうかんじゅう)</b>をよび出せる！</div></div>`);
+  if (s.range) {
+    P.push(`<div class="tag">先週のできごと</div><p><small>${es(s.range)}</small></p>
+      <h2>${JS}に<br><b class="em">${s.n}</b>人の仲間が来た！</h2>
+      <p>合わせて <b>${es(s.time)}</b> 勉強した</p>
+      ${s.people && s.people.length ? `<div class="chips">${s.people.map(p => `<span>${es(p)}</span>`).join('')}</div>` : ''}`);
+    P.push(`<div class="tag">週末の召喚の儀式</div><div class="em">🔮</div>
+      ${s.ok ? `<h2>${es(s.ok.date)}<br>召喚が成立！</h2><p>教室に残っていた${s.ok.voters ? ` <b>${s.ok.voters}</b>人` : '仲間'}が<br>全員で「召喚する」ボタンをおした</p>`
+             : `<h2>集まった魔力で<br>魔法陣ができた！</h2>`}
+      ${s.tiers && s.tiers.length ? `<p><small>来た人数で、よべる召喚獣が変わる</small></p><div class="lad">${s.tiers.map(t => `<div class="${t.now ? 'now' : ''}"><i>${t.icon}</i>${es(t.name)}<span>${t.min}人〜${t.now ? ' ← 先週' : ''}</span></div>`).join('')}</div>
+      <p><small>勉強した時間が長いほど、召喚獣は強くなる</small></p>` : ''}`);
+    P.push(s.only
+      ? `<div class="tag">そして月曜日——</div><div class="em">${s.beast ? s.beast.icon : '✨'}</div><h2>${beast} が<br>ボスにおそいかかった！</h2>
+         ${s.dmg ? `<p><b>${Number(s.dmg).toLocaleString()}</b> ダメージ！</p>` : ''}
+         <div class="cta">${s.kid ? '自習室の仲間も、きみと同じボスと戦っている。<br>みんなの力をあわせて、たおそう！' : 'きみも自習室に来れば、<br>来週の召喚の仲間になれる！'}</div>`
+      : `<div class="tag">そして週があけた月曜日——</div><h2 class="big">${s.n}人の力で<br>よび出された<br>${beast} が…</h2>
+         <div class="cta">${s.kid ? '自習室の仲間も、きみと同じボスと戦っている。<br>みんなの力をあわせて、たおそう！' : 'きみも自習室に来れば、<br>来週の召喚の仲間になれる！'}</div>`);
+  } else if (s.tiers && s.tiers.length) {
+    P.push(`<div class="tag">召喚のルール</div><div class="em">🔮</div><h2>1週間に${JS}に<br>来た人数で召喚獣が決まる</h2>
+      <div class="lad">${s.tiers.map(t => `<div><i>${t.icon}</i>${es(t.name)}<span>${t.min}人〜</span></div>`).join('')}</div>
+      <p><small>勉強した時間が長いほど強くなり、月曜日にボスへ放たれる！</small></p>`);
+  }
+  return P;
+}
+function runStory(s, then){
+  const P = storyPages(s); if (!P.length) return then();
+  let i = 0; const box = $('story');
+  const show = () => {
+    $('spage').outerHTML = `<div class="sp" id="spage">${P[i]}</div>`;
+    $('sdots').innerHTML = P.map((_, k) => k === i ? '<b>●</b>' : '●').join('');
+    const last = i === P.length - 1;
+    $('snext').textContent = last ? (s.only ? 'とじる' : '▶ 召喚を見る') : 'つぎへ ▶';
+    $('sskip').style.visibility = last ? 'hidden' : '';
+    parent.postMessage({mqSummon:'alive'}, '*');
+  };
+  const end = () => { box.classList.remove('on'); box.onclick = null; then(); };
+  box.onclick = e => { e.stopPropagation();
+    if (e.target.id === 'sskip') return end();
+    if (i < P.length - 1) { i++; show(); } else end(); };
+  box.classList.add('on'); show();
+}
+function start(c){ CFG = c || {}; $('boss').src = bossSrc(CFG.boss); size();
+  const go = () => { T0 = Date.now(); if (CFG.story && CFG.story.only) return parent.postMessage({mqSummon:'close'}, '*'); (PLAY[CFG.k] || PLAY.owl)(); };
+  if (CFG.story) runStory(CFG.story, go); else go(); }
 addEventListener('message', e => { const d = e.data || {}; if(d.mqSummon === 'play') start(d); });
 st.addEventListener('click', () => { if(Date.now() - T0 > 1200){ clipStop(); parent.postMessage({mqSummon:'close'}, '*'); } });
 // 単体で開いたときの確認用:summon.html?k=teacher&n=7&dmg=10435
-{ const q = new URLSearchParams(location.search); if(q.get('k')) addEventListener('load', () => start({k:q.get('k'), n:+q.get('n')||null, dmg:q.get('dmg')!=null?+q.get('dmg'):null})); }
+// カットインの確認用:summon.html?k=teacher&n=8&dmg=10435&story=1&kid=1
+{ const q = new URLSearchParams(location.search); if(q.get('k')) addEventListener('load', () => start({k:q.get('k'), n:+q.get('n')||null, dmg:q.get('dmg')!=null?+q.get('dmg'):null,
+  story: q.get('story') ? { kid: !!q.get('kid'), range:'10/19(月)〜10/25(日)', n:+q.get('n')||8, time:'18時間30分', people:['たろう','はなこ','けんた','みさき','ゆうと','あおい','そうた','りな'].slice(0, +q.get('n')||8), ok:{date:'10/24(土)', voters:5},
+    tiers:[{icon:'🦉',name:'フクロウくん',min:1},{icon:'🦉',name:'巨大フクロウくん',min:3},{icon:'🧑‍🏫',name:'塾長',min:8,now:true},{icon:'🚀',name:'マル直羅針盤ロケット',min:10}], beast:{icon:'🧑‍🏫',name:'塾長'}, dmg:+q.get('dmg')||0 } : null })); }
 parent.postMessage({mqSummon:'ready'}, '*');
 </script>
 </body></html>

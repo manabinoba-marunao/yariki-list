@@ -427,6 +427,7 @@ td.td-name { padding-left: 16px; text-align: left; }
 .summon-ok small { display:block; font-size:11px; color:#d6ccff; text-shadow:none; margin-top:2px; }
 .summon-vote { font-size:11px; color:#b8b8e0; text-align:center; margin-bottom:6px; }
 .summon-vote .summon-names span.vt { background:rgba(255,215,0,.18); border:1px solid rgba(255,215,0,.7); color:#fff; }
+.summon-help { display:block; margin:8px auto 0; padding:5px 14px; border-radius:999px; border:1px solid rgba(255,215,0,.6); background:rgba(255,215,0,.1); color:var(--gold); font-size:12px; font-weight:700; cursor:pointer; }
 .summon-note { font-size:11px; color:#9a9ac8; text-align:center; margin-top:6px; line-height:1.6; }
 .log-summon { color:#7fe0ff; text-shadow:0 0 6px #3fb8ff; }
 /* 討伐図鑑 */
@@ -5108,6 +5109,7 @@ function renderSummon(){
   // 月曜の召喚は1回しか見られない(レア感)。もう一度見るボタンは出さない
   const lastHtml = last ? `<div class="summon-note" style="margin-top:6px">先週の召喚:${esc((/^自習室の召喚:(.+?)\(/.exec(last.nickname||'')||[])[1]||'')} が ${(Number(last.damage)||0).toLocaleString()} ダメージを与えた！</div>` : '';
   box.innerHTML = `<div class="summon-h"><b>🚪 今週の自習室の召喚</b><span>${md(ws)}〜${md(sdAdd(ws, 6))}</span></div>
+    <button class="summon-help" onclick="explainSummon()">❓ 自習室の召喚ってなに？</button>
     <div class="summon-ladder">${ladder}</div>
     <div class="summon-note" style="margin:0 0 6px;font-size:13px;color:#fff">今週 <b>${r.n}</b>人・<b>${Math.floor(r.minutes/60)}</b>時間${r.minutes%60 ? (r.minutes%60) + '分' : ''}${t ? `　→ ${t.icon}<b>${t.name}</b> を召喚できる！` : ''}</div>
     ${r.n ? `<div class="summon-names">${r.people.map(p => `<span class="${p.nebari ? 'nb' : ''}">${p.nebari ? '🔥' : ''}${esc(p.name)} <b>${hm(p.min)}</b></span>`).join('')}</div>` : ''}
@@ -5167,7 +5169,35 @@ function replaySummon(ws, eff){
   const log = summonLogFor(ws); if (!log) return;
   const m = /^自習室の召喚:(.+?)\((\d+)人\)/.exec(log.nickname || log.name || '') || [];
   const t = SUMMONS.find(x => x.name === m[1]) || SUMMONS[SUMMONS.length - 1];
-  summonFx(t, Number(m[2]) || 0, Number(log.damage) || 0, eff || (t.effect === 'cure' ? '来た仲間はみんな元気になった！' : ''), `${md(ws)}〜${md(sdAdd(ws, 6))} の`);
+  // 先週の自習室に来ていない人には「週末なにがあったか」、小学生には「自習室ってなに？」のカットインを先に見せる
+  const story = summonStory(ws, { joinedSkip: true });
+  summonFx(t, Number(m[2]) || 0, Number(log.damage) || 0, eff || (t.effect === 'cure' ? '来た仲間はみんな元気になった！' : ''), `${md(ws)}〜${md(sdAdd(ws, 6))} の`, story ? { story } : null);
+}
+function isKidViewer(){ return !!(currentStudent && String(currentStudent.grade || '').startsWith('小')); }
+/* カットインのデータ。joinedSkip:その週に来た子(小学生以外)には出さない。only:説明だけ(召喚の演出なし) */
+function summonStory(ws, o){
+  o = o || {};
+  const me = currentStudent ? String(currentStudent.id) : null, kid = isKidViewer() || !!o.kid;
+  const log = ws ? summonLogFor(ws) : null;
+  const tiers = SUMMONS.slice().reverse();
+  if (!log) return o.only ? { kid: true, only: true, tiers: tiers.map(x => ({ icon:x.icon, name:x.name, min:x.min })) } : null;
+  const r = roomRange(ws, sdAdd(ws, 6));
+  const joined = !!(me && idsOf(r).has(me));
+  if (o.joinedSkip && joined && !kid) return null;
+  const m = /^自習室の召喚:(.+?)\((\d+)人\)/.exec(log.nickname || log.name || '') || [];
+  const t = SUMMONS.find(x => x.name === m[1]) || summonTier(r.n) || SUMMONS[SUMMONS.length - 1];
+  const n = Number(m[2]) || r.n, ok = summonOK(ws);
+  return { kid: kid && !joined, only: !!o.only, range: `${sdLabel(ws)}〜${sdLabel(sdAdd(ws, 6))}`, n,
+    time: hm(r.minutes || 0), people: r.people.map(p => p.name),
+    ok: ok ? { date: sdLabel(ok.date || sdAdd(ws, 5)), voters: ok.voters || 0 } : null,
+    tiers: tiers.map(x => ({ icon:x.icon, name:x.name, min:x.min, now: x.key === t.key })),
+    beast: { icon: t.icon, name: t.name }, dmg: Number(log.damage) || 0 };
+}
+/* 「❓召喚ってなに？」:いつでも説明だけ見られる(先週の召喚があればそのおはなしも) */
+async function explainSummon(){
+  try { await loadVisits(); } catch(e) {}
+  const story = summonStory(sdAdd(weekStartOf(jstToday()), -7), { only: true, kid: true });
+  summonFx(SUMMONS[SUMMONS.length - 1], 0, null, '', '', { story });
 }
 /* ==== 討伐図鑑:倒した敵(ボスも雑魚も)と、討伐した仲間・とどめを刺した英雄 ==== */
 let DEX = null, DEX_TAB = 'cards';
@@ -5241,17 +5271,19 @@ function summonFx(t, n, dmg, eff, when, opt){
   const old = document.getElementById('summon-fx'); if (old) old.remove();
   const el = document.createElement('div'); el.id = 'summon-fx';
   el.style.cssText = 'position:fixed;inset:0;z-index:400;background:#03020f';
-  const fr = document.createElement('iframe'); fr.src = 'summon.html?v=1'; fr.title = '召喚'; fr.allow = 'autoplay';
+  const fr = document.createElement('iframe'); fr.src = 'summon.html?v=2'; fr.title = '召喚'; fr.allow = 'autoplay';
   fr.style.cssText = 'border:0;width:100%;height:100%;display:block;background:#03020f';
   el.appendChild(fr); document.body.appendChild(el);
   const boss = (typeof yarikiBossArt === 'function') ? yarikiBossArt() : {};
-  const msg = { mqSummon:'play', k:t.key, n, dmg, eff: eff || (t.effect === 'cure' ? '来た仲間はみんな元気になった！' : ''), when, boss, preview: !!(opt && opt.preview) };
+  const msg = { mqSummon:'play', k:t.key, n, dmg, eff: eff || (t.effect === 'cure' ? '来た仲間はみんな元気になった！' : ''), when, boss, preview: !!(opt && opt.preview), story: (opt && opt.story) || null };
   let sent = false; const send = () => { if (!sent) { sent = true; try { fr.contentWindow.postMessage(msg, '*'); } catch(e){} } };
-  const close = () => { el.remove(); removeEventListener('message', onMsg); };
-  const onMsg = e => { if (e.source !== fr.contentWindow) return; const d = e.data || {}; if (d.mqSummon === 'ready') send(); if (d.mqSummon === 'close' || d.mqSummon === 'done') close(); };
+  let guard = 0;
+  const arm = () => { clearTimeout(guard); guard = setTimeout(() => { if (document.getElementById('summon-fx') === el) close(); }, msg.story ? 90000 : 20000); };   // 念のため(カットインを読んでいる間はのばす)
+  const close = () => { clearTimeout(guard); el.remove(); removeEventListener('message', onMsg); };
+  const onMsg = e => { if (e.source !== fr.contentWindow) return; const d = e.data || {}; if (d.mqSummon === 'ready') send(); if (d.mqSummon === 'alive') arm(); if (d.mqSummon === 'close' || d.mqSummon === 'done') close(); };
   addEventListener('message', onMsg);
   fr.addEventListener('load', () => setTimeout(send, 50));
-  setTimeout(() => { if (document.getElementById('summon-fx') === el) close(); }, 20000);   // 念のため
+  arm();
 }
 
 /* メダル:級・年度などが読めるメダル(金・銀・銅・マル)。リボンの色は区分ごと */
