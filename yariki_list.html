@@ -2855,10 +2855,10 @@ async function giveCandyTo(toId, btnEl) {
   renderBossView();
 }
 
-function showToast(msg){
+function showToast(msg, ms){
   const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2800);
+  clearTimeout(showToast._t); showToast._t = setTimeout(()=>t.classList.remove('show'), ms || 2800);
 }
 
 function getDemoStudents(){
@@ -3321,7 +3321,9 @@ function renderBossView() {
         const st = studentByNick(rawNick.replace(/\(マル単\)$/, ''));
         const w = st ? weaponFor(levelOf(st.id)) : WEAPONS[WEAPONS.length-1];
         let line;
-        if (isSummon) { const m = /^自習室の召喚:(.+?)\((\d+)人\)/.exec(rawNick) || []; const t = (typeof SUMMONS !== 'undefined' && SUMMONS.find(x => x.name === m[1])) || { icon:'🦉' };
+        if (isSummon && /^召喚のなおし/.test(rawNick)) { const m = /^召喚のなおし:(.+?)\{(\d{4})-(\d\d)-(\d\d)\}/.exec(rawNick) || [];
+          line = `✏️ [${dateStr}] 自習室の時間を直したので、${m[2] ? `${+m[3]}/${+m[4]}〜の週の` : ''}${esc(m[1] || '召喚獣')}の召喚ダメージを調整<span class="log-summon">${dmg > 0 ? '+' : ''}${dmg.toLocaleString()}</span>`; }
+        else if (isSummon) { const m = /^自習室の召喚:(.+?)\((\d+)人\)/.exec(rawNick) || []; const t = (typeof SUMMONS !== 'undefined' && SUMMONS.find(x => x.name === m[1])) || { icon:'🦉' };
           line = `${t.icon} [${dateStr}] <b>自習室の仲間${m[2] ? ' ' + m[2] + '人' : ''}</b>が${esc(m[1] || '召喚獣')}を召喚！<span class="log-summon">${dmg.toLocaleString()}の召喚ダメージ</span>`; }
         else if (isMagic) line = crit
           ? `🔮 [${dateStr}] <b>${nick}</b> の大魔法！<span class="log-magic-crit">✨${dmg.toLocaleString()}の魔法ダメージ</span>`
@@ -4929,6 +4931,34 @@ async function roomOut(key){
   }catch(e){ showToast('記録できませんでした:'+(e.message||'自習室アプリの更新が必要かも')); return; }
   if (out) await saveRoomFix(v, out);
   await loadVisits(); renderStudyDash(); showToast(v.name + ' さん 退室しました' + (out ? `(${out} に直しました)` : ''));
+  if (out) await afterRoomFix(v);
+}
+/* ==== 召喚がもう発動した週の時間を直したら、差の分だけ召喚ダメージとボスのHPを調整する ====
+   ダメージログには「召喚のなおし:召喚獣{週のはじめ}」として差の分(マイナスもあり)を1行足す。
+   元の召喚の行はそのまま残るので、合計がいつも正しい値になる。 */
+function summonPowerFixed(r, t){ const raw = Math.round((r.pts ?? r.minutes) * SUMMON_PER_MIN * t.mult); return raw <= t.cap ? raw : Math.round(t.cap + (raw - t.cap) * SUMMON_OVER); }
+async function summonReconcile(date){
+  const ws = weekStartOf(date);
+  if (ws >= weekStartOf(jstToday())) return null;   // 今週の分はまだ発動していないので、月曜に正しく数える
+  try { const lr = await api('getDamageLog', { days: 40 }); if (lr && lr.ok && Array.isArray(lr.logs)) DAMAGE_LOG = lr.logs; else return null; } catch(e) { return null; }
+  const base = summonLogFor(ws); if (!base) return null;   // この週は召喚していない
+  const m = /^自習室の召喚:(.+?)\((\d+)人\)/.exec(base.nickname || base.name || '') || [];
+  const t = SUMMONS.find(x => x.name === m[1]); if (!t) return null;
+  const tag = `{${ws}}`;
+  const now = (DAMAGE_LOG || []).filter(l => { const n = String(l.nickname || l.name || ''); return n === String(base.nickname || base.name) || (n.startsWith('召喚のなおし') && n.includes(tag)); })
+    .reduce((a, l) => a + (Number(l.damage) || 0), 0);
+  const want = summonPowerFixed(roomRange(ws, sdAdd(ws, 6)), t);
+  const diff = want - now;
+  if (!diff) return { diff: 0 };
+  const sd = await api('saveDamage', { studentId: 'room', nickname: `召喚のなおし:${t.name}${tag}`, damage: diff, isCrit: false, habitsDone: '召喚' });
+  if (!sd || !sd.ok) return { error: true };
+  try { await api('updateBossHp', { damage: diff, heroName: '自習室の仲間' }); } catch(e) {}
+  return { diff, name: t.name, want };
+}
+async function afterRoomFix(v){
+  const r = await summonReconcile(v.date);
+  if (r && r.diff) showToast(`${md(weekStartOf(v.date))}〜の週の召喚ダメージを ${r.diff > 0 ? '+' : ''}${r.diff.toLocaleString()} 調整しました(${r.want.toLocaleString()} に)`, 5000);
+  else if (r && r.error) showToast('召喚ダメージの調整を記録できませんでした');
 }
 /* なおし画面:この14日の来室を一覧にして、退室時間を直す */
 let FIX_ALL = false;
@@ -4961,7 +4991,7 @@ async function fixSave(key, btn, undo){
     if (toMin(out) <= toMin(visitIn(v))) { showToast('入室(' + visitIn(v) + ')より後の時間にしてね'); return; } }
   btn.disabled = true; btn.textContent = '保存中…';
   const ok = await saveRoomFix(v, out);
-  if (ok) { await loadVisits(); showToast(undo ? '元にもどしました' : `${v.name} さん ${out} 退室に直しました`); }
+  if (ok) { await loadVisits(); showToast(undo ? '元にもどしました' : `${v.name} さん ${out} 退室に直しました`); await afterRoomFix(v); }
   openRoomFix(); if (typeof renderStudyDash === 'function') renderStudyDash();
 }
 function dTestDate(d){ const t = STUDY_TESTS.find(x=>x.id===(d.test||{}).id); return t ? t.start : (d.test||{}).date || null; }
