@@ -1735,7 +1735,15 @@ async function submitRecord() {
       // ボスHPをGASに保存（引き算はGAS側で行う）
       if (BOSS_DATA) {
         BOSS_DATA.currentHp = Math.max(0, (BOSS_DATA.currentHp ?? BOSS_DATA.hp) - dmg);
-        const hpRes = await api('updateBossHp', { damage: dmg, heroName: nickname, heroId: currentStudent.id });
+        let hpRes = await api('updateBossHp', { damage: dmg, heroName: nickname, heroId: currentStudent.id });
+        // 大魔王の結界が消えていたら(全員の力がそろったら)、この一撃でとどめ
+        if (hpRes.ok && !hpRes.defeated && hpRes.shield && Number(hpRes.shield.missing) === 0 && Number(hpRes.currentHp) > 0) {
+          const fin = await api('updateBossHp', { damage: Number(hpRes.currentHp), heroName: nickname, heroId: currentStudent.id });
+          if (fin && fin.ok) {
+            hpRes = Object.assign({}, fin, { counters: hpRes.counters, counter: hpRes.counter, shield: fin.shield || hpRes.shield });
+            setTimeout(() => showToast('✨ 結界の消えた大魔王に、みんなの力がそろった一撃！', 4500), 600);
+          }
+        }
         setTimeout(loadGacha, 1500);
         if (hpRes.ok && typeof hpRes.currentHp === 'number') BOSS_DATA.currentHp = hpRes.currentHp;
         if (hpRes.ok && hpRes.shield) { const was = BOSS_DATA.shield && BOSS_DATA.shield.missing; BOSS_DATA.shield = hpRes.shield; renderFinalShield();
@@ -3293,7 +3301,7 @@ function renderFinalShield(){
     (sh.missing ? 'background:linear-gradient(135deg,rgba(120,40,200,.25),rgba(255,120,0,.15));border:1px solid #b46bff;color:#f3e6ff' : 'background:rgba(255,215,0,.12);border:1px solid var(--gold);color:var(--gold)');
   el.innerHTML = '<div style="color:#ffb347;font-weight:bold;margin-bottom:3px">🎃 ハロウィンの魔力でよみがえった！</div>' + (sh.missing
     ? `🔮 <b>大魔王の結界</b>:今月 ${need.toLocaleString()}ダメージにまだ届いていない仲間が <b style="font-size:15px">${sh.missing}人</b><br>全員の力がそろうまで、大魔王は倒れない！<br><span style="opacity:.85">やりきリストの習慣でもマル単でもOK</span>${meMissing ? `<br><b style="color:#ffd76b">きみはあと ${Math.max(1, need - (meRow ? Number(meRow.dmg) || 0 : 0)).toLocaleString()} ダメージで、結界がひとつ割れる！</b>` : ''}${isT && sh.missing ? `<br><span style="opacity:.8">👨‍🏫 ${(sh.list || (sh.names || []).map(n => ({ name: n }))).map(m => esc(m.name) + (m.dmg != null ? `(${Number(m.dmg).toLocaleString()})` : '')).join('・')}</span>` : ''}`
-    : '✨ 全員の力がそろった！結界が消えた。いまなら大魔王を倒せる！');
+    : '✨ 全員の力がそろった！結界が消えた。次の一撃で大魔王にとどめ！');
   const h = BOSS_DATA.heal;
   if (h && h.amount > 0) { let seen = null; try { seen = localStorage.getItem('final_heal_' + h.date); } catch(e) {}
     if (!seen) { try { localStorage.setItem('final_heal_' + h.date, '1'); } catch(e) {}
@@ -5819,12 +5827,17 @@ function hatKepi(u, body, band, badge, plain){
     ${plain ? `<path d="M50,36 L53,39 L50,42 L47,39Z" fill="${badge}" stroke="#7a5a08" stroke-width=".5"/>`
             : `<path d="M44,39 Q47,36 50,38 Q53,36 56,39 Q53,40 50,41 Q47,40 44,39Z" fill="${badge}"/><circle cx="50" cy="38.5" r="1.8" fill="${badge}" stroke="#7a5a08" stroke-width=".5"/>`}</g>`;
 }
+/* 自作の絵:リポジトリの hats フォルダに「id.png」(例:owl.png)を置くと、描いた絵のかわりにそれを使う。
+   400×400の透明PNG。頭の丸は 中心(200,248)・半径92(てっぺんは y=156)。くわしくは hats/_template.png */
+const HAT_IMG = {};
+(function(){ if (typeof Image === 'undefined') return; let t = null;
+  HATS.forEach(h => { const im = new Image(); im.onload = () => { HAT_IMG[h.id] = im.src; clearTimeout(t); t = setTimeout(() => { try { renderParty(); } catch(e) {} }, 300); }; im.src = 'hats/' + h.id + '.png'; }); })();
 /* かぶりものの絵。head=true なら頭(丸)と頭文字もいっしょに描く(一覧や見本用) */
 function hatSVG(h, opt){
   opt = opt || {};
   const head = opt.head ? `<circle cx="50" cy="62" r="23" fill="#2e2e58" stroke="#4a4a7a" stroke-width="2"/>${opt.letter ? `<text x="50" y="68.5" text-anchor="middle" font-size="18" font-weight="700" fill="#e8e6ff" font-family="'Hiragino Sans','Noto Sans JP',sans-serif">${esc(opt.letter)}</text>` : ''}` : '';
   const vb = opt.head ? '0 0 100 96' : '0 0 100 100';
-  return `<svg class="${opt.cls || ''}" viewBox="${vb}" ${opt.size ? `width="${opt.size}" height="${Math.round(opt.size * (opt.head ? .96 : 1))}"` : ''} xmlns="http://www.w3.org/2000/svg" aria-label="${esc(h.name)}">${head}${hatArt(h.id)}</svg>`;
+  return `<svg class="${opt.cls || ''}" viewBox="${vb}" ${opt.size ? `width="${opt.size}" height="${Math.round(opt.size * (opt.head ? .96 : 1))}"` : ''} xmlns="http://www.w3.org/2000/svg" aria-label="${esc(h.name)}">${head}${HAT_IMG[h.id] ? `<image href="${HAT_IMG[h.id]}" x="0" y="0" width="100" height="100"/>` : hatArt(h.id)}</svg>`;
 }
 function hatsOf(id){
   const m = MQB[String(id)]; if (!m) return [];
