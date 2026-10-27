@@ -5635,7 +5635,7 @@ const HATS = [
   { id:'cap',     name:'キャップ',           cond:'英検「3級」をぜんぶマル',        rank:1, re:/^英語\/英検\/英検3級$/ },
   { id:'usagi',   name:'うさみみ',           cond:'英検「4級」をぜんぶマル',        rank:1, re:/^英語\/英検\/英検4級$/ },
   { id:'chick',   name:'ひよこ',         cond:'英検「5級」をぜんぶマル',        rank:1, re:/^英語\/英検\/英検5級$/ },
-  { id:'owl',     name:'フクロウのフード',   cond:'共通テストの年度を1つぜんぶマル', rank:2, re:/^英語\/共通テスト\// },
+  { id:'owl',     name:'フクロウくんのフード',   cond:'共通テストの年度を1つぜんぶマル', rank:2, re:/^英語\/共通テスト\// },
   { id:'laurel',  name:'金の月桂冠',         cond:'まいにち英単語3000「中学編」をぜんぶマル', rank:3, re:/^英語\/[^/]+\/まいにち英単語3000 中学編$/ },
   { id:'sprout',  name:'頭から若葉',         cond:'まいにち英単語3000「小学編」をぜんぶマル', rank:2, re:/^英語\/[^/]+\/まいにち英単語3000 小学編$/ },
   { id:'gakubo',  name:'ベレー帽',             cond:'英語の教科書(中1・中2・中3)を1学年ぜんぶマル', rank:2, re:/^英語\/中学\/中[123] 教科書$/ },
@@ -5759,18 +5759,22 @@ function hatArt(id){
     <circle cx="45.4" cy="27.6" r="2" fill="#2a1a10"/><circle cx="54.6" cy="27.6" r="2" fill="#2a1a10"/><circle cx="46.1" cy="26.9" r=".75" fill="#fff"/><circle cx="55.3" cy="26.9" r=".75" fill="#fff"/>
     <path d="M47.6,30.6 Q50,29.6 52.4,30.6 Q50,33.6 47.6,30.6Z" fill="#ff8a1f" stroke="#c25e00" stroke-width=".5"/>
     <ellipse cx="42" cy="31.6" rx="2.4" ry="1.5" fill="#ff9aa8" opacity=".8"/><ellipse cx="58" cy="31.6" rx="2.4" ry="1.5" fill="#ff9aa8" opacity=".8"/>`,
-  owl: `<defs><radialGradient id="${u}h" cx="40%" cy="30%" r="75%"><stop offset="0" stop-color="#e2b07a"/><stop offset="1" stop-color="#a8703e"/></radialGradient>
-      <mask id="${u}m"><rect width="100" height="100" fill="#fff"/><circle cx="50" cy="64" r="19.5" fill="#000"/></mask></defs>
+  owl: `<defs><mask id="${u}m"><rect width="100" height="100" fill="#fff"/><circle cx="50" cy="65" r="19" fill="#000"/></mask></defs>
     <g mask="url(#${u}m)">
-      <path d="M28,36 Q24,24 30,20 Q36,26 40,31Z M72,36 Q76,24 70,20 Q64,26 60,31Z" fill="#8a5a2b" stroke="#5a3712" stroke-width="1.2" stroke-linejoin="round"/>
-      <path d="M50,28 Q80,28 81,60 Q82,88 50,91 Q18,88 19,60 Q20,28 50,28Z" fill="url(#${u}h)" stroke="#5a3712" stroke-width="1.4"/>
-      <circle cx="50" cy="64" r="23.5" fill="#f8e7cc"/>
-      <path d="M26,76 l3,3 3,-3 M68,76 l3,3 3,-3 M30,84 l3,3 3,-3 M64,84 l3,3 3,-3" fill="none" stroke="#7a4a20" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></g>
-    <circle cx="40" cy="38" r="7.5" fill="#fff" stroke="#5a3712" stroke-width="1.2"/><circle cx="60" cy="38" r="7.5" fill="#fff" stroke="#5a3712" stroke-width="1.2"/>
-    <circle cx="41" cy="39" r="4.6" fill="#2a1a10"/><circle cx="59" cy="39" r="4.6" fill="#2a1a10"/>
-    <circle cx="42.6" cy="37.2" r="1.7" fill="#fff"/><circle cx="60.6" cy="37.2" r="1.7" fill="#fff"/><circle cx="39.6" cy="40.6" r=".8" fill="#fff"/><circle cx="57.6" cy="40.6" r=".8" fill="#fff"/>
-    <path d="M47.6,43 Q50,41.6 52.4,43 L50,46.6Z" fill="#f2a12e" stroke="#b8700e" stroke-width=".6" stroke-linejoin="round"/>
-    <ellipse cx="27" cy="58" rx="3.6" ry="2.2" fill="#ff9aa8" opacity=".7"/><ellipse cx="73" cy="58" rx="3.6" ry="2.2" fill="#ff9aa8" opacity=".7"/>`,
+      <path d="M50,29 Q81,29 82,60 Q83,89 50,92 Q17,89 18,60 Q19,29 50,29Z" fill="#fff" stroke="#111" stroke-width="1.8"/>
+      <path d="M19,64 Q16,78 24,88 Q30,84 28,70Z M81,64 Q84,78 76,88 Q70,84 72,70Z" fill="#8a4a24" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/>
+      <path d="M38,86 q3,3 6,0 M56,86 q3,3 6,0" fill="none" stroke="#111" stroke-width="1.3" stroke-linecap="round"/></g>
+    <path d="M30,38 Q22,36 16,30 Q22,30 22,27 Q27,30 28,26 Q31,31 35,30 Q36,35 30,38Z" fill="#ffd400" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/>
+    <path d="M70,38 Q78,36 84,30 Q78,30 78,27 Q73,30 72,26 Q69,31 65,30 Q64,35 70,38Z" fill="#ffd400" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/>
+    <path d="M33,33 Q50,25 67,33 L66,38 Q50,32 34,38Z" fill="#ffd400" stroke="#111" stroke-width="1.3" stroke-linejoin="round"/>
+    <polygon points="50,9 82,20 50,30 18,20" fill="#111" stroke="#111" stroke-width="1" stroke-linejoin="round"/>
+    <path d="M36,24 Q50,29 64,24 L64,31 Q50,35 36,31Z" fill="#111"/>
+    <path d="M50,20 L74,24 L76,31" fill="none" stroke="#fff" stroke-width="1" stroke-dasharray="1.6 1.2"/>
+    <path d="M74,30 Q72,36 76,38 Q80,36 78,30Z" fill="#fff" stroke="#111" stroke-width="1"/>
+    <ellipse cx="40" cy="43" rx="8" ry="8.6" fill="#fff" stroke="#111" stroke-width="1.6"/><ellipse cx="60" cy="43" rx="8" ry="8.6" fill="#fff" stroke="#111" stroke-width="1.6"/>
+    <circle cx="43.6" cy="44" r="3.8" fill="#111"/><circle cx="63.6" cy="44" r="3.8" fill="#111"/><circle cx="44.8" cy="42.8" r="1.1" fill="#fff"/><circle cx="64.8" cy="42.8" r="1.1" fill="#fff"/>
+    <path d="M45,48.6 Q50,47 55,48.6 L50,55Z" fill="#ffd400" stroke="#111" stroke-width="1.3" stroke-linejoin="round"/>
+    <circle cx="50" cy="65" r="19" fill="none" stroke="#111" stroke-width="1.6"/>`,
   laurel: `<defs><linearGradient id="${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff2a8"/><stop offset=".5" stop-color="#f2c12e"/><stop offset="1" stop-color="#a87508"/></linearGradient></defs>
     ${[0,1,2,3,4,5].map(i => { const a = Math.PI * (1.02 + i * .085), x = 50 + Math.cos(a) * 24, y = 58 + Math.sin(a) * 24, r = a * 180 / Math.PI + 60; return `<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="3.2" ry="7" fill="url(#${u})" stroke="#7a5a08" stroke-width=".6" transform="rotate(${r.toFixed(0)} ${x.toFixed(1)} ${y.toFixed(1)})"/>`; }).join('')}
     ${[0,1,2,3,4,5].map(i => { const a = Math.PI * (1.98 - i * .085), x = 50 + Math.cos(a) * 24, y = 58 + Math.sin(a) * 24, r = a * 180 / Math.PI - 60; return `<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="3.2" ry="7" fill="url(#${u})" stroke="#7a5a08" stroke-width=".6" transform="rotate(${r.toFixed(0)} ${x.toFixed(1)} ${y.toFixed(1)})"/>`; }).join('')}
