@@ -1748,7 +1748,7 @@ async function submitRecord() {
         if (hpRes.ok && typeof hpRes.currentHp === 'number') BOSS_DATA.currentHp = hpRes.currentHp;
         if (hpRes.ok && hpRes.shield) { const was = BOSS_DATA.shield && BOSS_DATA.shield.missing; BOSS_DATA.shield = hpRes.shield; renderFinalShield();
           if (was && hpRes.shield.missing < was) setTimeout(() => showToast(hpRes.shield.missing ? `🔮 結界がひとつ割れた！のこり ${hpRes.shield.missing}人` : '✨ 結界が消えた！全員の力がそろった！', 4500), 2500);
-          else if (hpRes.shield.missing && hpRes.currentHp <= hpRes.shield.floor) setTimeout(() => showToast(`🔮 結界にはね返された！まだ力が届いていない仲間が ${hpRes.shield.missing}人いる…みんなで力を合わせよう`, 4500), 2500); }
+          else if (hpRes.shield.missing && hpRes.currentHp <= hpRes.shield.floor) setTimeout(() => showToast(`🔮 結界でとめられた(あと${hpRes.shield.missing}人)`, 3500), 2500); }
 
         // ボス討伐！（トドメを刺した本人）
         if (hpRes.ok && hpRes.defeated) {
@@ -1795,7 +1795,7 @@ async function submitRecord() {
     showToast(tester
       ? `${done}個達成！記録しました(テスト用なのでボスへの攻撃はなし)`
       : sd.ok
-      ? `${spellMsg}${done}個達成！ボスに${dmg}ダメージ${effNote}！EXP+${expGain} 🎉`
+      ? `⚔ ${dmg.toLocaleString()}ダメージ！(${done}個達成・EXP+${expGain})${spellMsg ? ' ' + spellMsg : ''}`
       : dmg > 0
         ? `${spellMsg}${done}個達成！記録を更新したよ（今日の攻撃はもう済んでいるよ）`
         : `${spellMsg}記録しました！`);
@@ -2660,7 +2660,7 @@ function showEnemyAttack(res) {
   if (!def) return;
   // 討伐演出・ボス登場演出が出ている間は、終わるまで待ってから攻撃を見せる
   const busy = ['boss-event-overlay', 'boss-intro-overlay', 'levelup-overlay']
-    .some(id => document.getElementById(id)?.classList.contains('show'));
+    .some(id => document.getElementById(id)?.classList.contains('show')) || document.getElementById('mq-strike')?.classList.contains('on');
   if (busy) { setTimeout(() => showEnemyAttack(res), 1000); return; }
   const ov = document.getElementById('attack-overlay');
   const line = document.getElementById('atk-line');
@@ -2905,6 +2905,9 @@ async function giveCandyTo(toId, btnEl) {
 }
 
 function showToast(msg, ms){
+  // 攻撃のカットイン中は、終わってから順番に出す(ダメージの数字を邪魔しない)
+  const ci = document.getElementById('mq-strike');
+  if (ci && ci.classList.contains('on')) { (showToast.q ||= []).push([msg, ms]); return; }
   const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('show');
   clearTimeout(showToast._t); showToast._t = setTimeout(()=>t.classList.remove('show'), ms || 2800);
@@ -3530,12 +3533,14 @@ function renderBossView() {
 .mqs-dmg.crit{font-size:68px}
 .mqs-dmg.crit span{background:linear-gradient(180deg,#fff 0%,#ff9db0 35%,#ff1744 100%);-webkit-background-clip:text;background-clip:text;filter:drop-shadow(0 0 2px #000) drop-shadow(0 3px 0 #6a0016) drop-shadow(0 0 20px rgba(255,40,90,1))}
 .mqs-dmg.go{opacity:1}
+.mqs-dmg i{display:block;font-style:normal;font-size:16px;letter-spacing:.3em;color:#fff;margin-top:-6px;opacity:0;text-shadow:0 0 6px #000,0 2px 4px #000}
+.mqs-dmg.go i{animation:mqsIn .3s .35s forwards}
 .mqs-dmg.go span{animation:mqsDigit .55s cubic-bezier(.2,1.8,.4,1) forwards}
 .mqs-crit{position:absolute;top:18%;left:0;right:0;text-align:center;font-size:16px;letter-spacing:.35em;color:#fff;opacity:0;text-shadow:0 0 6px #ff1744,0 0 16px #ff1744}
 .mqs-crit.go{animation:mqsIn .25s forwards}
 .mqs-msg{position:absolute;bottom:4%;left:0;right:0;text-align:center;font-size:15px;line-height:1.7;opacity:0;text-shadow:0 2px 6px #000}
 .mqs-msg.go{animation:mqsIn .45s forwards}
-.mqs-msg b{color:#ffd76a;font-size:18px}
+.mqs-msg b{color:#ffd76a;font-size:30px;vertical-align:-3px}
 .mqs-msg small{display:block;font-size:11px;color:#b8b0e8;letter-spacing:.1em}
 #mqs-cv{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 #mqs-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;mix-blend-mode:screen}
@@ -3944,7 +3949,8 @@ function mqsLoop(now){
   MQS.raf = requestAnimationFrame(mqsLoop);
 }
 function mqStrikeClose(){
-  const el = document.getElementById('mq-strike'); if(el) el.classList.remove('on');
+  const el = document.getElementById('mq-strike'); const wasOn = el && el.classList.contains('on'); if(el) el.classList.remove('on');
+  if (wasOn && showToast.q && showToast.q.length) { const q = showToast.q.splice(0); let at = 300; q.forEach(([m, ms]) => { setTimeout(() => showToast(m, ms), at); at += (ms || 2800) + 300; }); }
   clearTimeout(mqsTimer); MQS.timers.forEach(clearTimeout); MQS.timers = [];
   cancelAnimationFrame(MQS.raf); MQS.raf = 0; MQS.fx = []; MQS.parts = []; MQS.shake = 0;
 }
@@ -3974,9 +3980,9 @@ function mqStrike(o){
       <div class="mqs-hpnum" id="mqs-hpnum">HP ${cur.toLocaleString()} / ${hp.toLocaleString()}</div></div>
     <div class="mqs-word" id="mqs-word"></div>
     <div class="mqs-crit" id="mqs-crit">${o.crit ? (magic ? '✦ 大魔法 ✦' : '✦ CRITICAL ✦') : ''}</div>
-    <div class="mqs-dmg ${o.crit ? 'crit' : ''}" id="mqs-dmg">${digits}</div>
+    <div class="mqs-dmg ${o.crit ? 'crit' : ''}" id="mqs-dmg">${digits}<i>ダメージ</i></div>
     <div class="mqs-hero" id="mqs-hero"><div class="mqs-face">${face}${wpn}</div><div class="mqs-hname">${mqsEsc(o.hero || '')}</div></div>
-    <div class="mqs-msg" id="mqs-msg">${msg}<br>ボスに <b>${(Number(o.dmg)||0).toLocaleString()}</b> ダメージ！<small>タップでとじる</small></div>`;
+    <div class="mqs-msg" id="mqs-msg"><b>${(Number(o.dmg)||0).toLocaleString()}</b> ダメージ！<small>${msg}・タップでとじる</small></div>`;
   root.classList.add('on');
   // 割れた半分(聖剣用)
   const halves = st.querySelectorAll('.mqs-boss .half');
