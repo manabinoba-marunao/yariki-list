@@ -1403,6 +1403,9 @@ let STUDENTS = [];
 // ── テスト用アカウント(先生が使い心地を確かめる用) ──
 // ニックネームか名前が「テスト」で始まる人は、ボスに攻撃しない・敵にも攻撃されない・先生画面やランキングに出ない
 function isTester(s) { return !!s && (String(s.nickname||'').startsWith('テスト') || String(s.name||'').startsWith('テスト')); }
+/* ダメージ記録がテスト用アカウントのものか(ボス戦の画面には出さない・数えない) */
+function isTesterLog(l) { const raw = String((l && (l.nickname || l.name)) || '').replace(/\(マル単\)$/, ''); if (raw.startsWith('テスト')) return true;
+  const st = (typeof studentByNick === 'function') ? studentByNick(raw) : null; return !!(st && isTester(st)); }
 function rosterStudents() { return STUDENTS.filter(s => !isTester(s)); }
 let ALL_RECORDS = {}; // {studentId: {date: [0/1/null x6]}}
 let currentStudent = null;
@@ -1737,7 +1740,7 @@ async function submitRecord() {
         BOSS_DATA.currentHp = Math.max(0, (BOSS_DATA.currentHp ?? BOSS_DATA.hp) - dmg);
         let hpRes = await api('updateBossHp', { damage: dmg, heroName: nickname, heroId: currentStudent.id });
         // 大魔王の結界が消えていたら(全員の力がそろったら)、この一撃でとどめ
-        if (hpRes.ok && !hpRes.defeated && hpRes.shield && Number(hpRes.shield.missing) === 0 && Number(hpRes.currentHp) > 0) {
+        if (hpRes.ok && !hpRes.defeated && hpRes.shield && Number(shieldClean(hpRes.shield).missing) === 0 && Number(hpRes.currentHp) > 0) {
           const fin = await api('updateBossHp', { damage: Number(hpRes.currentHp), heroName: nickname, heroId: currentStudent.id });
           if (fin && fin.ok) {
             hpRes = Object.assign({}, fin, { counters: hpRes.counters, counter: hpRes.counter, shield: fin.shield || hpRes.shield });
@@ -1746,9 +1749,10 @@ async function submitRecord() {
         }
         setTimeout(loadGacha, 1500);
         if (hpRes.ok && typeof hpRes.currentHp === 'number') BOSS_DATA.currentHp = hpRes.currentHp;
-        if (hpRes.ok && hpRes.shield) { const was = BOSS_DATA.shield && BOSS_DATA.shield.missing; BOSS_DATA.shield = hpRes.shield; renderFinalShield();
-          if (was && hpRes.shield.missing < was) setTimeout(() => showToast(hpRes.shield.missing ? `🔮 結界がひとつ割れた！のこり ${hpRes.shield.missing}人` : '✨ 結界が消えた！全員の力がそろった！', 4500), 2500);
-          else if (hpRes.shield.missing && hpRes.currentHp <= hpRes.shield.floor) setTimeout(() => showToast(`🔮 結界でとめられた(あと${hpRes.shield.missing}人)`, 3500), 2500); }
+        if (hpRes.ok && hpRes.shield) { const was = BOSS_DATA.shield && shieldClean(BOSS_DATA.shield).missing; BOSS_DATA.shield = hpRes.shield; renderFinalShield();
+          const nowMiss = shieldClean(hpRes.shield).missing;
+          if (was && nowMiss < was) setTimeout(() => showToast(nowMiss ? `🔮 結界がひとつ割れた！のこり ${nowMiss}人` : '✨ 結界が消えた！全員の力がそろった！', 4500), 2500);
+          else if (nowMiss && hpRes.currentHp <= hpRes.shield.floor) setTimeout(() => showToast(`🔮 結界でとめられた(あと${nowMiss}人)`, 3500), 2500); }
 
         // ボス討伐！（トドメを刺した本人）
         if (hpRes.ok && hpRes.defeated) {
@@ -2783,7 +2787,8 @@ function todayParty() {
     const m = STATUS_MAP[id];
     if (activeIds.has(id) && m && m.status && STATUS_DEFS[m.status]) get(id);
   });
-  return Object.values(map).sort((a,b) => (b.hit+b.magic) - (a.hit+a.magic));
+  const testers = new Set(STUDENTS.filter(isTester).map(s => String(s.id)));   // テスト用アカウントはボス戦に出さない
+  return Object.values(map).filter(m => !testers.has(String(m.id))).sort((a,b) => (b.hit+b.magic) - (a.hit+a.magic));
 }
 
 const FACE_ST_ALL = { pumpkin:'🎃', bat:'🦇', cat:'🐈‍⬛', ghost:'👻' };
@@ -3153,11 +3158,11 @@ async function loadBossData() {
     const logRes = await api('getDamageLog', { days: 30 });
     console.log('logRes:', JSON.stringify(logRes).slice(0,300));
     if (logRes && logRes.ok && Array.isArray(logRes.logs)) {
-      DAMAGE_LOG = logRes.logs;
+      DAMAGE_LOG = logRes.logs.filter(l => !isTesterLog(l));   // テスト用アカウントの攻撃は出さない
       MONTH_TOTALS = logRes.monthTotals || null;   // GASが新しければ、今月の生徒ごとの合計(魔法も)
-      MONTH_DMG = logRes.logs.reduce((sum, l) => sum + (Number(l.damage) || 0), 0);
+      MONTH_DMG = DAMAGE_LOG.reduce((sum, l) => sum + (Number(l.damage) || 0), 0);
       const today = new Date().toISOString().slice(0,10);
-      TODAY_DMG = logRes.logs
+      TODAY_DMG = DAMAGE_LOG
         .filter(l => String(l.date).slice(0,10) === today)
         .reduce((sum, l) => sum + (Number(l.damage) || 0), 0);
     }
@@ -3292,9 +3297,19 @@ function renderBossHp() {
 }
 
 /* ==== ハロウィンの大魔王:結界(全員そろうまで倒れない)と夜の回復 ==== */
+/* 結界の「まだ届いていない仲間」からテスト用アカウントを除く */
+function shieldClean(sh){
+  if (!sh) return sh;
+  const tst = m => { const id = m && m.id != null ? String(m.id) : null, nm = String((m && (m.name || m)) || '');
+    if (nm.startsWith('テスト')) return true; const st = id ? STUDENTS.find(x => String(x.id) === id) : studentByNick(nm); return !!(st && isTester(st)); };
+  const o = Object.assign({}, sh);
+  if (Array.isArray(sh.list)) { o.list = sh.list.filter(m => !tst(m)); o.missing = Math.min(Number(sh.missing) || 0, o.list.length); }
+  else if (Array.isArray(sh.names)) { o.names = sh.names.filter(n => !tst(n)); o.missing = Math.min(Number(sh.missing) || 0, o.names.length); }
+  return o;
+}
 function renderFinalShield(){
   const el = document.getElementById('final-shield'); if (!el) return;
-  const sh = BOSS_DATA && BOSS_DATA.type === 'boss_final' ? BOSS_DATA.shield : null;
+  const sh = BOSS_DATA && BOSS_DATA.type === 'boss_final' ? shieldClean(BOSS_DATA.shield) : null;
   if (!sh) { el.style.display = 'none'; return; }
   let isT = false; try { isT = localStorage.getItem('yariki_teacher_ok') === '1'; } catch(e) {}
   const need = sh.need || 1000;
@@ -3435,7 +3450,7 @@ function renderBossView() {
   if (labelEl) labelEl.textContent = isMob ? '⚔ 雑魚バトル' : '⚠ BOSS BATTLE';
   renderBossHp();
 
-  const sorted = STUDENTS
+  const sorted = rosterStudents()
     .map(s => ({ ...s, exp: calcExpFromRecords(s.id), monthDmg: calcMonthTotal(s.id) }))
     .sort((a,b) => b.monthDmg - a.monthDmg);
 
@@ -5015,7 +5030,7 @@ function summonPowerFixed(r, t){ const raw = Math.round((r.pts ?? r.minutes) * S
 async function summonReconcile(date){
   const ws = weekStartOf(date);
   if (ws >= weekStartOf(jstToday())) return null;   // 今週の分はまだ発動していないので、月曜に正しく数える
-  try { const lr = await api('getDamageLog', { days: 40 }); if (lr && lr.ok && Array.isArray(lr.logs)) DAMAGE_LOG = lr.logs; else return null; } catch(e) { return null; }
+  try { const lr = await api('getDamageLog', { days: 40 }); if (lr && lr.ok && Array.isArray(lr.logs)) DAMAGE_LOG = lr.logs.filter(l => !isTesterLog(l)); else return null; } catch(e) { return null; }
   const base = summonLogFor(ws); if (!base) return null;   // この週は召喚していない
   const m = /^自習室の召喚:(.+?)\((\d+)人\)/.exec(base.nickname || base.name || '') || [];
   const t = SUMMONS.find(x => x.name === m[1]); if (!t) return null;
@@ -5400,7 +5415,7 @@ async function summonWeeklyCheck(){
     await loadVisits(); if (!VISITS) return;
     const ws = sdAdd(weekStartOf(jstToday()), -7), we = sdAdd(ws, 6);
     if (ws < '2026-10-19') return;   // QRの記録はこの週から
-    try { const lr = await api('getDamageLog', { days: 30 }); if (lr && lr.ok && Array.isArray(lr.logs)) DAMAGE_LOG = lr.logs; } catch(e) {}
+    try { const lr = await api('getDamageLog', { days: 30 }); if (lr && lr.ok && Array.isArray(lr.logs)) DAMAGE_LOG = lr.logs.filter(l => !isTesterLog(l)); } catch(e) {}
     let log = summonLogFor(ws), fresh = null;
     if (!log) { await loadMQB(); log = summonLogFor(ws); }   // 召喚ボタンの成立・自習時間のなおし・発動済みの記録を読んでから数える
     const r = roomRange(ws, we), t = summonTier(r.n);
@@ -5475,7 +5490,7 @@ function summonStory(ws, o){
 }
 /* テストアカウント用:先週の召喚を、来ていない人が見るのと同じカットイン付きで何度でも再生(ダメージ・記録なし) */
 async function testSummon(kid){
-  try { await loadVisits(); await loadMQB(); const lr = await api('getDamageLog', { days: 30 }); if (lr && lr.ok && Array.isArray(lr.logs)) DAMAGE_LOG = lr.logs; } catch(e) {}
+  try { await loadVisits(); await loadMQB(); const lr = await api('getDamageLog', { days: 30 }); if (lr && lr.ok && Array.isArray(lr.logs)) DAMAGE_LOG = lr.logs.filter(l => !isTesterLog(l)); } catch(e) {}
   const ws = sdAdd(weekStartOf(jstToday()), -7), log = summonLogFor(ws);
   if (!log) { showToast('先週の召喚の記録がまだないよ'); return; }
   const m = /^自習室の召喚:(.+?)\((\d+)人\)/.exec(log.nickname || log.name || '') || [];
