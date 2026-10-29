@@ -2922,7 +2922,9 @@ function candyThrowHtml(){
   const isMob = String(BOSS_DATA.type || '').indexOf('mob') === 0; if (isMob) return '';
   const f = BOSS_DATA.flinch;
   const banner = f ? `<div class="ct-banner">🍬 <b>${esc(f.by || '仲間')}</b>の飴が喉の奥に命中！ 大魔王はひるんでいる(今日は反撃してこない)</div>` : '';
-  if (!currentStudent || isTester(currentStudent)) return banner;
+  if (!currentStudent) return banner;
+  if (isTester(currentStudent)) return banner + `<button class="ct-btn" onclick="candyCutIn()">🍬 大魔王の口に飴を投げる(テスト用:演出だけ)</button>
+    <div class="ct-sub">テスト用アカウントなので、お菓子は減らず、大魔王もひるみません(演出を見るだけ)</div>`;
   const n = MY_STATUS ? (Number(MY_STATUS.candies) || 0) : 0;
   let done = false; try { done = localStorage.getItem('candy_throw_' + currentStudent.id) === TODAY; } catch(e) {}
   const btn = f ? '' : `<button class="ct-btn" ${n > 0 && !done ? '' : 'disabled'} onclick="throwCandyAtBoss(this)">🍬 大魔王の口に飴を投げる${n > 0 ? '' : '(お菓子がない)'}${done ? '(今日は投げた)' : ''}</button>
