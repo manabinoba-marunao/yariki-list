@@ -467,10 +467,10 @@ td.td-name { padding-left: 16px; text-align: left; }
 #candy-ci .cc-stage { position:absolute; left:50%; top:0; bottom:0; width:min(100vw,460px); transform:translateX(-50%); }
 #candy-ci .cc-mouth { position:absolute; left:8%; right:8%; top:14%; width:84%; height:auto; animation:cc-in .35s cubic-bezier(.2,1.4,.4,1) both; }
 #candy-ci.hit .cc-mouth { animation:cc-shake .5s; }
-#candy-ci .cc-uvula { transform-origin:150px 48px; }
+#candy-ci .cc-uvula { transform-origin:150px 108px; }
 #candy-ci.hit .cc-uvula { animation:cc-wobble .9s ease-out; }
 #candy-ci .cc-candy { position:absolute; left:6%; top:84%; font-size:46px; filter:drop-shadow(0 0 10px rgba(255,150,200,.9)); animation:cc-fly .95s cubic-bezier(.3,.1,.5,1) forwards; }
-#candy-ci.hit .cc-candy { animation:cc-bounce .6s ease-out forwards; left:calc(50% - 23px); top:23%; }
+#candy-ci.hit .cc-candy { animation:cc-bounce .6s ease-out forwards; left:calc(50% - 23px); top:25%; }
 #candy-ci .cc-boom { position:absolute; top:6%; left:0; right:0; text-align:center; font-size:54px; font-weight:900; color:#fff; opacity:0; font-family:'Arial Black','Hiragino Sans',sans-serif; text-shadow:0 0 4px #000,0 4px 0 #a8243e,0 0 22px #ff6f9a; }
 #candy-ci.hit .cc-boom { animation:cc-pop .6s cubic-bezier(.2,1.8,.4,1) forwards; }
 #candy-ci .cc-msg { position:absolute; bottom:6%; left:0; right:0; text-align:center; color:#fff; font-size:15px; line-height:1.7; opacity:0; text-shadow:0 2px 6px #000; }
@@ -478,9 +478,9 @@ td.td-name { padding-left: 16px; text-align: left; }
 #candy-ci .cc-msg small { display:block; font-size:11px; color:#b8b0e8; letter-spacing:.1em; }
 #candy-ci.hit .cc-msg { animation:cc-fade .5s .45s forwards; }
 @keyframes cc-in { from{transform:scale(.6);opacity:0} to{transform:none;opacity:1} }
-@keyframes cc-fly { 0%{left:6%;top:84%;transform:rotate(0)} 55%{left:34%;top:6%;transform:rotate(400deg)} 100%{left:calc(50% - 23px);top:23%;transform:rotate(720deg) scale(.7)} }
+@keyframes cc-fly { 0%{left:6%;top:84%;transform:rotate(0)} 55%{left:34%;top:6%;transform:rotate(400deg)} 100%{left:calc(50% - 23px);top:25%;transform:rotate(720deg) scale(.6)} }
 @keyframes cc-bounce { 0%{transform:scale(.7)} 40%{transform:translate(-30px,-40px) rotate(-60deg) scale(.6)} 100%{transform:translate(-90px,160px) rotate(-200deg) scale(.4);opacity:0} }
-@keyframes cc-wobble { 0%{transform:rotate(0)} 15%{transform:rotate(28deg) scaleY(.85)} 30%{transform:rotate(-22deg)} 45%{transform:rotate(14deg)} 60%{transform:rotate(-8deg)} 80%{transform:rotate(4deg)} 100%{transform:rotate(0)} }
+@keyframes cc-wobble { 0%{transform:scale(1)} 20%{transform:scale(.6,.5)} 45%{transform:scale(1.25,1.3)} 70%{transform:scale(.9)} 100%{transform:scale(1)} }
 @keyframes cc-shake { 0%,100%{transform:none} 20%{transform:translate(-8px,4px) rotate(-2deg)} 40%{transform:translate(8px,-4px) rotate(2deg)} 60%{transform:translate(-5px,2px)} 80%{transform:translate(4px,-2px)} }
 @keyframes cc-pop { from{opacity:0;transform:scale(.3) rotate(-8deg)} to{opacity:1;transform:scale(1) rotate(-4deg)} }
 @keyframes cc-fade { to{opacity:1} }
@@ -2916,17 +2916,17 @@ function renderRescue() {
   }
 }
 
-/* ==== 飴をボスの口に投げる:のどちんこに当ててひるませる(その日は反撃なし)。お菓子を1個使う・1日1回 ==== */
+/* ==== 飴をボスの口に投げる:喉の奥に放りこんでひるませる(その日は反撃なし)。お菓子を1個使う・1日1回 ==== */
 function candyThrowHtml(){
   if (!BOSS_DATA || BOSS_DATA.defeated) return '';
   const isMob = String(BOSS_DATA.type || '').indexOf('mob') === 0; if (isMob) return '';
   const f = BOSS_DATA.flinch;
-  const banner = f ? `<div class="ct-banner">🍬 <b>${esc(f.by || '仲間')}</b>の飴がのどちんこに命中！ 大魔王はひるんでいる(今日は反撃してこない)</div>` : '';
+  const banner = f ? `<div class="ct-banner">🍬 <b>${esc(f.by || '仲間')}</b>の飴が喉の奥に命中！ 大魔王はひるんでいる(今日は反撃してこない)</div>` : '';
   if (!currentStudent || isTester(currentStudent)) return banner;
   const n = MY_STATUS ? (Number(MY_STATUS.candies) || 0) : 0;
   let done = false; try { done = localStorage.getItem('candy_throw_' + currentStudent.id) === TODAY; } catch(e) {}
   const btn = f ? '' : `<button class="ct-btn" ${n > 0 && !done ? '' : 'disabled'} onclick="throwCandyAtBoss(this)">🍬 大魔王の口に飴を投げる${n > 0 ? '' : '(お菓子がない)'}${done ? '(今日は投げた)' : ''}</button>
-    <div class="ct-sub">のどちんこに当てると、大魔王がひるんで今日は反撃してこない(お菓子を1個使う・1日1回)</div>`;
+    <div class="ct-sub">喉の奥に放りこむと、大魔王がひるんで今日は反撃してこない(お菓子を1個使う・1日1回)</div>`;
   return banner + btn;
 }
 async function throwCandyAtBoss(btn){
@@ -2952,13 +2952,13 @@ function candyCutIn(done){
       <path d="M20,40 Q150,-10 280,40 Q300,150 230,225 Q150,265 70,225 Q0,150 20,40Z" fill="#3a1060" stroke="#1a0630" stroke-width="6"/>
       <path d="M44,62 Q150,24 256,62 Q268,150 214,205 Q150,236 86,205 Q32,150 44,62Z" fill="url(#ccIn)"/>
       <g fill="#fff8e6" stroke="#c9b48a" stroke-width="2"><path d="M60,64 L76,96 L90,58Z"/><path d="M210,58 L224,96 L240,64Z"/><path d="M96,56 L108,80 L120,52Z"/><path d="M180,52 L192,80 L204,56Z"/></g>
-      <g class="cc-uvula"><path d="M138,48 Q150,46 162,48 Q164,92 150,112 Q136,92 138,48Z" fill="#ff6f8a" stroke="#a8243e" stroke-width="3"/><ellipse cx="150" cy="104" rx="11" ry="10" fill="#ff8aa0" stroke="#a8243e" stroke-width="3"/></g>
+      <g class="cc-uvula"><ellipse cx="150" cy="108" rx="44" ry="30" fill="#0a0003"/><ellipse cx="150" cy="108" rx="44" ry="30" fill="none" stroke="#7a1428" stroke-width="3"/><ellipse class="cc-ring" cx="150" cy="108" rx="30" ry="20" fill="none" stroke="#ffd6e6" stroke-width="2" stroke-dasharray="5 5" opacity=".6"/></g>
       <path d="M78,200 Q150,150 222,200 Q190,226 150,228 Q110,226 78,200Z" fill="#e04866" stroke="#8a1a30" stroke-width="3"/>
       <path d="M150,170 L150,222" stroke="#a8243e" stroke-width="2"/>
     </svg>
     <div class="cc-candy">🍬</div>
     <div class="cc-boom">ゴホッ!!</div>
-    <div class="cc-msg"><b>のどちんこに命中！</b><br>大魔王はひるんだ！ 今日は反撃してこない<small>タップでとじる</small></div>
+    <div class="cc-msg"><b>喉の奥に命中！</b><br>大魔王はひるんだ！ 今日は反撃してこない<small>タップでとじる</small></div>
   </div>`;
   el.className = 'on';
   const close = () => { el.className = ''; el.innerHTML = ''; if (done) done(); done = null; };
