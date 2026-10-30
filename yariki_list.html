@@ -1314,7 +1314,7 @@ td.td-name { padding-left: 16px; text-align: left; }
             ">
           </div>
         </div>
-        <div style="font-size:11px;color:var(--ink2);margin-bottom:8px;">習慣の達成状況（タップで切替）</div>
+        <div style="font-size:11px;color:var(--ink2);margin-bottom:8px;">習慣の達成状況（タップで切替）<br>⚔ 保存すると、今月の紙の記録でまだボスに届いていない分が、その子の攻撃としてまとめて届きます(1人1日1回)</div>
         <div id="manual-habits" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px;"></div>
         <button onclick="submitManualRecord()" style="
           width:100%;padding:12px;background:var(--ink);color:white;
@@ -3093,12 +3093,72 @@ async function submitManualRecord() {
   if (res.ok) {
     if (!ALL_RECORDS[sid]) ALL_RECORDS[sid] = {};
     ALL_RECORDS[sid][date] = [...manualHabitStates];
-    resultEl.textContent = '✅ 保存しました！';
+    resultEl.textContent = '✅ 保存しました！ボスへの攻撃を確認中...';
     renderTeacher();
-    setTimeout(() => resultEl.textContent = '', 3000);
+    let msg = '✅ 保存しました！';
+    try { msg = await paperAttack(sid); } catch(e) { console.error('紙の攻撃エラー:', e); msg = '✅ 保存しました(ボスへの攻撃は通信できず、次に保存したときにまとめて届けます)'; }
+    resultEl.textContent = msg;
+    setTimeout(() => { if (resultEl.textContent === msg) resultEl.textContent = ''; }, 8000);
   } else {
     resultEl.textContent = '⚠ 保存に失敗しました';
   }
+}
+
+/* ── 紙で提出した記録を、ボスへのダメージにする ──
+   今月の記録から「本来与えているはずのダメージ」(1日ごとに 達成数×レベル×10×連続提出ボーナス)を出し、
+   今月すでにボスに届いている打撃・斬撃ダメージとの差を、まとめて1回の攻撃として届ける。
+   ・何日分をまとめて入れても、あとから直しても、二重には攻撃しない(差しか届かない)
+   ・ボスへの攻撃は1人1日1回なので、今日すでに攻撃していたら、差は次の日に保存したときに届く
+   ・会心・状態異常の倍率はかけない(スマホで攻撃している子より多くならないように) */
+const jstMonth = () => new Date(Date.now() + 9*3600e3).toISOString().slice(0,7);
+function shiftDate(ds, n){ const d = new Date(ds + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0,10); }
+function paperExpected(sid){
+  const r = ALL_RECORDS[sid] || {}, month = jstMonth(), lv = levelOf(sid);
+  let total = 0;
+  Object.keys(r).filter(ds => ds.slice(0,7) === month).forEach(ds => {
+    const rec = r[ds]; if (!rec) return;
+    const done = rec.filter(v => v === 1).length; if (!done) return;
+    let streak = 0; while (streak <= 60 && r[shiftDate(ds, -streak)]) streak++;
+    const bonus = streak >= 7 ? 2 : streak >= 3 ? 1.5 : 1;
+    total += Math.round(done * lv * 10 * bonus);
+  });
+  return total;
+}
+async function paperAttack(sid){
+  const st = STUDENTS.find(s => String(s.id) === String(sid));
+  if (!st) return '✅ 保存しました！';
+  if (isTester(st)) return '✅ 保存しました(テスト用なのでボスへの攻撃はなし)';
+  // 今月すでに届いているダメージを最新にする
+  const lr = await api('getDamageLog', { days: 30 });
+  if (!lr || !lr.ok || !lr.monthTotals) return '✅ 保存しました(ボスへの攻撃は通信できず、次に保存したときにまとめて届けます)';
+  DAMAGE_LOG = (lr.logs || []).filter(l => !isTesterLog(l)); MONTH_TOTALS = lr.monthTotals;
+  const dealt = Number((lr.monthTotals[String(sid)] || {}).hit) || 0;
+  const dmg = paperExpected(sid) - dealt;
+  if (dmg <= 0) return '✅ 保存しました！(この子の今月の分は、もうボスに届いています)';
+  const nickname = st.nickname || st.name;
+  const sd = await api('saveDamage', { studentId: sid, nickname, damage: dmg, isCrit: false, habitsDone: '紙' });
+  if (!sd || !sd.ok) return `✅ 保存しました！(${nickname}さんは今日もう攻撃済み。のこりの ${dmg.toLocaleString()} ダメージは、明日以降に記録を保存すると届きます)`;
+  let extra = '';
+  if (BOSS_DATA) {
+    let hpRes = await api('updateBossHp', { damage: dmg, heroName: nickname, heroId: sid });
+    // 大魔王の結界が消えていたら、この一撃でとどめ(生徒の攻撃と同じ)
+    if (hpRes.ok && !hpRes.defeated && hpRes.shield && Number(shieldClean(hpRes.shield).missing) === 0 && Number(hpRes.currentHp) > 0) {
+      const fin = await api('updateBossHp', { damage: Number(hpRes.currentHp), heroName: nickname, heroId: sid });
+      if (fin && fin.ok) hpRes = Object.assign({}, fin, { shield: fin.shield || hpRes.shield });
+    }
+    if (hpRes.ok && typeof hpRes.currentHp === 'number') BOSS_DATA.currentHp = hpRes.currentHp;
+    if (hpRes.ok && hpRes.shield) { BOSS_DATA.shield = hpRes.shield; try { renderFinalShield(); } catch(e) {}
+      const miss = Number(shieldClean(hpRes.shield).missing);
+      extra = miss ? ` 🔮 結界のこり ${miss}人` : ' ✨ 結界が消えた！'; }
+    (hpRes.counters || []).forEach(c => { STATUS_MAP[String(c.targetId)] = { ...(STATUS_MAP[String(c.targetId)] || {}), status: c.status, end: c.end, enemy: c.enemy }; });
+    if (hpRes.ok && hpRes.defeated) extra += ` 🏆 ${nickname}さんがとどめを刺した！`;
+  }
+  DAMAGE_LOG.unshift({ studentId: sid, nickname, damage: dmg, isCrit: false, date: TODAY, habitsDone: '紙' });
+  TODAY_DMG += dmg; MONTH_DMG += dmg;
+  MONTH_TOTALS[String(sid)] = Object.assign({ hit: 0, magic: 0 }, MONTH_TOTALS[String(sid)]); MONTH_TOTALS[String(sid)].hit += dmg;
+  try { renderBossHp(); } catch(e) {}
+  setTimeout(loadGacha, 1500);
+  return `✅ 保存しました！ ⚔ ${nickname}さんの紙の記録で ${dmg.toLocaleString()} ダメージ！${extra}`;
 }
 
 init().then(async () => {
