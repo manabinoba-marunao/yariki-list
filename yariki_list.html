@@ -1601,6 +1601,35 @@ async function loadGachaTeacher() {
   const res = await api('getTickets', {});
   if (!res.ok) { box.textContent = '読み込めませんでした'; return; }
   GACHA_T = res;
+  await loadMQB();
+  renderGachaTeacher();
+}
+/* ガチャ大会の景品(アプリ):当たった子の行で、ボタンを押すとわたす(もう一度押すと取り消し) */
+function giftTeacherHtml(){
+  return `<div style="margin:14px 0 6px;font-size:13px;font-weight:700;color:var(--ink)">🎁 ガチャ大会の景品(アプリ)をわたす</div>
+    <div style="margin-bottom:6px;">カプセルから出た子の行で、当たった景品を押してください。色がついたら渡せています(もう一度押すと取り消し)。マル単のきせかえは、その子がマル単を開いたときに使えるようになります。</div>
+    <table><thead><tr><th>名前</th><th>景品</th></tr></thead><tbody>` +
+    rosterStudents().map(s => `<tr><td>${esc_(s.nickname || s.name)}</td><td>${GIFTS.map(g => {
+      const on = hasGift(s.id, g.id);
+      return `<button data-g-gift="${s.id}" data-g="${g.id}" title="${esc_(g.desc)}" style="margin:2px;${on ? 'background:#C2410C;color:#fff;border-color:#C2410C' : ''}">${on ? '✓ ' : ''}${esc_(g.name)}</button>`;
+    }).join('')}</td></tr>`).join('') + `</tbody></table>`;
+}
+async function giftToggle(id, g, btn){
+  if (btn) btn.disabled = true;
+  try {
+    const r = await api('getStudy', { studentId: id });
+    let obj = {}; try { obj = r && r.data ? JSON.parse(r.data) : {}; } catch(e) { obj = {}; }
+    if (!obj || typeof obj !== 'object') obj = {};
+    const mq = Object.assign({}, obj.mq || {});
+    const list = Array.isArray(mq.gifts) ? mq.gifts.slice() : [];
+    const i = list.indexOf(g); if (i >= 0) list.splice(i, 1); else list.push(g);
+    mq.gifts = list; obj.mq = mq;
+    const w = await api('saveStudy', { studentId: id, data: JSON.stringify(obj) });
+    if (!w || !w.ok) throw 0;
+    MQB[String(id)] = mq;
+    const st = STUDENTS.find(x => String(x.id) === String(id)), gg = GIFTS.find(x => x.id === g);
+    showToast(`${st ? (st.nickname || st.name) : ''} に「${gg ? gg.name : g}」を${i >= 0 ? '取り消しました' : 'わたしました'}`);
+  } catch(e) { alert('保存できませんでした(通信エラー)。もう一度押してください'); }
   renderGachaTeacher();
 }
 function renderGachaTeacher() {
@@ -1616,7 +1645,8 @@ function renderGachaTeacher() {
       <td>${t.dmgTickets} / ${t.hero} / ${t.dayTickets}${t.used ? `<br><span style="color:var(--ink2)">使用済み ${t.used}</span>` : ''}</td>
       <td>${t.monthDays}日</td>
       <td style="white-space:nowrap"><button class="use" data-g-use="${s.id}" ${t.available > 0 ? '' : 'disabled'}>使う</button> <button data-g-undo="${s.id}" ${t.used > 0 ? '' : 'disabled'} title="押しまちがいを1枚もどす">↩</button></td></tr>`).join('') +
-    `</tbody></table>`;
+    `</tbody></table>` + giftTeacherHtml();
+  box.querySelectorAll('[data-g-gift]').forEach(b => b.onclick = () => giftToggle(b.dataset.gGift, b.dataset.g, b));
   box.querySelectorAll('[data-g-use]').forEach(b => b.onclick = () => gachaUse(b.dataset.gUse, 1));
   box.querySelectorAll('[data-g-undo]').forEach(b => b.onclick = () => gachaUse(b.dataset.gUndo, -1));
 }
@@ -1757,7 +1787,7 @@ async function submitRecord() {
 
     if (sd.ok) {
       const hpBefore = BOSS_DATA ? Number(BOSS_DATA.currentHp ?? BOSS_DATA.hp) : null;
-      const myW = weaponFor(getLevelInfo(exp).lv);
+      const myW = currentStudent ? weaponOf(currentStudent.id, getLevelInfo(exp).lv) : weaponFor(getLevelInfo(exp).lv);
       mqStrike({ kind: myW.cls === 'w1' ? 'punch' : 'slash', dmg, crit:isCrit, hero:nickname, weaponHtml:weaponIcon(myW, {held:true}), weaponName:myW.name, tier:myW.cls,
         boss: Object.assign({ name: BOSS_DATA ? BOSS_DATA.name : '大魔王', hp: BOSS_DATA ? Number(BOSS_DATA.hp) : 0, cur: hpBefore }, yarikiBossArt()) });
       setTimeout(() => showAttackEffect(dmg, isCrit, currentStudent.name), 200);
@@ -2765,17 +2795,36 @@ const WEAPONS = [
 function esc(t) { return String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 const FIST = '<circle cx="10" cy="55" r="3.8" fill="#f1c27d" stroke="#b9854f" stroke-width=".7"/>';
 const WEAPON_SVG = {
+  owl: `<svg viewBox="0 0 20 64" xmlns="http://www.w3.org/2000/svg"><polygon points="10,1 6.6,11 13.4,11" fill="#e9c79f"/><polygon points="10,1 8.9,4.6 11.1,4.6" fill="#333"/><rect x="5.6" y="11" width="8.8" height="33" rx="1.5" fill="#8a5a2b"/><path d="M5.6,15 Q10,11.5 14.4,15 L14.4,30 Q10,33 5.6,30Z" fill="#c8915a"/><polygon points="5.8,13.6 7.2,10.4 8.6,13.2" fill="#6b4226"/><polygon points="14.2,13.6 12.8,10.4 11.4,13.2" fill="#6b4226"/><circle cx="7.9" cy="19" r="2.4" fill="#fff" stroke="#6b4226" stroke-width=".5"/><circle cx="12.1" cy="19" r="2.4" fill="#fff" stroke="#6b4226" stroke-width=".5"/><circle cx="8.1" cy="19.2" r="1.2" fill="#222"/><circle cx="11.9" cy="19.2" r="1.2" fill="#222"/><circle cx="8.5" cy="18.7" r=".4" fill="#fff"/><circle cx="12.3" cy="18.7" r=".4" fill="#fff"/><polygon points="10,21.2 8.9,22.4 10,24.4 11.1,22.4" fill="#f5a623"/><path d="M7,27 Q10,29 13,27 M7.6,29.5 Q10,31.2 12.4,29.5" stroke="#8a5a2b" stroke-width=".6" fill="none"/><rect x="5.6" y="40.5" width="8.8" height="3.5" fill="#d4af37"/><path d="M1.5,47.5 Q5,43.5 10,46 Q15,43.5 18.5,47.5 L18,49.5 Q10,47.5 2,49.5Z" fill="#6b4226" stroke="#4a2c14" stroke-width=".4"/><rect x="8.6" y="49.5" width="2.8" height="11" fill="#4a2c14"/><circle cx="10" cy="61.3" r="2" fill="#d4af37"/>%F</svg>`,
   w2: `<svg viewBox="0 0 20 64" xmlns="http://www.w3.org/2000/svg"><polygon points="10,1 6.8,12 13.2,12" fill="#e9c79f"/><polygon points="10,1 8.9,5 11.1,5" fill="#333"/><rect x="6.8" y="12" width="6.4" height="32" fill="#f6c443"/><rect x="9.3" y="12" width="1.4" height="32" fill="#dca52b"/><rect x="6.8" y="43" width="6.4" height="3.4" fill="#c9c9c9"/><rect x="3" y="46.5" width="14" height="3" rx="1.5" fill="#8b5a2b"/><rect x="8.6" y="49.5" width="2.8" height="11" fill="#6b4226"/><circle cx="10" cy="61.3" r="1.8" fill="#8b5a2b"/>%F</svg>`,
   w3: `<svg viewBox="0 0 20 64" xmlns="http://www.w3.org/2000/svg"><rect x="9.6" y="0" width=".8" height="4.5" fill="#666"/><polygon points="10,3.5 8.4,9 11.6,9" fill="#d5dde8"/><rect x="8.4" y="9" width="3.2" height="35" fill="#4f86d4"/><rect x="8.4" y="31" width="3.2" height="11" fill="#243a66"/><rect x="11.4" y="12" width=".9" height="10" fill="#c7d2e2"/><path d="M3,46 Q10,53 17,46" stroke="#dfe6ef" stroke-width="1.8" fill="none"/><rect x="4" y="44.6" width="12" height="2" rx="1" fill="#dfe6ef"/><rect x="8.7" y="47" width="2.6" height="13" fill="#3a3a52"/><circle cx="10" cy="61" r="1.7" fill="#dfe6ef"/>%F</svg>`,
   w4: `<svg viewBox="0 0 20 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="wg4" x1="0" x2="1"><stop offset="0" stop-color="#8d9bb0"/><stop offset=".45" stop-color="#f3f6fa"/><stop offset="1" stop-color="#7d8aa0"/></linearGradient></defs><polygon points="10,1 6.3,12 13.7,12" fill="#e4eaf2"/><circle cx="10" cy="1.8" r="1" fill="#222"/><rect x="6.3" y="12" width="7.4" height="33" rx="1" fill="url(#wg4)"/><rect x="12.4" y="15" width="1.7" height="15" rx=".8" fill="#5d6b80"/><rect x="1.5" y="45" width="17" height="3.8" rx="1.9" fill="#b9c5d4"/><circle cx="10" cy="46.9" r="2.1" fill="#3d7bff" stroke="#fff" stroke-width=".5"/><rect x="8.5" y="48.8" width="3" height="11.5" fill="#2f3b52"/><circle cx="10" cy="61.2" r="2" fill="#b9c5d4"/>%F</svg>`,
   w5: `<svg viewBox="0 0 20 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="wg5" x1="0" x2="1"><stop offset="0" stop-color="#b8860b"/><stop offset=".5" stop-color="#fff2a8"/><stop offset="1" stop-color="#c9971a"/></linearGradient></defs><path d="M10,0 L14,10 L14,14 L6,14 L6,10 Z" fill="url(#wg5)"/><line x1="10" y1="2.5" x2="10" y2="10.5" stroke="#6b4c00" stroke-width=".8"/><circle cx="10" cy="11" r=".9" fill="#6b4c00"/><rect x="6" y="14" width="8" height="4" fill="#222"/><rect x="5.5" y="18" width="9" height="1.6" fill="#e8c25a"/><rect x="6" y="19.6" width="8" height="25" rx="1" fill="#1b1838"/><rect x="5.5" y="39" width="9" height="2" fill="#e8c25a"/><path d="M0.5,46.5 Q5,42 10,46 Q15,42 19.5,46.5 L19.5,49.5 Q10,47.5 0.5,49.5 Z" fill="url(#wg5)"/><circle cx="10" cy="48" r="1.9" fill="#ff3b6b" stroke="#fff" stroke-width=".5"/><rect x="8.5" y="49.5" width="3" height="11" fill="#1b1838"/><circle cx="10" cy="61.3" r="2.1" fill="url(#wg5)"/>%F</svg>`,
 };
+/* ==== ガチャ大会の景品(アプリ):先生画面でわたすと、生徒の学習データの mq.gifts に入る。マル単もこれを読む ====
+   owlpencil=フクロウくんの鉛筆(武器の見た目)/traveler=世界の旅人の帽子+称号/mt_owl・mt_world=マル単のきせかえ */
+const GIFTS = [
+  { id:'owlpencil', app:'やりきリスト', name:'フクロウくんの鉛筆', desc:'武器の見た目がフクロウくんの鉛筆になる' },
+  { id:'traveler',  app:'やりきリスト', name:'世界の旅人の帽子',   desc:'かぶりもの+称号「世界の旅人」' },
+  { id:'mt_owl',    app:'マル単',       name:'きせかえ フクロウくん', desc:'マル単の特別きせかえ' },
+  { id:'mt_world',  app:'マル単',       name:'きせかえ 塾長と世界旅行', desc:'マル単の特別きせかえ' },
+];
+function giftsOf(id){ const m = MQB[String(id)]; return m && Array.isArray(m.gifts) ? m.gifts : []; }
+function hasGift(id, g){ return giftsOf(id).includes(g); }
+const OWL_PENCIL = { lv:0, icon:'✏️', name:'フクロウくんの鉛筆', cls:'w2', svg:'owl', verb:'フクロウ斬り', gift:true };
+/* その生徒が今持っている武器(フクロウくんの鉛筆を装備中ならそれ。攻撃力はレベルのまま) */
+function weaponOf(id, lv){
+  const base = weaponFor(lv != null ? lv : levelOf(id));
+  const m = MQB[String(id)];
+  if (hasGift(id, 'owlpencil') && !(m && m.weapon === 'level')) return OWL_PENCIL;
+  return base;
+}
 function weaponIcon(w, opts) {
   const o = opts || {};
   if (w.cls === 'w1') return o.held ? '👊' : '<span class="wpn-inline" style="transform:none">👊</span>';
   // グラデーションのidが重なると、隠れている画面の定義が使われて刃が消えるので、毎回別のidにする
   const uid = 'g' + (++weaponIcon.n);
-  const svg = WEAPON_SVG[w.cls].replace('%F', o.held ? FIST : '').replace(/wg([45])/g, 'wg$1' + uid);
+  const svg = WEAPON_SVG[w.svg || w.cls].replace('%F', o.held ? FIST : '').replace(/wg([45])/g, 'wg$1' + uid);
   return o.held ? svg : `<span class="wpn-inline">${svg}</span>`;
 }
 function yarikiBossArt() {
@@ -2826,7 +2875,7 @@ function renderParty() {
   if (!list.length) { box.innerHTML = '<div class="party-empty">まだ今日の参戦者はいないよ。一番乗りしよう！</div>'; }
   else box.innerHTML = list.map(p => {
     const name = studentNameById(p.id);
-    const w = weaponFor(levelOf(p.id));
+    const w = weaponOf(p.id);
     const sm = STATUS_MAP[p.id]; const def = sm && sm.status ? STATUS_DEFS[sm.status] : null;
     const total = p.hit + p.magic;
     const FACE_ST = FACE_ST_ALL;   // 変身系は顔そのものが変わる
@@ -2851,7 +2900,7 @@ function renderParty() {
 
 function openMember(id) {
   const p = todayParty().find(x => x.id === String(id)) || { id:String(id), hit:0, magic:0 };
-  const lv = levelOf(p.id); const w = weaponFor(lv);
+  const lv = levelOf(p.id); const w = weaponOf(p.id, lv);
   const sm = STATUS_MAP[p.id]; const def = sm && sm.status ? STATUS_DEFS[sm.status] : null;
   const myId = currentStudent ? String(currentStudent.id) : null;
   const myCandies = MY_STATUS ? (Number(MY_STATUS.candies) || 0) : 0;
@@ -2865,8 +2914,9 @@ function openMember(id) {
   }
   document.getElementById('pm-sheet-body').innerHTML = `
     <h3>${esc(studentNameById(p.id))}</h3>
-    <div class="sub">Lv${lv}・${getTitle(lv)}</div>
-    <div class="pm-row"><span>武器</span><span>${weaponIcon(w)} ${w.name}</span></div>
+    <div class="sub">Lv${lv}・${getTitle(lv)}${titleTag(p.id)}</div>
+    <div class="pm-row"><span>武器</span><span>${weaponIcon(w)} ${w.name}${w.gift ? '<small style="color:#ffd700"> 🎁景品</small>' : ''}</span></div>
+    ${myId && p.id === myId && hasGift(p.id, 'owlpencil') ? `<div style="text-align:right;margin:-2px 0 6px"><button class="hat-off" style="margin:0" onclick="toggleOwlPencil()">${w.gift ? 'レベルの武器にもどす' : 'フクロウくんの鉛筆を装備する'}</button></div>` : ''}
     <div class="pm-row"><span>⚔ 今日の${w.verb === '打撃' ? '打撃' : '斬撃'}(やりきリスト)</span><b>${p.hit.toLocaleString()}</b></div>
     <div class="pm-row"><span>🔮 今日の魔法(マル単)</span><b>${p.magic.toLocaleString()}</b></div>
     <div class="pm-row"><span>今月の合計(⚔${calcMonthDmg(p.id).toLocaleString()} + 🔮${calcMonthMagic(p.id).toLocaleString()})</span><b>${calcMonthTotal(p.id).toLocaleString()}</b></div>
@@ -3561,7 +3611,7 @@ function renderBossView() {
         })() : '--';
         const isToday = String(l.date).slice(0,10) === TODAY;
         const st = studentByNick(rawNick.replace(/\((マル単|紙)\)$/, ''));
-        const w = st ? weaponFor(levelOf(st.id)) : WEAPONS[WEAPONS.length-1];
+        const w = st ? weaponOf(st.id) : WEAPONS[WEAPONS.length-1];
         let line;
         if (isSummon && /^召喚のなおし/.test(rawNick)) { const m = /^召喚のなおし:(.+?)\{(\d{4})-(\d\d)-(\d\d)\}/.exec(rawNick) || [];
           line = `✏️ [${dateStr}] 自習室の時間を直したので、${m[2] ? `${+m[3]}/${+m[4]}〜の週の` : ''}${esc(m[1] || '召喚獣')}の召喚ダメージを調整<span class="log-summon">${dmg > 0 ? '+' : ''}${dmg.toLocaleString()}</span>`; }
@@ -3640,10 +3690,10 @@ function renderBossView() {
     const title = getTitle(info.lv);
     return `<div class="rank-item ${rankClass}">
       <div class="rank-num ${numClass}">${numText}</div>
-      <div class="rank-avatar">${weaponIcon(weaponFor(info.lv))}</div>
+      <div class="rank-avatar">${weaponIcon(weaponOf(s.id, info.lv))}</div>
       <div class="rank-body">
         <div class="rank-name">${displayName}${typeof hatTag === 'function' ? hatTag(s.id) : ''}${statusTagById(s.id)}</div>
-        <div class="rank-sub" style="color:#8888bb;font-size:10px;">${title}</div>
+        <div class="rank-sub" style="color:#8888bb;font-size:10px;">${title}${typeof titleTag === 'function' ? titleTag(s.id) : ''}</div>
         <div class="dmg-bar-wrap">
           <div class="dmg-bar-track"><div class="dmg-bar-fill" style="width:${pct}%"></div></div>
           <div class="dmg-num">${s.monthDmg.toLocaleString()}</div>
@@ -5393,7 +5443,17 @@ function mqExtrasLoad(force){
   Promise.all([
     (typeof loadVisits === 'function' ? loadVisits() : Promise.resolve()),
     loadMQB(),
-  ]).finally(() => { MQX_BUSY = false; renderParty(); renderSummon(); });
+  ]).finally(() => { MQX_BUSY = false; renderParty(); renderSummon(); giftNotice(); });
+}
+function giftNotice(){
+  if (!currentStudent) return;
+  const id = String(currentStudent.id), k = 'giftSeen_' + id;
+  let seen = []; try { seen = JSON.parse(localStorage.getItem(k) || '[]'); } catch(e) {}
+  const fresh = giftsOf(id).filter(g => !seen.includes(g));
+  if (!fresh.length) return;
+  const names = fresh.map(g => (GIFTS.find(x => x.id === g) || {}).name || g);
+  showToast(`🎁 ガチャ大会の景品「${names.join('」「')}」が届いたよ！`, 5000);
+  try { localStorage.setItem(k, JSON.stringify(giftsOf(id))); } catch(e) {}
 }
 function loadMQB(){ return api('getAllStudy', {}).then(a => { if (a && a.ok && a.data) { ROOMFIX = {}; Object.entries(a.data).forEach(([k, v]) => { try { const o = JSON.parse(v); if (o && o.mq) MQB[k] = o.mq; collectRoomFix(k, o); } catch(e){} }); applyRoomFix(); } }).catch(() => {}); }
 /* 自分の学習データのセルに mq の項目を足して保存(メダル・召喚ボタンで使う) */
@@ -5828,7 +5888,18 @@ const HATS = [
   { id:'halo',    name:'∞の金の輪',        cond:'数学の単元を1つぜんぶマル',      rank:1, re:/^数学\// },
   { id:'goggles', name:'実験ゴーグル',       cond:'理科の単元を1つぜんぶマル',      rank:1, re:/^理科\// },
   { id:'wizard',  name:'魔法使いの帽子',     cond:'マル単でマルを50個あつめる',     rank:3, maru:50 },
+  { id:'traveler', name:'世界の旅人の帽子',   cond:'ガチャ大会の景品(当たった人だけ)', rank:3, gift:'traveler', title:'世界の旅人' },
 ];
+/* 称号:称号つきのかぶりものをかぶっている間だけ出る */
+function titleTag(id){ const h = typeof wornHat === 'function' ? wornHat(id) : null; return h && h.title ? ` <span style="color:#ffd700;font-weight:700">🌏${esc(h.title)}</span>` : ''; }
+async function toggleOwlPencil(){
+  if (!currentStudent) return;
+  const id = String(currentStudent.id), m = MQB[id]; if (!m) return;
+  const next = m.weapon === 'level' ? '' : 'level';
+  m.weapon = next; openMember(id); renderParty(); if (typeof renderBossView === 'function') renderBossView();
+  const ok = await writeMQ({ weapon: next });
+  showToast(ok ? (next ? 'レベルの武器にもどしたよ' : 'フクロウくんの鉛筆を装備した！') : '保存できませんでした(通信エラー)');
+}
 const HAT_RANK = { 1:'ふつう', 2:'レア', 3:'伝説' };
 let HAT_N = 0;
 /* 頭の上半分にぴったり沿う形(帽子の本体) */
@@ -5990,6 +6061,15 @@ function hatArt(id){
     <path d="M33.5,38 Q50,34 66.5,38 L67,42 Q50,38 33,42Z" fill="#ffd34a"/>
     <ellipse cx="50" cy="43" rx="26" ry="5" fill="#4a2aa0" stroke="#1f0c52" stroke-width="1"/>`,
   };
+  if (id === 'traveler') return `<g>
+    <ellipse cx="50" cy="45" rx="31" ry="6.5" fill="#b8955a" stroke="#5a4020" stroke-width="1"/>
+    <path d="M30,45 Q29,27 50,24 Q71,27 70,45 Q50,40 30,45Z" fill="#d6b77a" stroke="#5a4020" stroke-width="1" stroke-linejoin="round"/>
+    <path d="M44,25.5 Q50,30 56,25.5" fill="none" stroke="#a9874e" stroke-width="1.2"/>
+    <path d="M30.6,40 Q50,35 69.4,40 L70,45 Q50,40 30,45Z" fill="#7a3f1d" stroke="#3d1f0e" stroke-width=".7"/>
+    <circle cx="61" cy="39.5" r="4.6" fill="#2f86d6" stroke="#0b3f86" stroke-width=".8"/>
+    <path d="M58.4,38 Q60,36.4 61.6,37.6 Q62.4,39.6 60.6,40.4 Q59,40.8 58.4,38Z M62.6,41 Q63.8,40.6 63.6,42" fill="#5cc26b"/>
+    <path d="M56.4,39.5 L65.6,39.5 M61,34.9 Q63.6,39.5 61,44.1 M61,34.9 Q58.4,39.5 61,44.1" fill="none" stroke="#bfe3ff" stroke-width=".4"/>
+    <path d="M36,37 L40,31" stroke="#c8a2ff" stroke-width="1.6" stroke-linecap="round"/><path d="M38,37.5 L43,30" stroke="#ffd34a" stroke-width="1.4" stroke-linecap="round"/></g>`;
   return A[id] || '';
 }
 /* つばのある帽子(駅長さん・学生帽) */
@@ -6018,7 +6098,8 @@ function hatSVG(h, opt){
 function hatsOf(id){
   const m = MQB[String(id)]; if (!m) return [];
   const g = Array.isArray(m.gdone) ? m.gdone : [], maru = Number(m.maru) || 0;
-  return HATS.filter(h => h.maru ? maru >= h.maru : g.some(k => h.re.test(k)));
+  const gifts = Array.isArray(m.gifts) ? m.gifts : [];
+  return HATS.filter(h => h.gift ? gifts.includes(h.gift) : h.maru ? maru >= h.maru : g.some(k => h.re.test(k)));
 }
 function wornHat(id){
   const m = MQB[String(id)]; if (!m) return null;
@@ -6042,7 +6123,7 @@ function hatSection(id){
     : `<div class="hat-cell lock r${h.rank}"><span class="hi">${hatSVG(h, { size:56 })}</span><span class="hn">？？？</span><span class="hs">${esc(h.cond)}</span></div>`).join('');
   return `<div class="bd-sec">
     <div class="hat-head">🎩 かぶりもの <b>${own.length}</b> / ${HATS.length}${w ? `<button class="hat-off" onclick="wearHat('')">ぬぐ</button>` : ''}</div>
-    <div class="bd-empty">マル単で単元のセットをぜんぶマルにすると手に入るよ。かぶると、ボス戦の仲間の画面で頭にのる！(攻撃力は変わりません)</div>
+    <div class="bd-empty">マル単で単元のセットをぜんぶマルにすると手に入るよ(ガチャ大会の景品もあるよ)。かぶると、ボス戦の仲間の画面で頭にのる！(攻撃力は変わりません)</div>
     <div class="hat-grid">${list}</div></div>`;
 }
 async function wearHat(hid){
