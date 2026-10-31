@@ -2800,8 +2800,8 @@ function todayParty() {
   (DAMAGE_LOG || []).forEach(l => {
     if (String(l.date).slice(0,10) !== TODAY) return;
     const raw = l.nickname || l.name || '';
-    const magic = /\(マル単\)$/.test(raw) || l.habitsDone === 'マル単';
-    const st = studentByNick(raw.replace(/\(マル単\)$/, ''));
+    const magic = !/\(紙\)$/.test(raw) && (/\(マル単\)$/.test(raw) || l.habitsDone === 'マル単');
+    const st = studentByNick(raw.replace(/\((マル単|紙)\)$/, ''));
     if (!st) return;
     const m = get(String(st.id)); const d = Number(l.damage) || 0;
     if (magic) m.magic += d; else m.hit += d;
@@ -3124,6 +3124,15 @@ function paperExpected(sid){
   });
   return total;
 }
+/* 別枠で届けた紙の分(今月):ダメージログの「名前(紙)」と、この端末の控えの多い方 */
+function paperExtraKey(){ return 'paper_extra_' + jstMonth(); }
+function addPaperExtra(sid, d){ try { const o = JSON.parse(localStorage.getItem(paperExtraKey()) || '{}'); o[sid] = (Number(o[sid]) || 0) + d; localStorage.setItem(paperExtraKey(), JSON.stringify(o)); } catch(e) {} }
+function paperExtra(sid, logs){
+  const month = jstMonth();
+  const fromLog = logs.filter(l => String(l.studentId) === String(sid) && /\(紙\)$/.test(String(l.nickname || '')) && String(l.date).slice(0,7) === month).reduce((a, l) => a + (Number(l.damage) || 0), 0);
+  let mine = 0; try { mine = Number((JSON.parse(localStorage.getItem(paperExtraKey()) || '{}'))[sid]) || 0; } catch(e) {}
+  return Math.max(fromLog, mine);
+}
 async function paperAttack(sid){
   const st = STUDENTS.find(s => String(s.id) === String(sid));
   if (!st) return '✅ 保存しました！';
@@ -3132,11 +3141,17 @@ async function paperAttack(sid){
   const lr = await api('getDamageLog', { days: 30 });
   if (!lr || !lr.ok || !lr.monthTotals) return '✅ 保存しました(ボスへの攻撃は通信できず、次に保存したときにまとめて届けます)';
   DAMAGE_LOG = (lr.logs || []).filter(l => !isTesterLog(l)); MONTH_TOTALS = lr.monthTotals;
-  const dealt = Number((lr.monthTotals[String(sid)] || {}).hit) || 0;
+  const dealt = (Number((lr.monthTotals[String(sid)] || {}).hit) || 0) + paperExtra(sid, lr.logs || []);
   const dmg = paperExpected(sid) - dealt;
   if (dmg <= 0) return '✅ 保存しました！(この子の今月の分は、もうボスに届いています)';
   const nickname = st.nickname || st.name;
-  const sd = await api('saveDamage', { studentId: sid, nickname, damage: dmg, isCrit: false, habitsDone: '紙' });
+  let sd = await api('saveDamage', { studentId: sid, nickname, damage: dmg, isCrit: false, habitsDone: '紙' });
+  // 今日すでに攻撃していたら(1人1日1回の制限)、紙の記録の分は「別枠」で届ける。
+  // サーバーの別枠(habitsDone='マル単')を借り、名前に(紙)をつけて、画面では打撃として表示する
+  if (!sd || !sd.ok) {
+    sd = await api('saveDamage', { studentId: sid, nickname: nickname + '(紙)', damage: dmg, isCrit: false, habitsDone: 'マル単' });
+    if (sd && sd.ok) addPaperExtra(sid, dmg);
+  }
   if (!sd || !sd.ok) return `✅ 保存しました！(${nickname}さんは今日もう攻撃済み。のこりの ${dmg.toLocaleString()} ダメージは、明日以降に記録を保存すると届きます)`;
   let extra = '';
   if (BOSS_DATA) {
@@ -3535,16 +3550,17 @@ function renderBossView() {
         const dmg = Number(l.damage) || 0;
         const crit = l.isCrit === true || l.isCrit === 'true' || l.isCrit === 'YES';
         // マル単からのダメージは「魔法」として表示
-        const isMagic = /\(マル単\)$/.test(rawNick) || l.habitsDone === 'マル単';
+        const isPaper = /\(紙\)$/.test(rawNick);
+        const isMagic = !isPaper && (/\(マル単\)$/.test(rawNick) || l.habitsDone === 'マル単');
         const isSummon = l.habitsDone === '召喚' || /^自習室の召喚/.test(rawNick);
-        const nick = rawNick.replace(/\(マル単\)$/, '') + statusTagByNick(rawNick.replace(/\(マル単\)$/, ''));
+        const nick = rawNick.replace(/\((マル単|紙)\)$/, '') + statusTagByNick(rawNick.replace(/\((マル単|紙)\)$/, ''));
         // 日付表示（例：8/6）
         const dateStr = l.date ? (() => {
           const d = new Date(l.date);
           return isNaN(d.getTime()) ? String(l.date).slice(5,10).replace('-','/') : `${d.getMonth()+1}/${d.getDate()}`;
         })() : '--';
         const isToday = String(l.date).slice(0,10) === TODAY;
-        const st = studentByNick(rawNick.replace(/\(マル単\)$/, ''));
+        const st = studentByNick(rawNick.replace(/\((マル単|紙)\)$/, ''));
         const w = st ? weaponFor(levelOf(st.id)) : WEAPONS[WEAPONS.length-1];
         let line;
         if (isSummon && /^召喚のなおし/.test(rawNick)) { const m = /^召喚のなおし:(.+?)\{(\d{4})-(\d\d)-(\d\d)\}/.exec(rawNick) || [];
