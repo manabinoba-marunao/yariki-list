@@ -1620,8 +1620,10 @@ async function giftToggle(id, g, btn){
   if (btn) btn.disabled = true;
   try {
     const r = await api('getStudy', { studentId: id });
-    let obj = {}; try { obj = r && r.data ? JSON.parse(r.data) : {}; } catch(e) { obj = {}; }
+    if (!r || !r.ok) throw new Error('get');   // 読めなかったときに空で上書きして記録を消さない
+    let obj = {}; try { obj = r.data ? JSON.parse(r.data) : {}; } catch(e) { obj = {}; }
     if (!obj || typeof obj !== 'object') obj = {};
+    obj = sdFresher(obj, id);
     const mq = Object.assign({}, obj.mq || {});
     const list = Array.isArray(mq.gifts) ? mq.gifts.slice() : [];
     const i = list.indexOf(g); if (i >= 0) list.splice(i, 1); else list.push(g);
@@ -4527,6 +4529,15 @@ function sdSunday(){ const d=new Date(); d.setDate(d.getDate()+((7-d.getDay())%7
 function fmtMin(m){ m=Math.round(m); return m>=60 ? Math.floor(m/60)+'時間'+(m%60?(m%60)+'分':'') : m+'分'; }
 
 /* ---------- 保存と同期 ---------- */
+/* 生徒の端末にある学習データ(SD)のほうが新しければ、それを土台にする(古い塾のデータで登竜門などを巻きもどさない) */
+function sdFresher(obj, id){
+  if (typeof SD === 'undefined' || !SD || sdSid == null || String(sdSid) !== String(id)) return obj;
+  if ((SD.updated || 0) <= (obj.updated || 0)) return obj;
+  const base = Object.assign({}, SD);
+  if (obj.mq) base.mq = obj.mq; else delete base.mq;
+  if (obj.roomFix) base.roomFix = obj.roomFix; else delete base.roomFix;
+  return base;
+}
 let TEAM = {}, SD = null, sdSid = null, sdSyncState = 'local', sdSaveTimer = null, sdTick = null, sdForm = null, sdSetSubj = null;
 function sdBlank(){ return {v:1, timer:{subj:null, start:null}, sessions:[], test:{id:null, date:null, subj:{}}, targets:[], gateTab:'term', goals:[], badges:[], missions:{}, updated:0}; }
 function sdKeyName(id){ return 'mq_study_'+id; }
@@ -4537,16 +4548,32 @@ function sdSave(){
   // 古い記録は60日で消す(スプレッドシートの1セルに収めるため)
   const cut = Date.now()-60*864e5; SD.sessions = SD.sessions.filter(x=>x.b>cut);
   try{ localStorage.setItem(sdKeyName(sdSid), JSON.stringify(SD)); }catch(e){}
+  sdDirty = true;
   clearTimeout(sdSaveTimer);
   sdSaveTimer = setTimeout(sdPush, 1500);
 }
+/* 保存待ちのまま「マル単へ」を押したり、アプリを閉じたりしても塾に届くように、その場で送る */
+let sdDirty = false;
+function sdFlush(){
+  if(!sdDirty || !SD || sdSid==null) return;
+  clearTimeout(sdSaveTimer);
+  try{
+    fetch(GAS_URL + '?action=saveStudy', {method:'POST', keepalive:true, body: JSON.stringify({action:'saveStudy', studentId: sdSid, data: JSON.stringify(SD)})});
+    sdDirty = false;
+  }catch(e){}
+}
+window.addEventListener('pagehide', sdFlush);
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') sdFlush(); });
 async function sdPush(){
-  if(sdSid==null||sdSyncState==='off') return;
+  if(sdSid==null) return;
+  const sid = sdSid;
   const mqNew = typeof MQB !== 'undefined' ? MQB[String(sdSid)] : null; if(mqNew && (!SD.mq || (mqNew.at||0) >= (SD.mq.at||0))) SD.mq = mqNew;   // マル単から届いたバッジを消さない
   // 先生が直した自習時間(roomFix)は、塾にある最新のものを残す(生徒の端末の古いデータで消さない)
   try{ const cur = await api('getStudy', {studentId: sdSid}); if(cur && cur.ok){ let o = null; try{ o = cur.data ? JSON.parse(cur.data) : null; }catch(e){} if(o && o.roomFix) SD.roomFix = o.roomFix; else if(o) delete SD.roomFix; } }catch(e){}
+  if(sid !== sdSid) return;
   const r = await api('saveStudy', {studentId: sdSid, data: JSON.stringify(SD)});
-  sdSyncState = r && r.ok ? 'cloud' : 'off';
+  if(r && r.ok){ sdSyncState = 'cloud'; sdDirty = false; }
+  else { sdSyncState = 'off'; clearTimeout(sdSaveTimer); sdSaveTimer = setTimeout(sdPush, 30000); }   // 通信エラーは30秒後にもう一度
   const el=document.getElementById('sv-sync'); if(el) el.textContent = sdSyncLabel();
 }
 function sdSyncLabel(){ return sdSyncState==='cloud' ? '☁ 塾に保存ずみ' : 'この端末に保存中'; }
@@ -4557,7 +4584,10 @@ async function sdOpen(st){
   const r = await api('getStudy', {studentId: st.id});
   if(r && r.ok){
     sdSyncState = 'cloud';
-    if(r.data){ try{ const remote = JSON.parse(r.data); if(remote && remote.mq) SD.mq = remote.mq; if(remote && (remote.updated||0) > (SD.updated||0)){ SD = Object.assign(sdBlank(), remote); try{ localStorage.setItem(sdKeyName(st.id), JSON.stringify(SD)); }catch(e){} } }catch(e){} }
+    let remote = null; try{ remote = r.data ? JSON.parse(r.data) : null; }catch(e){}
+    if(remote && remote.mq) SD.mq = remote.mq;
+    if(remote && (remote.updated||0) > (SD.updated||0)){ SD = Object.assign(sdBlank(), remote); try{ localStorage.setItem(sdKeyName(st.id), JSON.stringify(SD)); }catch(e){} }
+    else if((SD.updated||0) > ((remote&&remote.updated)||0)){ await sdPush(); }   // この端末の記録のほうが新しい(塾に届いていない)→ いま送る
   } else sdSyncState = 'off';
   if(sdSyncState==='cloud'){ const a = await api('getAllStudy', {}); if(a&&a.ok&&a.data){ TEAM={}; Object.entries(a.data).forEach(([k,v])=>{ try{ TEAM[k]=JSON.parse(v); }catch(e){} }); } }
   if(currentStudent && currentStudent.id===st.id) renderStudy();
@@ -5196,8 +5226,10 @@ async function saveRoomFix(v, out){
   try { await fetch(JISHU_URL, {method:'POST', body: JSON.stringify({action:'fixVisit', date: v.date, name: v.name, inMs: v.inMs || null, in: visitIn(v), out: out || ''})}).then(x=>x.json()); } catch(e) {}
   try {
     const r = await api('getStudy', { studentId: st.id });
-    let obj = {}; try { obj = r && r.data ? JSON.parse(r.data) : {}; } catch(e) { obj = {}; }
+    if (!r || !r.ok) throw new Error('get');   // 読めなかったときに空で上書きして記録を消さない
+    let obj = {}; try { obj = r.data ? JSON.parse(r.data) : {}; } catch(e) { obj = {}; }
     if (!obj || typeof obj !== 'object') obj = {};
+    obj = sdFresher(obj, st.id);
     obj.roomFix = Object.assign({}, obj.roomFix || {});
     if (out) obj.roomFix[key] = { out, orig, at: Date.now() }; else delete obj.roomFix[key];
     // 古いなおし(30日より前)はそうじ
@@ -5464,8 +5496,10 @@ async function writeMQ(patch){
   const id = String(currentStudent.id);
   try {
     const r = await api('getStudy', { studentId: currentStudent.id });
-    let obj = {}; try { obj = r && r.data ? JSON.parse(r.data) : {}; } catch(e) { obj = {}; }
+    if (!r || !r.ok) throw new Error('get');   // 読めなかったときに空で上書きして記録を消さない
+    let obj = {}; try { obj = r.data ? JSON.parse(r.data) : {}; } catch(e) { obj = {}; }
     if (!obj || typeof obj !== 'object') obj = {};
+    obj = sdFresher(obj, currentStudent.id);
     obj.mq = Object.assign({}, obj.mq || {}, patch);
     MQB[id] = obj.mq;
     if (typeof sdSid !== 'undefined' && String(sdSid) === id && SD) { SD.mq = obj.mq; try { localStorage.setItem(sdKeyName(sdSid), JSON.stringify(SD)); } catch(e) {} }
@@ -6169,8 +6203,10 @@ async function toggleEquip(bid){
   openMember(id); renderParty();
   try {
     const r = await api('getStudy', { studentId: currentStudent.id });
-    let obj = {}; try { obj = r && r.data ? JSON.parse(r.data) : {}; } catch(e) { obj = {}; }
+    if (!r || !r.ok) throw new Error('get');   // 読めなかったときに空で上書きして記録を消さない
+    let obj = {}; try { obj = r.data ? JSON.parse(r.data) : {}; } catch(e) { obj = {}; }
     if (!obj || typeof obj !== 'object') obj = {};
+    obj = sdFresher(obj, currentStudent.id);
     obj.mq = Object.assign({}, obj.mq || {}, m, { badges: (obj.mq && (obj.mq.at || 0) > (m.at || 0)) ? obj.mq.badges : m.badges, equip: eq });
     MQB[id] = obj.mq;
     if (typeof sdSid !== 'undefined' && String(sdSid) === id && SD) { SD.mq = obj.mq; try { localStorage.setItem(sdKeyName(sdSid), JSON.stringify(SD)); } catch(e) {} }
