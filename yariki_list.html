@@ -1780,8 +1780,11 @@ async function submitRecord() {
       }, 600);
     }
 
+    // 期末の誘魔には習慣の攻撃(打撃・斬撃)は効かない。ダメージは送らず、「届かない」演出だけ
+    const kimatsu = isKimatsu();
+    if (kimatsu && dmg > 0 && !tester) setTimeout(showKimatsuImmune, 400);
     // GASにダメージを保存（全員共有）— 1日1回。保存できた時だけボスのHPを減らす
-    const sd = (dmg > 0 && !tester) ? await api('saveDamage', {
+    const sd = (dmg > 0 && !tester && !kimatsu) ? await api('saveDamage', {
       studentId: currentStudent.id,
       nickname,
       damage: dmg,
@@ -1799,7 +1802,7 @@ async function submitRecord() {
       // ボスHPをGASに保存（引き算はGAS側で行う）
       if (BOSS_DATA) {
         BOSS_DATA.currentHp = Math.max(0, (BOSS_DATA.currentHp ?? BOSS_DATA.hp) - dmg);
-        let hpRes = await api('updateBossHp', { damage: dmg, heroName: nickname, heroId: currentStudent.id });
+        let hpRes = await api('updateBossHp', { damage: dmg, heroName: nickname, heroId: currentStudent.id, source: 'habit' });
         // 大魔王の結界が消えていたら(全員の力がそろったら)、この一撃でとどめ
         if (hpRes.ok && !hpRes.defeated && hpRes.shield && Number(shieldClean(hpRes.shield).missing) === 0 && Number(hpRes.currentHp) > 0) {
           const fin = await api('updateBossHp', { damage: Number(hpRes.currentHp), heroName: nickname, heroId: currentStudent.id });
@@ -1821,6 +1824,7 @@ async function submitRecord() {
           try {
             localStorage.setItem('boss_hero', JSON.stringify({ name: nickname, date: TODAY, bossName: killedName }));
             localStorage.setItem(`boss_defeated_seen_${killedName}`, '1'); // 自分の端末で同じ演出を2回見ないように
+            if (hpRes.defeatedAt) localStorage.setItem(`boss_defeated_seen_${killedName}@${hpRes.defeatedAt}`, '1');
           } catch(e) {}
           showBossDefeated(nickname, hpRes.treasure || BOSS_DATA.treasure, killedName);
         }
@@ -1859,6 +1863,8 @@ async function submitRecord() {
     const effNote = stDef && sd.ok ? `（${stDef.icon}${stDef.name}：${stDef.short}）` : '';
     showToast(tester
       ? `${done}個達成！記録しました(テスト用なのでボスへの攻撃はなし)`
+      : kimatsu
+      ? `${spellMsg}${done}個達成！EXP+${expGain}(期末の誘魔には、マル単の魔法で攻撃しよう！)`
       : sd.ok
       ? `⚔ ${dmg.toLocaleString()}ダメージ！(${done}個達成・EXP+${expGain})${spellMsg ? ' ' + spellMsg : ''}`
       : dmg > 0
@@ -2602,9 +2608,12 @@ function showBossIntro() {
   art.className = 'bi-art';
   nm.classList.remove('show'); sub.classList.remove('show'); skip.classList.remove('show');
   nm.textContent = BOSS_DATA.name || '大魔王';
-  const revive = BOSS_DATA.type === 'boss_final';
-  const warn = ov.querySelector('.bi-warning'); if (warn) warn.textContent = revive ? '🎃 HALLOWEEN 🎃' : '⚠ WARNING ⚠';
-  sub.innerHTML = revive ? 'ハロウィンが近づき、夜の闇から魔力が集まる…<br><b>ハロウィンの魔力でよみがえった！</b><br>もう一度、全員の力を合わせて倒せ！' : 'が現れた！ 全員の力を合わせて倒せ！';
+  const revive = BOSS_DATA.type === 'boss_final', kim = isKimatsu();
+  const warn = ov.querySelector('.bi-warning'); if (warn) warn.textContent = revive ? '🎃 HALLOWEEN 🎃' : kim ? '📝 期末テスト 📝' : '⚠ WARNING ⚠';
+  if (kim) nm.innerHTML = '期末の誘魔<div style="font-size:.5em;margin-top:4px;opacity:.9">― 心の奥にささやく者 ―</div>';
+  sub.innerHTML = revive ? 'ハロウィンが近づき、夜の闇から魔力が集まる…<br><b>ハロウィンの魔力でよみがえった！</b><br>もう一度、全員の力を合わせて倒せ！'
+    : kim ? '「あと1本だけ」「あとでやる」…<br>心の奥で、誘いの声がささやく。<br><b>剣は届かない。学びの魔法だけが、誘いを打ち破る！</b><br>5科目のマル単の魔法で、5つの「誘いの盾」を割れ！<br>🍠 倒したら、塾で全員に<b>季節のおやつ</b>！'
+    : 'が現れた！ 全員の力を合わせて倒せ！';
   if (BOSS_DATA.imageUrl && String(BOSS_DATA.imageUrl).trim() !== '') {
     art.innerHTML = '<img src="' + BOSS_DATA.imageUrl + '" alt="">';
     art.firstChild.onerror = () => { art.innerHTML = svgHtml(); };
@@ -3191,6 +3200,7 @@ async function paperAttack(sid){
   const st = STUDENTS.find(s => String(s.id) === String(sid));
   if (!st) return '✅ 保存しました！';
   if (isTester(st)) return '✅ 保存しました(テスト用なのでボスへの攻撃はなし)';
+  if (isKimatsu()) return '✅ 保存しました(期末の誘魔には習慣の攻撃が効かないので、ボスへのダメージはなし)';
   // 今月すでに届いているダメージを最新にする
   const lr = await api('getDamageLog', { days: 30 });
   if (!lr || !lr.ok || !lr.monthTotals) return '✅ 保存しました(ボスへの攻撃は通信できず、次に保存したときにまとめて届けます)';
@@ -3209,7 +3219,7 @@ async function paperAttack(sid){
   if (!sd || !sd.ok) return `✅ 保存しました！(${nickname}さんは今日もう攻撃済み。のこりの ${dmg.toLocaleString()} ダメージは、明日以降に記録を保存すると届きます)`;
   let extra = '';
   if (BOSS_DATA) {
-    let hpRes = await api('updateBossHp', { damage: dmg, heroName: nickname, heroId: sid });
+    let hpRes = await api('updateBossHp', { damage: dmg, heroName: nickname, heroId: sid, source: 'habit' });
     // 大魔王の結界が消えていたら、この一撃でとどめ(生徒の攻撃と同じ)
     if (hpRes.ok && !hpRes.defeated && hpRes.shield && Number(shieldClean(hpRes.shield).missing) === 0 && Number(hpRes.currentHp) > 0) {
       const fin = await api('updateBossHp', { damage: Number(hpRes.currentHp), heroName: nickname, heroId: sid });
@@ -3340,6 +3350,7 @@ function calcMonthDmg(sid) {
 
 async function loadBossData() {
   let previousDefeat = null;
+  let recentBossDefeats = [];
   let defeatScheduled = false;
   try {
     const bossRes = await api('getBoss', {});
@@ -3348,6 +3359,7 @@ async function loadBossData() {
       // 現在HPが空欄なら最大HPとして扱う
       if (BOSS_DATA.currentHp === '' || BOSS_DATA.currentHp === null || BOSS_DATA.currentHp === undefined) BOSS_DATA.currentHp = BOSS_DATA.hp;
       previousDefeat = bossRes.previousDefeat || null;
+      recentBossDefeats = Array.isArray(bossRes.recentBossDefeats) ? bossRes.recentBossDefeats : [];
     } else {
       const now = new Date();
       const lastDay = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
@@ -3389,8 +3401,23 @@ async function loadBossData() {
     } catch(e) {}
   }
 
-  // 直前に討伐されたボスがいれば、現在のボスが交代済みでも演出を表示（全員対象）
-  if (previousDefeat && previousDefeat.name && previousDefeat.hero) {
+  // ここ10日に倒された大魔王で、この端末でまだ演出を見ていないものがあれば見せる(古い順に1つずつ)。
+  // 名前が同じ大魔王(覚醒→ハロウィンで復活 など)もあるので、倒した日時で見分ける
+  if (!defeatScheduled && recentBossDefeats.length) {
+    try {
+      const seen = x => localStorage.getItem(`boss_defeated_seen_${x.name}@${x.at}`) || (!x.dup && localStorage.getItem(`boss_defeated_seen_${x.name}`));
+      const d = recentBossDefeats.find(x => x && x.name && x.hero && x.at && !seen(x));
+      if (d) {
+        localStorage.setItem(`boss_defeated_seen_${d.name}@${d.at}`, '1');
+        localStorage.setItem(`boss_defeated_seen_${d.name}`, '1');
+        defeatScheduled = true;
+        setTimeout(() => showBossDefeated(d.hero, d.treasure, d.name), 800);
+      }
+    } catch(e) {}
+  }
+
+  // 直前に討伐された敵がいれば、現在の敵が交代済みでも演出を表示（全員対象）。大魔王は上で見せるので、ここは雑魚だけ
+  if (!defeatScheduled && previousDefeat && previousDefeat.name && previousDefeat.hero && !recentBossDefeats.some(x => x && x.name === previousDefeat.name)) {
     const seenKey = `boss_defeated_seen_${previousDefeat.name}`;
     try {
       if (!localStorage.getItem(seenKey)) {
@@ -3504,6 +3531,32 @@ function renderBossHp() {
   if (maxEl) maxEl.textContent = '???';
 }
 
+/* ==== 期末の誘魔 ― 心の奥にささやく者:マル単の魔法と召喚しか効かない。5つの誘いの盾 ==== */
+function isKimatsu(){ return !!(BOSS_DATA && BOSS_DATA.type === 'boss_kimatsu' && !BOSS_DATA.defeated); }
+function renderKimatsuSeals(el){
+  const sl = BOSS_DATA.seal; if (!sl || !Array.isArray(sl.seals)) { el.style.display = 'none'; return; }
+  el.style.cssText = 'display:block;margin:0 0 10px;padding:10px 12px;border-radius:10px;font-size:12px;line-height:1.55;background:linear-gradient(135deg,rgba(90,30,160,.32),rgba(20,40,90,.3));border:1px solid #b46bff;color:#f3e6ff';
+  const rows = sl.seals.map(x => {
+    const pct = Math.min(100, Math.round((Number(x.dmg) || 0) / (Number(x.need) || 1) * 100));
+    return `<div style="display:flex;align-items:center;gap:8px;margin:5px 0;${x.broken ? 'opacity:.75' : ''}">
+      <div style="width:84px;flex:none;font-weight:bold">${x.icon} ${esc(x.subject)}<span style="opacity:.7;font-weight:normal">(${esc(x.el)})</span></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;${x.broken ? 'text-decoration:line-through;color:#ffd76b' : ''}">「${esc(x.word)}」の盾${x.broken ? ' 💥打ち破った！' : ''}</div>
+        <div style="height:7px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:2px"><div style="height:100%;width:${pct}%;background:${x.broken ? 'var(--gold)' : 'linear-gradient(90deg,#8d5bff,#ff7ad9)'}"></div></div>
+      </div>
+      <div style="width:64px;flex:none;text-align:right;font-size:11px;opacity:.85">${x.broken ? '' : Number(x.dmg || 0).toLocaleString() + '/' + Number(x.need).toLocaleString()}</div>
+    </div>`;
+  }).join('');
+  el.innerHTML = '<div style="text-align:center;color:#ffb3f0;font-weight:bold;margin-bottom:2px">🕯️ 期末の誘魔 ― 心の奥にささやく者</div>'
+    + '<div style="text-align:center;opacity:.9;margin-bottom:4px">剣(習慣の攻撃)は届かない。<b>マル単の魔法</b>と<b>召喚</b>だけが効く！<br>その教科の魔法をみんなで当てると、誘いの盾が割れる</div>'
+    + rows
+    + `<div style="text-align:center;margin-top:6px">${sl.left ? `🛡️ 盾があと <b style="font-size:14px">${sl.left}枚</b>。全部割れるまで、誘魔は倒れない！` : '<b style="color:var(--gold)">✨ 5つの誘いの盾をすべて打ち破った！あとは本体を削りきれ！</b>'}`
+    + '<br>🍠 倒したら、塾で全員に<b>季節のおやつ</b>！</div>';
+}
+function showKimatsuImmune(){
+  showToast('🛡️ 剣が誘魔をすり抜けた…！ 心の奥の誘いには、剣は届かない。マル単の「学びの魔法」で攻撃しよう！', 6000);
+}
+
 /* ==== ハロウィンの大魔王:結界(全員そろうまで倒れない)と夜の回復 ==== */
 /* 結界の「まだ届いていない仲間」からテスト用アカウントを除く */
 function shieldClean(sh){
@@ -3517,6 +3570,7 @@ function shieldClean(sh){
 }
 function renderFinalShield(){
   const el = document.getElementById('final-shield'); if (!el) return;
+  if (isKimatsu()) { renderKimatsuSeals(el); return; }
   const sh = BOSS_DATA && BOSS_DATA.type === 'boss_final' ? shieldClean(BOSS_DATA.shield) : null;
   if (!sh) { el.style.display = 'none'; return; }
   let isT = false; try { isT = localStorage.getItem('yariki_teacher_ok') === '1'; } catch(e) {}
@@ -5284,7 +5338,7 @@ async function summonReconcile(date){
   const sd = await api('saveDamage', { studentId: 'room', nickname: `召喚のなおし:${t.name}${tag}`, damage: diff, isCrit: false, habitsDone: '召喚' });
   if (!sd || !sd.ok) return { error: true };
   try { o = await roomRec(); const f2 = o.mq.fired[ws] = o.mq.fired[ws] || {}; f2.adj = (Number(f2.adj) || 0) + diff; await roomSave(o); } catch(e) {}
-  try { await api('updateBossHp', { damage: diff, heroName: '自習室の仲間' }); } catch(e) {}
+  try { await api('updateBossHp', { damage: diff, heroName: '自習室の仲間', source: 'summon' }); } catch(e) {}
   return { diff, name: t.name, want };
 }
 async function afterRoomFix(v){
@@ -5696,7 +5750,7 @@ async function summonWeeklyCheck(){
       let hpRes = null;
       if (BOSS_DATA) {
         BOSS_DATA.currentHp = Math.max(0, (BOSS_DATA.currentHp ?? BOSS_DATA.hp) - dmg);
-        try { hpRes = await api('updateBossHp', { damage: dmg, heroName: '自習室の仲間' }); } catch(e) {}
+        try { hpRes = await api('updateBossHp', { damage: dmg, heroName: '自習室の仲間', source: 'summon' }); } catch(e) {}
         if (hpRes && hpRes.ok && typeof hpRes.currentHp === 'number') BOSS_DATA.currentHp = hpRes.currentHp;
       }
       fresh = { eff, hpRes };
