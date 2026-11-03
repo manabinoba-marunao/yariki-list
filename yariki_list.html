@@ -4459,6 +4459,14 @@ function mqStrike(o){
 .rg-wh{display:flex;gap:6px;align-items:center}
 .rg-wh input{flex:1}
 .rg-del{flex:none;width:36px;height:36px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--danger);font:900 14px var(--font);cursor:pointer}
+.rh-bar{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 4px}
+.rh-bar button{flex:1 1 140px;font:800 13px var(--font);padding:10px 8px;border-radius:12px;border:1.5px solid var(--accent);background:#fff;color:var(--accent);cursor:pointer}
+.rh-bar button.main{background:var(--accent);color:#fff}
+.rp-sub{border:1.5px solid var(--border);border-radius:12px;padding:10px 12px;margin:8px 0;display:flex;gap:10px;align-items:flex-start}
+.rp-sub input{margin-top:3px;width:18px;height:18px}
+.rp-sub b{font-size:14px}.rp-sub small{display:block;color:#6b6760;font-size:12px;line-height:1.6}
+.rp-mate{display:block;width:100%;text-align:left;border:1.5px solid var(--border);border-radius:12px;padding:10px 12px;margin:8px 0;background:#fff;font:700 14px var(--font);cursor:pointer}
+.rp-mate small{display:block;color:#6b6760;font-size:12px;font-weight:600;margin-top:4px;line-height:1.6}
 .rg-add{font:700 13px var(--font);padding:10px;border-radius:10px;border:1.5px dashed var(--accent);background:var(--accent-light);color:var(--accent);cursor:pointer}
 .sr .set{font:700 12px var(--font);color:var(--accent);background:none;border:none;text-decoration:underline;cursor:pointer;padding:0}
 .badge-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
@@ -4589,9 +4597,12 @@ function mqStrike(o){
 #roomfix .rf-in input{font:600 15px var(--font);padding:5px 6px;border:1.5px solid #d7deec;border-radius:8px}
 #roomfix .rf-in button{font:700 12px var(--font);padding:7px 12px;border-radius:8px;border:none;background:#143070;color:#fff;cursor:pointer}
 #roomfix .rf-in button.undo{background:#eef1f7;color:#143070}
+#roomfix .rf-add{border:1.5px dashed #143070;border-radius:10px;padding:8px 10px;margin:0 0 10px;background:#f6f8fc}
+#roomfix .rf-add summary{font-weight:800;color:#143070;cursor:pointer;font-size:13px}
 .room-add{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px;font-size:12px;font-weight:700}
 .room-add select{font:600 13px var(--font);padding:6px;border:1.5px solid #d7deec;border-radius:8px;max-width:100%}
 .room-add button{font:700 12px var(--font);padding:7px 12px;border-radius:8px;border:none;background:#143070;color:#fff;cursor:pointer}
+.room-add button.ghost{background:#eef1f7;color:#143070}
 .room-now{font-size:11px;font-weight:900;color:#1f8a5b;background:#e8f5ef;border-radius:999px;padding:2px 8px}
 .sv-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;display:none;align-items:flex-end;justify-content:center}
 .sv-modal-bg.on{display:flex}
@@ -5011,7 +5022,7 @@ function testCard(st){
       <option value="custom" ${!SD.test.id&&SD.test.date!=null?'selected':''}>ほかの日付</option></select>
       ${!SD.test.id&&SD.test.date!=null?`<input type="date" value="${SD.test.date||''}" onchange="SD.test.date=this.value;sdSave();renderStudy()" style="font:700 13px var(--font);padding:6px;border:1.5px solid var(--border);border-radius:8px">`:''}</div>`;
   const title = `<div class="gate-title"><span class="kanji">克己</span><div><b>登竜門</b><small>期末テストの関門をやぶれ</small></div>${td?`<span class="td">テスト<br>${sdLabel(td)}</span>`:''}</div>`;
-  if(!td) return `<div class="sv-card gate">${title}${head}<p class="sv-note">テストの日を選ぶと、一ノ門「学校ワーク完遂」の締め切り(テスト2週間前)が出ます。</p></div>`;
+  if(!td) return `<div class="sv-card gate">${title}${head}${schoolHint(st)}<p class="sv-note">テストの日を選ぶと、一ノ門「学校ワーク完遂」の締め切り(テスト2週間前)が出ます。</p></div>`;
   const rows = subs.map(s=>({s, r: SD.test.subj[s] || {}}));
   const setRows = rows.filter(x=>x.r.from!=null);
   const all1 = setRows.length && setRows.every(x=>lapProg(x.r,0)>=1);
@@ -5035,6 +5046,7 @@ function testCard(st){
   } else if(step===3) box = `<div class="cz clear"><div class="cz-h">🐉 登竜成就！</div>すべての門をやぶった。テストまであと <b>${Math.max(0,toTest)}</b> 日、自信をもって挑もう！</div>`;
   else box = `<div class="cz clear"><div class="cz-h">⛩ 一ノ門 突破！</div>テストまであと <b>${Math.max(0,toTest)}</b> 日。${step===1?'二ノ門:ワークを3周して完璧に。':'三ノ門:塾ワークで仕上げよう。'}</div>`;
   return `<div class="sv-card gate">${title}${head}
+    ${rangeHelpBar(st)}
     <div class="gates">${GATES.map((g,i)=>`<div class="${step>i?'ok':step===i?'now':''}">${step===i?'<span class="koi">🐟</span>':step>i?'<span class="koi">⛩</span>':''}${g}</div>`).join('')}<div class="${step===3?'ok dragon':''}">${step===3?'🐉':'竜'}</div></div>
     ${box}
     ${gs&&gs.n?`<div class="gate-team">一ノ門 突破:<b>${gs.cleared}</b> / ${gs.n} 名${gs.cleared<gs.n?'　まだの人は急げ！':'　全員突破！'}</div>`:''}
@@ -5161,6 +5173,134 @@ function sdSaveRange(){
   SD.test.subj[s] = r; RG = null; sdCloseModal(); sdSave(); renderStudy();
 }
 function sdClearRange(){ delete SD.test.subj[sdSetSubj]; sdCloseModal(); sdSave(); renderStudy(); }
+
+/* ==== 範囲をかんたんに入れる ====
+   ① 範囲表の写真をとる → AIが学校ワーク・塾ワークのページを読みとる(先生側のGASで readRange)
+   ② 同じ学校(同じテスト)・同じ学年の子がもう入れた範囲を、そのまま使う(進み具合は自分のまま) */
+function rangeSummary(subj){
+  return Object.entries(subj||{}).filter(([,r])=>r&&r.from!=null).map(([s,r])=>`${s} ${works(r).map(w=>`${w.name==='学校ワーク'?'':w.name}p.${w.from}〜${w.to}`).join('・')}${r.juku&&r.juku.from!=null?`/塾 p.${r.juku.from}〜${r.juku.to}`:''}`).join('　');
+}
+function rangeMates(st){
+  if(!SD.test.id && !SD.test.date) return [];
+  const g = String(st.grade||'');
+  return rosterStudents().filter(s=>String(s.id)!==String(st.id) && String(s.grade||'')===g).map(s=>{
+    const d = TEAM[String(s.id)]; if(!d || !d.test) return null;
+    const same = SD.test.id ? d.test.id===SD.test.id : (!d.test.id && d.test.date===SD.test.date);
+    if(!same) return null;
+    const n = Object.values(d.test.subj||{}).filter(r=>r&&r.from!=null).length;
+    return n ? {s, d, n, at: d.updated||0} : null;
+  }).filter(Boolean).sort((a,b)=>b.n-a.n || b.at-a.at);
+}
+/* テスト(学校)をまだ選んでいない子に、同じ学年の子がどのテストを選んだかを見せて、すぐ選べるようにする */
+function schoolHint(st){
+  const g = String(st.grade||''), today = sdToday(), by = {};
+  rosterStudents().forEach(s=>{ if(String(s.id)===String(st.id) || String(s.grade||'')!==g) return;
+    const d = TEAM[String(s.id)]; const id = d && d.test && d.test.id; const t = STUDY_TESTS.find(x=>x.id===id);
+    if(t && sdDiff(t.start,today)>=-3) (by[id] = by[id] || []).push(s.nickname||s.name); });
+  const ids = Object.keys(by); if(!ids.length) return '';
+  return `<div class="rh-bar">${ids.map(id=>{ const t = STUDY_TESTS.find(x=>x.id===id), n = by[id];
+    return `<button onclick="sdSetTest('${id}')">🏫 ${esc_(t.label)}<br><small style="font-weight:600">${esc_(n.slice(0,4).join('・'))}${n.length>4?` ほか${n.length-4}人`:''} と同じ</small></button>`; }).join('')}</div>`;
+}
+function rangeHelpBar(st){
+  const mates = rangeMates(st), none = !Object.values(SD.test.subj||{}).some(r=>r&&r.from!=null);
+  return `<div class="rh-bar"><button class="${none?'main':''}" onclick="sdPhotoRange()">📷 範囲表の写真から入れる</button>${mates.length?`<button onclick="sdOpenMates()">👥 同じ学校の${esc_(st.grade||'')}の範囲を使う(${mates.length}人)</button>`:''}</div>`;
+}
+/* 読みとった範囲・友だちの範囲を自分の登竜門に入れる。map = {教科:{works:[{name,from,to}], juku:{name,from,to}|null}} */
+function sdApplyRanges(map){
+  let n = 0;
+  Object.entries(map).forEach(([s, x])=>{
+    const ws = (x.works||[]).filter(w=>w && w.from!=null && w.to!=null && w.to>=w.from).slice(0, MAX_WORKS);
+    if(!ws.length) return;
+    const old = SD.test.subj[s] || {}, oldW = works(old);
+    const lapsFor = (w,k)=>{ const m = oldW.find(o=>o.name===(w.name||'学校ワーク')) || oldW[k]; return m ? m.laps.slice() : [0,0,0]; };
+    const [w0, ...rest] = ws;
+    const r = {from:w0.from, to:w0.to, laps:lapsFor(w0,0), setAt: old.setAt || sdToday()};
+    if(w0.name && w0.name!=='学校ワーク') r.wname = w0.name;
+    if(rest.length) r.extra = rest.map((w,k)=>({name:w.name || `ワーク${k+2}`, from:w.from, to:w.to, laps:lapsFor(w,k+1)}));
+    const j = x.juku;
+    if(j && j.from!=null && j.to!=null && j.to>=j.from) r.juku = {name: j.name || (old.juku&&old.juku.name) || '塾ワーク', from:j.from, to:j.to, done:(old.juku&&old.juku.done)||0};
+    else if(old.juku) r.juku = old.juku;
+    SD.test.subj[s] = r; n++;
+  });
+  return n;
+}
+function subjToMap(subj){
+  const map = {};
+  Object.entries(subj||{}).forEach(([s,r])=>{ if(!r||r.from==null) return;
+    map[s] = {works: works(r).map(w=>({name:w.name, from:w.from, to:w.to})), juku: r.juku&&r.juku.from!=null ? {name:r.juku.name, from:r.juku.from, to:r.juku.to} : null}; });
+  return map;
+}
+/* ② 同じ学校・同じ学年の子の範囲 */
+let RM = null;
+function sdOpenMates(){
+  RM = rangeMates(currentStudent);
+  document.getElementById('sv-modal-body').innerHTML = `<h4>👥 同じ学校の${esc_(currentStudent.grade||'')}の範囲を使う</h4>
+    <p class="sv-note">同じテストを選んだ人が入れた範囲です。選ぶと、その範囲が自分の登竜門に入ります(進み具合は自分のまま)。ちがうところは、あとで「変更」で直してね。</p>
+    ${RM.map((m,i)=>`<button class="rp-mate" onclick="sdUseMate(${i})">${esc_(m.s.nickname||m.s.name)} さんの範囲(${m.n}教科)<small>${esc_(rangeSummary(m.d.test.subj))}</small></button>`).join('')}
+    <div style="text-align:right;margin-top:8px"><button class="sv-btn ghost" onclick="sdCloseModal()">やめる</button></div>`;
+  document.getElementById('sv-modal').classList.add('on');
+}
+function sdUseMate(i){
+  const m = RM && RM[i]; if(!m) return;
+  const mine = Object.values(SD.test.subj||{}).some(r=>r&&r.from!=null);
+  if(mine && !confirm(`${m.s.nickname||m.s.name} さんの範囲で、同じ教科の範囲を入れかえますか？(進み具合は消えません)`)) return;
+  const n = sdApplyRanges(subjToMap(m.d.test.subj));
+  sdCloseModal(); sdSave(); renderStudy(); showToast(`⛩ ${n}教科の範囲を入れました！`);
+}
+/* ① 範囲表の写真 */
+let RP = null;
+function sdPhotoRange(){
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
+  inp.onchange = ()=>{ const f = inp.files && inp.files[0]; if(f) sdReadRangePhoto(f); };
+  inp.click();
+}
+function shrinkImage(file, max){
+  return new Promise((ok, ng)=>{
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = ()=>{ const k = Math.min(1, max/Math.max(img.width, img.height)); const c = document.createElement('canvas');
+      c.width = Math.round(img.width*k); c.height = Math.round(img.height*k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url); ok(c.toDataURL('image/jpeg', 0.85).split(',')[1]); };
+    img.onerror = ()=>{ URL.revokeObjectURL(url); ng(new Error('img')); };
+    img.src = url;
+  });
+}
+async function sdReadRangePhoto(file){
+  const st = currentStudent; if(!st) return;
+  document.getElementById('sv-modal-body').innerHTML = `<h4>📷 範囲表を読みとっています…</h4><p class="sv-note" style="text-align:center;padding:24px 0">🔮 20〜40秒くらいかかります。このまま待っててね。</p>`;
+  document.getElementById('sv-modal').classList.add('on');
+  let r = null;
+  try{
+    const image = await shrinkImage(file, 1800);
+    r = await api('readRange', {image, mime:'image/jpeg', grade: st.grade||'', subjects: studySubjects(st), jukuTexts: studySubjects(st).map(s=>s+':'+jukuTexts(s).filter(x=>x!=='その他').join('/')).join(' ')});
+  }catch(e){ r = {ok:false, error:'写真を読みこめませんでした'}; }
+  if(!r || !r.ok || !r.subjects){
+    const msg = r && /unknown|不明|readRange|action/i.test(String(r.error||'')) ? '先生がまだ「写真の読みとり」の準備をしていません。' : (r && r.error) || '読みとれませんでした';
+    document.getElementById('sv-modal-body').innerHTML = `<h4>読みとれませんでした</h4><p class="sv-note">${esc_(msg)}<br>明るいところで、範囲表がまっすぐ全部うつるように撮りなおしてみてね。手で入れるときは、教科の「範囲を入れる」から。</p><div style="text-align:right"><button class="sv-btn" onclick="sdCloseModal()">とじる</button></div>`;
+    return;
+  }
+  const subs = studySubjects(st);
+  RP = {};
+  Object.entries(r.subjects).forEach(([s,x])=>{ if(!subs.includes(s) || !x) return;
+    const ws = (x.works||[]).map(w=>({name:String(w.name||'学校ワーク').slice(0,20), from:parseInt(w.from,10), to:parseInt(w.to,10)})).filter(w=>!isNaN(w.from)&&!isNaN(w.to)&&w.to>=w.from);
+    const j = x.juku && !isNaN(parseInt(x.juku.from,10)) && !isNaN(parseInt(x.juku.to,10)) ? {name:x.juku.name||'', from:parseInt(x.juku.from,10), to:parseInt(x.juku.to,10)} : null;
+    if(ws.length) RP[s] = {works: ws, juku: j, note: x.note||''};
+  });
+  if(!Object.keys(RP).length){
+    document.getElementById('sv-modal-body').innerHTML = `<h4>ワークのページが見つかりませんでした</h4><p class="sv-note">範囲表の「ワーク」のページが写るように撮りなおしてみてね。</p><div style="text-align:right"><button class="sv-btn" onclick="sdCloseModal()">とじる</button></div>`;
+    return;
+  }
+  document.getElementById('sv-modal-body').innerHTML = `<h4>📷 読みとった範囲</h4>
+    <p class="sv-note">写真とくらべて、合っている教科にチェックを入れて「入れる」を押してね。ちがうところは、あとで「変更」で直せるよ。</p>
+    ${Object.entries(RP).map(([s,x])=>`<label class="rp-sub"><input type="checkbox" id="rp-${s}" checked><div><b>${esc_(s)}</b>
+      <small>${x.works.map(w=>`📘 ${esc_(w.name)} p.${w.from}〜${w.to}`).join('<br>')}${x.juku?`<br>🏫 ${esc_(x.juku.name||'塾ワーク')} p.${x.juku.from}〜${x.juku.to}`:''}${x.note?`<br>※${esc_(x.note)}`:''}</small></div></label>`).join('')}
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px"><button class="sv-btn ghost" onclick="sdCloseModal()">やめる</button><button class="sv-btn" onclick="sdUsePhoto()">入れる</button></div>`;
+}
+function sdUsePhoto(){
+  if(!RP) return;
+  const pick = {}; Object.entries(RP).forEach(([s,x])=>{ const c = document.getElementById('rp-'+s); if(c && c.checked) pick[s] = x; });
+  const n = sdApplyRanges(pick); RP = null;
+  sdCloseModal(); sdSave(); renderStudy(); showToast(n ? `⛩ ${n}教科の範囲を入れました！` : '入れる教科がありませんでした');
+}
 
 /* ---------- 登竜門:期末テスト以外の目標(単元テスト・入試など) ---------- */
 const TARGET_KINDS = ['単元テスト','実力テスト','模試','入試','検定','その他'];
@@ -5318,35 +5458,56 @@ async function loadVisits(){
    なおしは その生徒の学習データのセル(roomFix)に保存し、来室記録を読んだあとに上書きする。
    召喚・ダッシュボード・7日の自習時間など、自習時間を使うところはすべて直した時間で数える。 */
 let ROOMFIX = {};   // 来室のキー → {out:'HH:MM', sid}
-function visitKey(v){ return `${v.date}|${nName(v.name)}|${v.inMs || v.in || ''}`; }
+function visitKey(v){ return v.key0 || `${v.date}|${nName(v.name)}|${v.inMs || v.in || ''}`; }   // 入室時間を直しても、キーは元のまま
+function jstMs(date, hm){ return new Date(`${date}T${hm}:00+09:00`).getTime(); }
 function hhmmOf(ms){ const d = new Date(Number(ms) + 9*3600e3); return String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0'); }
 function toMin(hm){ const m = /^(\d{1,2}):(\d{2})/.exec(String(hm || '')); return m ? (+m[1]) * 60 + (+m[2]) : null; }
 function visitIn(v){ return v.in ? String(v.in).slice(0,5) : (v.inMs ? hhmmOf(v.inMs) : ''); }
 function collectRoomFix(sid, obj){
   if (!obj || !obj.roomFix) return;
-  Object.entries(obj.roomFix).forEach(([k, f]) => { if (f && f.out) ROOMFIX[k] = { out: f.out, orig: f.orig, sid: String(sid) }; });
+  Object.entries(obj.roomFix).forEach(([k, f]) => { if (f && (f.out || f.in || f.add)) ROOMFIX[k] = Object.assign({}, f, { sid: String(sid) }); });
 }
 function applyRoomFix(){
   if (!VISITS || !VISITS.visits) return;
+  // 先生があとから足した来室(入室を忘れた日)
+  Object.entries(ROOMFIX).forEach(([k, f]) => {
+    if (!f.add || VISITS.visits.some(v => v.key0 === k)) return;
+    const st = STUDENTS.find(x => String(x.id) === String(f.sid));
+    const date = k.split('|')[0], a = toMin(f.in), b = toMin(f.out);
+    if (a == null) return;
+    VISITS.visits.push({ date, name: f.name || (st ? st.name : ''), in: f.in, inMs: jstMs(date, f.in), out: f.out || '', min: b != null && b > a ? b - a : null, added: true, fixed: true, key0: k });
+  });
   VISITS.visits.forEach(v => {
-    const f = ROOMFIX[visitKey(v)]; if (!f) return;
-    if (!v.fixed) {
+    const f = ROOMFIX[visitKey(v)]; if (!f || f.add) return;
+    if (!v.key0) {
+      v.key0 = visitKey(v); v.origIn = visitIn(v);
       if (v.out && v.out === f.out && f.orig != null) { v.origOut = f.orig; v.origMin = null; }   // 自習室のシートもすでに直っているとき
       else { v.origOut = v.out || ''; v.origMin = v.min; }
     }
-    const a = toMin(visitIn(v)), b = toMin(f.out); if (a == null || b == null || b <= a) return;
-    v.out = f.out; v.min = b - a; v.fixed = true;
+    if (f.in && toMin(f.in) != null) { v.in = f.in; v.inMs = jstMs(v.date, f.in); v.inFixed = true; }
+    const out = f.out || v.out, a = toMin(visitIn(v)), b = toMin(out);
+    if (f.out && a != null && b != null && b > a) v.out = f.out;
+    if (a != null && b != null && b > a) v.min = b - a;
+    v.fixed = true;
   });
 }
 function studentOfVisit(v){ return STUDENTS.find(s => nameMatch(s, v.name)) || null; }
-/* 生徒の学習データのセルに roomFix を書きこむ(out が null なら なおしを取り消す) */
-async function saveRoomFix(v, out){
+/* 生徒の学習データのセルに roomFix を書きこむ。fix = {in?:'HH:MM', out?:'HH:MM'}、null なら なおしを取り消す */
+async function saveRoomFix(v, fix){
+  if (typeof fix === 'string') fix = { out: fix };
   const st = studentOfVisit(v);
   if (!st) { showToast(v.name + ' さんがやりきリストの生徒と結びつきません(名前を確認してください)'); return false; }
   const id = String(st.id), key = visitKey(v);
-  const orig = v.fixed ? (v.origOut || '') : (v.out || '');
-  // 自習室アプリのシート(来室)も書きかえる。自習室アプリが未更新なら、やりきリスト側だけで直す
-  try { await fetch(JISHU_URL, {method:'POST', body: JSON.stringify({action:'fixVisit', date: v.date, name: v.name, inMs: v.inMs || null, in: visitIn(v), out: out || ''})}).then(x=>x.json()); } catch(e) {}
+  const orig = v.fixed ? (v.origOut || '') : (v.out || ''), origIn = v.key0 ? (v.origIn || visitIn(v)) : visitIn(v);
+  // 自習室アプリのシート(来室)の退室も書きかえる。自習室アプリが未更新なら、やりきリスト側だけで直す
+  if (!fix || fix.out) { try { await fetch(JISHU_URL, {method:'POST', body: JSON.stringify({action:'fixVisit', date: v.date, name: v.name, inMs: v.inMs || null, in: origIn, out: (fix && fix.out) || ''})}).then(x=>x.json()); } catch(e) {} }
+  let entry = null;
+  if (fix) { entry = { orig, at: Date.now() }; if (fix.out) entry.out = fix.out; if (fix.in && fix.in !== origIn) { entry.in = fix.in; entry.origIn = origIn; } if (!entry.out && !entry.in) fix = null; }
+  return writeRoomFix(st, key, fix ? entry : null);
+}
+/* roomFix の1件を書く(entry が null なら消す) */
+async function writeRoomFix(st, key, entry){
+  const id = String(st.id);
   try {
     const r = await api('getStudy', { studentId: st.id });
     if (!r || !r.ok) throw new Error('get');   // 読めなかったときに空で上書きして記録を消さない
@@ -5354,14 +5515,14 @@ async function saveRoomFix(v, out){
     if (!obj || typeof obj !== 'object') obj = {};
     obj = sdFresher(obj, st.id);
     obj.roomFix = Object.assign({}, obj.roomFix || {});
-    if (out) obj.roomFix[key] = { out, orig, at: Date.now() }; else delete obj.roomFix[key];
+    if (entry) obj.roomFix[key] = entry; else delete obj.roomFix[key];
     // 古いなおし(30日より前)はそうじ
     const old = sdAdd(jstToday(), -30); Object.keys(obj.roomFix).forEach(k => { if (k.split('|')[0] < old) delete obj.roomFix[k]; });
     const w = await api('saveStudy', { studentId: st.id, data: JSON.stringify(obj) });
     if (!w || !w.ok) throw new Error('save');
     if (TEAM && TEAM[id]) TEAM[id].roomFix = obj.roomFix;
     if (typeof sdSid !== 'undefined' && String(sdSid) === id && SD) { SD.roomFix = obj.roomFix; try { localStorage.setItem(sdKeyName(sdSid), JSON.stringify(SD)); } catch(e) {} }
-    if (out) ROOMFIX[key] = { out, orig, sid: id }; else delete ROOMFIX[key];
+    if (entry) ROOMFIX[key] = Object.assign({}, entry, { sid: id }); else delete ROOMFIX[key];
     return true;
   } catch(e) { showToast('保存できませんでした(通信エラー)'); return false; }
 }
@@ -5427,26 +5588,67 @@ function openRoomFix(){
   let el = document.getElementById('roomfix'); if (!el) { el = document.createElement('div'); el.id = 'roomfix'; document.body.appendChild(el); }
   const L = (VISITS && VISITS.visits || []).slice().sort((a, b) => b.date.localeCompare(a.date) || (Number(b.inMs)||0) - (Number(a.inMs)||0));
   const sus = L.filter(v => fixSuspect(v) || v.fixed), list = FIX_ALL ? L : sus;
+  const T = (v, k) => `${v.added ? '📝 ' : fixSuspect(v) ? '⚠ ' : v.fixed ? '✅ ' : ''}`;
   el.innerHTML = `<div class="rf-box"><div class="rf-h"><b>✏️ 自習時間のなおし</b><button onclick="document.getElementById('roomfix').remove()">とじる</button></div>
-    <p class="rf-note">退室のQRを忘れた日は、実際に帰った時間を入れてください。召喚の強さ・ダッシュボードの自習時間は、直した時間で数えます。<br>⚠ = 退室なし、または4時間をこえている記録</p>
+    <p class="rf-note">入室・退室のQRを忘れた日は、実際に来た時間・帰った時間を入れてください。召喚の強さ・ダッシュボードの自習時間は、直した時間で数えます。<br>⚠ = 退室なし、または4時間をこえている記録</p>
+    ${roomAddForm()}
     <label class="rf-all"><input type="checkbox" ${FIX_ALL ? 'checked' : ''} onchange="FIX_ALL=this.checked;openRoomFix()"> この14日の来室をぜんぶ表示</label>
     ${list.length ? list.map(v => { const k = visitKey(v), inT = visitIn(v);
       return `<div class="rf-row ${fixSuspect(v) ? 'sus' : ''} ${v.fixed ? 'fixed' : ''}">
-        <div class="rf-who">${fixSuspect(v) ? '⚠ ' : v.fixed ? '✅ ' : ''}<b>${esc_(v.name)}</b> <small>${sdLabel(v.date)}</small></div>
-        <div class="rf-t">${inT}〜${v.out || '<em>退室なし</em>'}${v.min != null && v.out ? `(${fmtMin(v.min)})` : ''}${v.fixed ? `<small>もとは ${v.origOut || '退室なし'}${v.origMin != null && v.origOut ? `(${fmtMin(v.origMin)})` : ''}</small>` : ''}</div>
-        <div class="rf-in"><span>帰った時間</span><input type="time" id="${rfId(k)}" value="${v.fixed ? v.out : ''}" min="${inT}">
-          <button onclick="fixSave(${esc_(JSON.stringify(k))}, this)">保存</button>${v.fixed ? `<button class="undo" onclick="fixSave(${esc_(JSON.stringify(k))}, this, true)">元にもどす</button>` : ''}</div>
+        <div class="rf-who">${T(v, k)}<b>${esc_(v.name)}</b> <small>${sdLabel(v.date)}</small></div>
+        <div class="rf-t">${inT}〜${v.out || '<em>退室なし</em>'}${v.min != null && v.out ? `(${fmtMin(v.min)})` : ''}${v.added ? '<small>先生があとから入れた記録</small>' : v.fixed ? `<small>もとは ${v.inFixed ? (v.origIn || '') + '〜' : ''}${v.origOut || '退室なし'}${v.origMin != null && v.origOut ? `(${fmtMin(v.origMin)})` : ''}</small>` : ''}</div>
+        <div class="rf-in"><span>来た</span><input type="time" id="${rfId(k)}-in" value="${inT}"><span>帰った</span><input type="time" id="${rfId(k)}" value="${v.fixed || v.added ? v.out : ''}">
+          <button onclick="fixSave(${esc_(JSON.stringify(k))}, this)">保存</button>${v.added ? `<button class="undo" onclick="roomAddDel(${esc_(JSON.stringify(k))}, this)">この記録を消す</button>` : v.fixed ? `<button class="undo" onclick="fixSave(${esc_(JSON.stringify(k))}, this, true)">元にもどす</button>` : ''}</div>
       </div>`; }).join('') : '<p class="rf-note" style="text-align:center;padding:16px 0">直したほうがよさそうな記録はありません 👍</p>'}
   </div>`;
 }
 async function fixSave(key, btn, undo){
   const v = (VISITS && VISITS.visits || []).find(x => visitKey(x) === key); if (!v) return;
-  const inp = document.getElementById(rfId(key)), out = undo ? null : (inp && inp.value);
-  if (!undo) { if (!out) { showToast('帰った時間を入れてね'); return; }
-    if (toMin(out) <= toMin(visitIn(v))) { showToast('入室(' + visitIn(v) + ')より後の時間にしてね'); return; } }
+  const iIn = document.getElementById(rfId(key) + '-in'), iOut = document.getElementById(rfId(key));
+  const inV = undo ? null : (iIn && iIn.value) || visitIn(v), out = undo ? null : (iOut && iOut.value) || '';
+  if (!undo) {
+    if (!inV) { showToast('来た時間を入れてね'); return; }
+    if (out && toMin(out) <= toMin(inV)) { showToast('帰った時間は、来た時間(' + inV + ')より後にしてね'); return; }
+    const inChanged = inV !== (v.key0 ? (v.origIn || visitIn(v)) : visitIn(v));
+    if (!v.added && !out && !inChanged) { showToast('直す時間を入れてね'); return; }
+    if (!out && v.out && !v.added && toMin(v.out) <= toMin(inV)) { showToast('来た時間が、帰った時間(' + v.out + ')より後になっています'); return; }
+  }
   btn.disabled = true; btn.textContent = '保存中…';
-  const ok = await saveRoomFix(v, out);
-  if (ok) { await loadVisits(); showToast(undo ? '元にもどしました' : `${v.name} さん ${out} 退室に直しました`); await afterRoomFix(v); }
+  let ok;
+  if (v.added) { const st = studentOfVisit(v) || STUDENTS.find(x => String(x.id) === String((ROOMFIX[key] || {}).sid)); ok = st ? await writeRoomFix(st, key, { add: true, name: v.name, in: inV, out, at: Date.now() }) : false; }
+  else ok = await saveRoomFix(v, undo ? null : { in: inV, out: out || null });
+  if (ok) { await loadVisits(); showToast(undo ? '元にもどしました' : `${v.name} さん ${inV}〜${out || ''} に直しました`); await afterRoomFix(v); }
+  openRoomFix(); if (typeof renderStudyDash === 'function') renderStudyDash();
+}
+/* ==== 入室を忘れた日を、先生があとから足す(先生画面だけ) ==== */
+function roomAddForm(){
+  const opts = rosterStudents().slice().sort((a, b) => String(a.grade||'').localeCompare(String(b.grade||'')) || String(a.nickname||a.name).localeCompare(String(b.nickname||b.name), 'ja'));
+  return `<details class="rf-add"><summary>＋ 入室を忘れた日の記録を足す</summary>
+    <div class="rf-in" style="margin-top:8px"><select id="ra-st" style="font:600 14px var(--font);padding:5px;border:1.5px solid #d7deec;border-radius:8px"><option value="">生徒を選ぶ</option>${opts.map(s => `<option value="${s.id}">${esc_(s.grade || '')} ${esc_(s.nickname || s.name)}</option>`).join('')}</select>
+      <input type="date" id="ra-date" value="${jstToday()}" max="${jstToday()}" min="${sdAdd(jstToday(), -13)}"></div>
+    <div class="rf-in" style="margin-top:6px"><span>来た</span><input type="time" id="ra-in"><span>帰った</span><input type="time" id="ra-out"><button onclick="roomAddSave(this)">足す</button></div>
+    <p class="rf-note" style="margin-top:6px">召喚の強さ・ダッシュボードの自習時間に入ります(自習室アプリのシートには書きません)。帰った時間は、まだいるなら空でOK。</p></details>`;
+}
+async function roomAddSave(btn){
+  const sid = document.getElementById('ra-st').value, date = document.getElementById('ra-date').value, inV = document.getElementById('ra-in').value, out = document.getElementById('ra-out').value;
+  const st = STUDENTS.find(x => String(x.id) === String(sid));
+  if (!st) { showToast('生徒を選んでね'); return; }
+  if (!date || !inV) { showToast('日にちと来た時間を入れてね'); return; }
+  if (out && toMin(out) <= toMin(inV)) { showToast('帰った時間は、来た時間より後にしてね'); return; }
+  const dup = visitsOf(st).find(v => v.date === date && v.out && toMin(inV) < toMin(v.out) && (!out || toMin(out) > toMin(visitIn(v))));
+  if (dup && !confirm(`${st.nickname || st.name} さんは ${sdLabel(date)} ${visitIn(dup)}〜${dup.out} の記録がもうあります。重なりますが足しますか？`)) return;
+  btn.disabled = true; btn.textContent = '保存中…';
+  const key = `${date}|${nName(st.name)}|add-${Date.now().toString(36)}`;
+  const ok = await writeRoomFix(st, key, { add: true, name: st.name, in: inV, out, at: Date.now() });
+  if (ok) { await loadVisits(); showToast(`${st.nickname || st.name} さん ${sdLabel(date)} ${inV}〜${out} を足しました`); await afterRoomFix({ date }); }
+  openRoomFix(); if (typeof renderStudyDash === 'function') renderStudyDash();
+}
+async function roomAddDel(key, btn){
+  const f = ROOMFIX[key], st = f && STUDENTS.find(x => String(x.id) === String(f.sid)); if (!st) return;
+  if (!confirm('この記録を消しますか？')) return;
+  btn.disabled = true;
+  const ok = await writeRoomFix(st, key, null);
+  if (ok) { if (VISITS) VISITS.visits = VISITS.visits.filter(v => v.key0 !== key); await loadVisits(); showToast('消しました'); await afterRoomFix({ date: key.split('|')[0] }); }
   openRoomFix(); if (typeof renderStudyDash === 'function') renderStudyDash();
 }
 function dTestDate(d){ const t = STUDY_TESTS.find(x=>x.id===(d.test||{}).id); return t ? t.start : (d.test||{}).date || null; }
@@ -5539,7 +5741,7 @@ function roomBlock(){
   return `<div class="room"><div class="room-h"><b>🚪 今日の自習室</b><span>${list.length}人(いま ${list.filter(v=>!v.out).length}人)</span><span class="sv-note">この7日:のべ${new Set(week.map(v=>v.date+nName(v.name))).size}回・${ppl}人・${fmtMin(wmin)}</span></div>
     ${list.length?`<div class="room-list">${list.map(v=>`<span class="${v.out?'':'in'}">${esc_(v.name)} <small>${esc_(v.grade||'')} ${v.in}〜${v.out||'在室'}${v.min!=null?`(${fmtMin(v.min)})`:''}${v.rsv&&v.rsv.startsWith('なし')?' 予約なし':''}</small>${v.fixed?' <small>✏️直した</small>':''}${v.out?'':`<button onclick="event.stopPropagation();roomOut(${esc_(JSON.stringify(visitKey(v)))})">退室</button>`}</span>`).join('')}</div>`:'<div class="sv-note">今日はまだだれも来ていません</div>'}
     ${(()=>{ const n = VISITS.visits.filter(fixSuspect).length; return `<button class="rf-open ${n?'warn':''}" onclick="openRoomFix()">✏️ 自習時間のなおし${n?`(⚠ ${n}件)`:''}</button>`; })()}
-    <div class="room-add"><span>📱スマホがない子:</span><select id="room-who"><option value="">生徒を選ぶ</option>${rosterStudents().filter(s=>!list.some(v=>!v.out&&nameMatch(s,v.name))).map(s=>`<option value="${esc_(s.nickname||s.name)}" data-g="${esc_(s.grade||'')}">${esc_(s.name)}${s.nickname&&s.nickname!==s.name?'('+esc_(s.nickname)+')':''} ${esc_(s.grade||'')}</option>`).join('')}</select><button onclick="const o=document.getElementById('room-who').selectedOptions[0];roomAct('teacherCheckIn', o.value, o.dataset.g)">入室を記録</button></div>
+    <div class="room-add"><span>📱スマホがない子:</span><select id="room-who"><option value="">生徒を選ぶ</option>${rosterStudents().filter(s=>!list.some(v=>!v.out&&nameMatch(s,v.name))).map(s=>`<option value="${esc_(s.nickname||s.name)}" data-g="${esc_(s.grade||'')}">${esc_(s.name)}${s.nickname&&s.nickname!==s.name?'('+esc_(s.nickname)+')':''} ${esc_(s.grade||'')}</option>`).join('')}</select><button onclick="const o=document.getElementById('room-who').selectedOptions[0];roomAct('teacherCheckIn', o.value, o.dataset.g)">入室を記録</button><button class="ghost" onclick="openRoomFix();const d=document.querySelector('#roomfix .rf-add');if(d)d.open=true">入室を忘れた日をあとから入れる</button></div>
   </div>`;
 }
 
