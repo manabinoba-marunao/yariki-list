@@ -3606,7 +3606,7 @@ function renderKimatsuSeals(el){
   const rows = sl.seals.map(x => {
     const pct = Math.min(100, Math.round((Number(x.dmg) || 0) / (Number(x.need) || 1) * 100));
     return `<div style="display:flex;align-items:center;gap:8px;margin:5px 0;${x.broken ? 'opacity:.75' : ''}">
-      <div style="width:84px;flex:none;font-weight:bold">${x.icon} ${esc(x.subject)}<span style="opacity:.7;font-weight:normal">(${esc(x.el)})</span></div>
+      <div style="width:84px;flex:none;font-weight:bold">${x.icon==='🌀'?'🌿':x.icon} ${esc(x.subject)}<span style="opacity:.7;font-weight:normal">(${esc(gogyo(x.el))})</span></div>
       <div style="flex:1;min-width:0">
         <div style="font-size:11px;${x.broken ? 'text-decoration:line-through;color:#ffd76b' : ''}">「${esc(x.word)}」の盾${x.broken ? ' 💥打ち破った！' : ''}</div>
         <div style="height:7px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden;margin-top:2px"><div style="height:100%;width:${pct}%;background:${x.broken ? 'var(--gold)' : 'linear-gradient(90deg,#8d5bff,#ff7ad9)'}"></div></div>
@@ -3922,9 +3922,11 @@ const MQS_ELEMENTS = {
   fire:    { color:'#ff6a1a', light:'#ffd36b', icon:'🔥', word:'ゴォォッ!!', w1:'#ffd36b', w2:'#ff3d00' },
   thunder: { color:'#ffe14d', light:'#fffbe0', icon:'⚡', word:'バリバリッ!!', w1:'#fff6a0', w2:'#e0a800' },
   water:   { color:'#3fa2ff', light:'#d6f0ff', icon:'💧', word:'ザバァン!!', w1:'#bfe6ff', w2:'#1f6fd6' },
-  wind:    { color:'#5fe3b5', light:'#e6fff6', icon:'🌀', word:'ビュオォッ!!', w1:'#c8ffe9', w2:'#12996a' },
+  wind:    { color:'#5fe3b5', light:'#e6fff6', icon:'🌿', word:'ザザァッ!!', w1:'#c8ffe9', w2:'#12996a' },
   earth:   { color:'#c8894a', light:'#ffe2b8', icon:'🪨', word:'ドドドドッ!!', w1:'#ffd9a8', w2:'#7a4515' },
 };
+/* 陰陽五行:サーバーから来る古い属性名を五行に読みかえる(木・火・土・金・水) */
+function gogyo(el){ return ({'風':'木','雷':'金','炎':'火','大地':'土'})[el] || el; }
 const MQS_TIERS = {
   w2: { word:'ガリィッ!', w1:'#f2f2f2', w2:'#7a7a7a', color:'#e8e8e8', glow:'#b9b9b9' },
   w3: { word:'シュシュシュッ!', w1:'#d6ecff', w2:'#2a6fd6', color:'#cfe8ff', glow:'#4f9bff' },
@@ -5565,7 +5567,7 @@ function roomBlock(){
   WEAPONS.slice().reverse().forEach(w => box.appendChild(btn(w.cls === 'w1' ? '👊 素手' : w.name, () => mqStrike({ kind: w.cls === 'w1' ? 'punch' : 'slash', dmg: 1234, crit: false, hero: 'テスト', weaponHtml: weaponIcon(w, {held:true}), weaponName: w.name, tier: w.cls, boss: boss() }))));
   box.appendChild(btn('⚡ 会心', () => { const w = WEAPONS[0]; mqStrike({ kind:'slash', dmg: 5678, crit: true, hero: 'テスト', weaponHtml: weaponIcon(w, {held:true}), weaponName: w.name, tier: w.cls, boss: boss() }); }));
   let demoLv = 1; const lvBtn = btn('マルナLv1', () => { demoLv = demoLv === 1 ? 5 : demoLv === 5 ? 10 : 1; lvBtn.textContent = 'マルナLv' + demoLv; });
-  [['英語・風','wind'],['数学・雷','thunder'],['国語・水','water'],['理科・炎','fire'],['社会・大地','earth']].forEach(([n,el]) =>
+  [['英語・木','wind'],['数学・金','thunder'],['国語・水','water'],['理科・火','fire'],['社会・土','earth']].forEach(([n,el]) =>
     box.appendChild(btn('🔮 ' + n, () => mqStrike({ kind:'magic', dmg: 240, crit:false, hero:'テスト', spell: n.split('・')[1] + 'のマルナ', element: el, mlv: demoLv, boss: boss() }))));
   box.appendChild(lvBtn);
   box.appendChild(btn('✕ 閉じる', () => box.remove()));
