@@ -45,7 +45,7 @@ function readRangePrompt_(b) {
 function readRange_(b) {
   if (!b.image) return { ok: false, error: '写真がありません' };
   const props = PropertiesService.getScriptProperties();
-  const claudeKey = props.getProperty('ANTHROPIC_API_KEY'), geminiKey = props.getProperty('GEMINI_API_KEY');
+  const claudeKey = props.getProperty('ANTHROPIC_API_KEY'), geminiKey = (props.getProperty("GEMINI_API_KEY") || "").trim();
   if (!claudeKey && !geminiKey) return { ok: false, error: '先生がまだ「写真の読みとり」の準備(APIキー)をしていません。' };
   const prompt = readRangePrompt_(b), mime = b.mime || 'image/jpeg';
   let text = '';
@@ -67,8 +67,9 @@ function readRange_(b) {
     text = (j.content || []).filter(c => c.type === 'text').map(c => c.text).join('');
   } else {
     const model = props.getProperty('GEMINI_MODEL') || 'gemini-2.5-flash';
-    const res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + geminiKey, {
+    const res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent', {
       method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+      headers: { 'x-goog-api-key': geminiKey },
       payload: JSON.stringify({
         contents: [{ parts: [{ inline_data: { mime_type: mime, data: b.image } }, { text: prompt }] }],
         generationConfig: { responseMimeType: 'application/json' }
