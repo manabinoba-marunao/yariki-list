@@ -5274,7 +5274,7 @@ async function sdReadRangePhoto(file){
     r = await api('readRange', {image, mime:'image/jpeg', grade: st.grade||'', subjects: studySubjects(st), jukuTexts: studySubjects(st).map(s=>s+':'+jukuTexts(s).filter(x=>x!=='その他').join('/')).join(' ')});
   }catch(e){ r = {ok:false, error:'写真を読みこめませんでした'}; }
   if(!r || !r.ok || !r.subjects){
-    const raw = String((r && (r.error || r.message)) || ''), msg = (/unknown|不明|readRange|action/i.test(raw) ? '先生がまだ「写真の読みとり」の準備をしていません。' : raw || '読みとれませんでした') + (raw ? `<br><small style="color:#999">(くわしく:${esc_(raw.slice(0,200))})</small>` : '');
+    const raw = String((r && (r.error || r.message)) || ''), msg = ((!/^AI/.test(raw) && /unknown action|不明なアクション|readRange/i.test(raw)) ? '先生がまだ「写真の読みとり」の準備をしていません。' : raw || '読みとれませんでした') + (raw ? `<br><small style="color:#999">(くわしく:${esc_(raw.slice(0,200))})</small>` : '');
     document.getElementById('sv-modal-body').innerHTML = `<h4>読みとれませんでした</h4><p class="sv-note">${msg}<br>明るいところで、範囲表がまっすぐ全部うつるように撮りなおしてみてね。手で入れるときは、教科の「範囲を入れる」から。</p><div style="text-align:right"><button class="sv-btn" onclick="sdCloseModal()">とじる</button></div>`;
     return;
   }

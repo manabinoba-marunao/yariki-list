@@ -66,7 +66,7 @@ function readRange_(b) {
     if (res.getResponseCode() !== 200) return { ok: false, error: 'AIの読みとりでエラー:' + ((j.error && j.error.message) || res.getResponseCode()) };
     text = (j.content || []).filter(c => c.type === 'text').map(c => c.text).join('');
   } else {
-    const model = props.getProperty('GEMINI_MODEL') || 'gemini-2.5-flash';
+    const model = props.getProperty('GEMINI_MODEL') || 'gemini-3.8-flash';
     const res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent', {
       method: 'post', contentType: 'application/json', muteHttpExceptions: true,
       headers: { 'x-goog-api-key': geminiKey },
