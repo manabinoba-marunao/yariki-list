@@ -432,7 +432,7 @@ function storyPages(s){
   if (s.kid) P.push(`<div class="tag">はじめに</div><div class="em">🚪</div><h2>${JS}ってなに？</h2>
     <p>授業がない時間に、マル直の教室に来て<br><b>自分で決めた勉強をする</b>こと。</p>
     <div class="step"><i>📱</i><div>来たらQRコードで「入室」、帰るときに「退室」。勉強した時間が記録される</div></div>
-    <div class="step"><i>✨</i><div>その時間が <b>魔力(まりょく)</b> になってたまり、週に1回、<b>召喚獣(しょうかんじゅう)</b>をよび出せる！</div></div>`);
+    <div class="step"><i>✨</i><div>その時間が <b>マルナ</b> になってたまり、週に1回、<b>召喚獣(しょうかんじゅう)</b>をよび出せる！</div></div>`);
   if (s.range) {
     P.push(`<div class="tag">先週のできごと</div><p><small>${es(s.range)}</small></p>
       <h2>${JS}に<br><b class="em">${s.n}</b>人の仲間が来た！</h2>
@@ -440,7 +440,7 @@ function storyPages(s){
       ${s.people && s.people.length ? `<div class="chips">${s.people.map(p => `<span>${es(p)}</span>`).join('')}</div>` : ''}`);
     P.push(`<div class="tag">週末の召喚の儀式</div><div class="em">🔮</div>
       ${s.ok ? `<h2>${es(s.ok.date)}<br>召喚が成立！</h2><p>教室に残っていた${s.ok.voters ? ` <b>${s.ok.voters}</b>人` : '仲間'}が<br>全員で「召喚する」ボタンをおした</p>`
-             : `<h2>集まった魔力で<br>魔法陣ができた！</h2>`}
+             : `<h2>集まったマルナで<br>魔法陣ができた！</h2>`}
       ${s.tiers && s.tiers.length ? `<p><small>来た人数で、よべる召喚獣が変わる</small></p><div class="lad">${s.tiers.map(t => `<div class="${t.now ? 'now' : ''}"><i>${t.icon}</i>${es(t.name)}<span>${t.min}人〜${t.now ? ' ← 先週' : ''}</span></div>`).join('')}</div>
       <p><small>勉強した時間が長いほど、召喚獣は強くなる</small></p>` : ''}`);
     P.push(s.only

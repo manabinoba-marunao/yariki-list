@@ -1877,7 +1877,7 @@ async function submitRecord() {
     showToast(tester
       ? `${done}個達成！記録しました(テスト用なのでボスへの攻撃はなし)`
       : kimatsu
-      ? `${spellMsg}${done}個達成！EXP+${expGain}(期末の誘魔には、マル単の魔法で攻撃しよう！)`
+      ? `${spellMsg}${done}個達成！EXP+${expGain}(期末の誘魔には、マル単のマルナで攻撃しよう！)`
       : sd.ok
       ? `⚔ ${dmg.toLocaleString()}ダメージ！(${done}個達成・EXP+${expGain})${spellMsg ? ' ' + spellMsg : ''}`
       : dmg > 0
@@ -2690,7 +2690,7 @@ function showBossIntro() {
   const warn = ov.querySelector('.bi-warning'); if (warn) warn.textContent = revive ? '🎃 HALLOWEEN 🎃' : kim ? '📝 期末テスト 📝' : '⚠ WARNING ⚠';
   if (kim) nm.innerHTML = '期末の誘魔<div style="font-size:.5em;margin-top:4px;opacity:.9">― 心の奥にささやく者 ―</div>';
   sub.innerHTML = revive ? 'ハロウィンが近づき、夜の闇から魔力が集まる…<br><b>ハロウィンの魔力でよみがえった！</b><br>もう一度、全員の力を合わせて倒せ！'
-    : kim ? '「あと1本だけ」「あとでやる」…<br>心の奥で、誘いの声がささやく。<br><b>剣は届かない。学びの魔法だけが、誘いを打ち破る！</b><br>5科目のマル単の魔法で、5つの「誘いの盾」を割れ！<br>🍠 倒したら、塾で全員に<b>季節のおやつ</b>！'
+    : kim ? '「あと1本だけ」「あとでやる」…<br>心の奥で、誘いの声がささやく。<br><b>剣は届かない。学びのマルナだけが、誘いを打ち破る！</b><br>5科目のマル単のマルナで、5つの「誘いの盾」を割れ！<br>🍠 倒したら、塾で全員に<b>季節のおやつ</b>！'
     : 'が現れた！ 全員の力を合わせて倒せ！';
   if (BOSS_DATA.imageUrl && String(BOSS_DATA.imageUrl).trim() !== '') {
     art.innerHTML = '<img src="' + BOSS_DATA.imageUrl + '" alt="">';
@@ -3010,7 +3010,7 @@ function openMember(id) {
     <div class="pm-row"><span>武器</span><span>${weaponIcon(w)} ${w.name}${w.gift ? '<small style="color:#ffd700"> 🎁景品</small>' : ''}</span></div>
     ${myId && p.id === myId && hasGift(p.id, 'owlpencil') ? `<div style="text-align:right;margin:-2px 0 6px"><button class="hat-off" style="margin:0" onclick="toggleOwlPencil()">${w.gift ? 'レベルの武器にもどす' : 'フクロウくんの鉛筆を装備する'}</button></div>` : ''}
     <div class="pm-row"><span>⚔ 今日の${w.verb === '打撃' ? '打撃' : '斬撃'}(やりきリスト)</span><b>${p.hit.toLocaleString()}</b></div>
-    <div class="pm-row"><span>🔮 今日の魔法(マル単)</span><b>${p.magic.toLocaleString()}</b></div>
+    <div class="pm-row"><span>🔮 今日のマルナ(マル単)</span><b>${p.magic.toLocaleString()}</b></div>
     <div class="pm-row"><span>今月の合計(⚔${calcMonthDmg(p.id).toLocaleString()} + 🔮${calcMonthMagic(p.id).toLocaleString()})</span><b>${calcMonthTotal(p.id).toLocaleString()}</b></div>
     ${stHtml}
     ${typeof hatSection === 'function' ? hatSection(p.id) : ''}
@@ -3615,13 +3615,13 @@ function renderKimatsuSeals(el){
     </div>`;
   }).join('');
   el.innerHTML = '<div style="text-align:center;color:#ffb3f0;font-weight:bold;margin-bottom:2px">🕯️ 期末の誘魔 ― 心の奥にささやく者</div>'
-    + '<div style="text-align:center;opacity:.9;margin-bottom:4px">剣(習慣の攻撃)は届かない。<b>マル単の魔法</b>と<b>召喚</b>だけが効く！<br>その教科の魔法をみんなで当てると、誘いの盾が割れる</div>'
+    + '<div style="text-align:center;opacity:.9;margin-bottom:4px">剣(習慣の攻撃)は届かない。<b>マル単のマルナ</b>と<b>召喚</b>だけが効く！<br>その教科のマルナをみんなで当てると、誘いの盾が割れる</div>'
     + rows
     + `<div style="text-align:center;margin-top:6px">${sl.left ? `🛡️ 盾があと <b style="font-size:14px">${sl.left}枚</b>。全部割れるまで、誘魔は倒れない！` : '<b style="color:var(--gold)">✨ 5つの誘いの盾をすべて打ち破った！あとは本体を削りきれ！</b>'}`
     + '<br>🍠 倒したら、塾で全員に<b>季節のおやつ</b>！</div>';
 }
 function showKimatsuImmune(){
-  showToast('🛡️ 剣が誘魔をすり抜けた…！ 心の奥の誘いには、剣は届かない。マル単の「学びの魔法」で攻撃しよう！', 6000);
+  showToast('🛡️ 剣が誘魔をすり抜けた…！ 心の奥の誘いには、剣は届かない。マル単の「学びのマルナ」で攻撃しよう！', 6000);
 }
 
 /* ==== ハロウィンの大魔王:結界(全員そろうまで倒れない)と夜の回復 ==== */
@@ -3743,8 +3743,8 @@ function renderBossView() {
         else if (isSummon) { const m = /^自習室の召喚:(.+?)\((\d+)人\)/.exec(rawNick) || []; const t = (typeof SUMMONS !== 'undefined' && SUMMONS.find(x => x.name === m[1])) || { icon:'🦉' };
           line = `${t.icon} [${dateStr}] <b>自習室の仲間${m[2] ? ' ' + m[2] + '人' : ''}</b>が${esc(m[1] || '召喚獣')}を召喚！<span class="log-summon">${dmg.toLocaleString()}の召喚ダメージ</span>`; }
         else if (isMagic) line = crit
-          ? `🔮 [${dateStr}] <b>${nick}</b> の大魔法！<span class="log-magic-crit">✨${dmg.toLocaleString()}の魔法ダメージ</span>`
-          : `🔮 [${dateStr}] <b>${nick}</b> の魔法！<span class="log-magic">${dmg.toLocaleString()}の魔法ダメージ</span>`;
+          ? `🔮 [${dateStr}] <b>${nick}</b> の大マルナ！<span class="log-magic-crit">✨${dmg.toLocaleString()}のマルナダメージ</span>`
+          : `🔮 [${dateStr}] <b>${nick}</b> のマルナ！<span class="log-magic">${dmg.toLocaleString()}のマルナダメージ</span>`;
         else line = crit
           ? `${weaponIcon(w)} [${dateStr}] <b>${nick}</b> の${w.verb}！<span class="log-crit">⚡会心の一撃！${dmg.toLocaleString()}ダメージ</span>`
           : `${weaponIcon(w)} [${dateStr}] <b>${nick}</b> の${w.verb}！<span class="log-dmg">${dmg.toLocaleString()}ダメージ</span>`;
@@ -4315,8 +4315,8 @@ function mqStrike(o){
   const wpn = magic ? `<span class="mqs-wpn fist">${E ? E.icon : '🔮'}</span>`
     : (o.weaponHtml && o.weaponHtml.indexOf('<svg') === 0 ? `<span class="mqs-wpn">${o.weaponHtml}</span>` : `<span class="mqs-wpn fist">${o.weaponHtml || '👊'}</span>`);
   const digits = Array.from((Number(o.dmg)||0).toLocaleString()).map((c,i) => `<span style="animation-delay:${i*45}ms">${c}</span>`).join('');
-  const label = magic ? (E ? `${E.icon} MAGIC ATTACK${o.mlv ? ' ・ 魔力Lv' + o.mlv : ''}` : '🔮 MAGIC ATTACK') : punch ? '👊 PUNCH' : '⚔ ATTACK';
-  const msg = magic ? `${mqsEsc(o.spell || 'マル単の魔法')}！` : punch ? 'こぶしでパンチ！' : `${mqsEsc(o.weaponName || '')}で攻撃！`;
+  const label = magic ? (E ? `${E.icon} MARUNA ATTACK${o.mlv ? ' ・ マルナLv' + o.mlv : ''}` : '🔮 MARUNA ATTACK') : punch ? '👊 PUNCH' : '⚔ ATTACK';
+  const msg = magic ? `${mqsEsc(o.spell || 'マル単のマルナ')}！` : punch ? 'こぶしでパンチ！' : `${mqsEsc(o.weaponName || '')}で攻撃！`;
   st.innerHTML = `
     <div class="mqs-title">${label}</div>
     <div class="mqs-boss" id="mqs-boss"><div class="bart whole">${art}</div><div class="bart half a">${art}</div><div class="bart half b">${art}</div></div>
@@ -4324,7 +4324,7 @@ function mqStrike(o){
     <div class="mqs-hp" id="mqs-hp" style="${b.hp ? '' : 'visibility:hidden'}"><div class="mqs-hpbar"><div class="mqs-hpghost" id="mqs-ghost" style="width:${o._before}"></div><div class="mqs-hpfill" id="mqs-fill" style="width:${o._before}"></div><div class="mqs-hpcut" id="mqs-hpcut"></div></div>
       <div class="mqs-hpnum" id="mqs-hpnum">HP ${cur.toLocaleString()} / ${hp.toLocaleString()}</div></div>
     <div class="mqs-word" id="mqs-word"></div>
-    <div class="mqs-crit" id="mqs-crit">${o.crit ? (magic ? '✦ 大魔法 ✦' : '✦ CRITICAL ✦') : ''}</div>
+    <div class="mqs-crit" id="mqs-crit">${o.crit ? (magic ? '✦ 大マルナ ✦' : '✦ CRITICAL ✦') : ''}</div>
     <div class="mqs-dmg ${o.crit ? 'crit' : ''}" id="mqs-dmg">${digits}<i>ダメージ</i></div>
     <div class="mqs-hero" id="mqs-hero"><div class="mqs-face">${face}${wpn}</div><div class="mqs-hname">${mqsEsc(o.hero || '')}</div></div>
     <div class="mqs-msg" id="mqs-msg"><b>${(Number(o.dmg)||0).toLocaleString()}</b> ダメージ！<small>${msg}・タップでとじる</small></div>`;
@@ -5564,9 +5564,9 @@ function roomBlock(){
   box.appendChild(title);
   WEAPONS.slice().reverse().forEach(w => box.appendChild(btn(w.cls === 'w1' ? '👊 素手' : w.name, () => mqStrike({ kind: w.cls === 'w1' ? 'punch' : 'slash', dmg: 1234, crit: false, hero: 'テスト', weaponHtml: weaponIcon(w, {held:true}), weaponName: w.name, tier: w.cls, boss: boss() }))));
   box.appendChild(btn('⚡ 会心', () => { const w = WEAPONS[0]; mqStrike({ kind:'slash', dmg: 5678, crit: true, hero: 'テスト', weaponHtml: weaponIcon(w, {held:true}), weaponName: w.name, tier: w.cls, boss: boss() }); }));
-  let demoLv = 1; const lvBtn = btn('魔力Lv1', () => { demoLv = demoLv === 1 ? 5 : demoLv === 5 ? 10 : 1; lvBtn.textContent = '魔力Lv' + demoLv; });
+  let demoLv = 1; const lvBtn = btn('マルナLv1', () => { demoLv = demoLv === 1 ? 5 : demoLv === 5 ? 10 : 1; lvBtn.textContent = 'マルナLv' + demoLv; });
   [['英語・風','wind'],['数学・雷','thunder'],['国語・水','water'],['理科・炎','fire'],['社会・大地','earth']].forEach(([n,el]) =>
-    box.appendChild(btn('🔮 ' + n, () => mqStrike({ kind:'magic', dmg: 240, crit:false, hero:'テスト', spell: n.split('・')[1] + 'の魔法', element: el, mlv: demoLv, boss: boss() }))));
+    box.appendChild(btn('🔮 ' + n, () => mqStrike({ kind:'magic', dmg: 240, crit:false, hero:'テスト', spell: n.split('・')[1] + 'のマルナ', element: el, mlv: demoLv, boss: boss() }))));
   box.appendChild(lvBtn);
   box.appendChild(btn('✕ 閉じる', () => box.remove()));
   window.addEventListener('load', () => document.body.appendChild(box));
