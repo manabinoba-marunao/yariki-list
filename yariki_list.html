@@ -768,6 +768,9 @@ td.td-name { padding-left: 16px; text-align: left; }
   text-shadow:0 0 10px rgba(255,215,0,.6);
 }
 .event-treasure.show { opacity:1; }
+.event-treasure.legend { font-size:17px; padding:14px 26px; border-width:2px; background:linear-gradient(135deg, rgba(255,215,0,.35), rgba(255,140,0,.15)); animation:legend-glow 1.6s ease-in-out infinite; }
+@keyframes legend-glow { 0%,100% { box-shadow:0 0 12px rgba(255,215,0,.5); transform:scale(1); } 50% { box-shadow:0 0 34px rgba(255,215,0,1), 0 0 60px rgba(255,120,0,.5); transform:scale(1.06); } }
+.dex-replay { display:block; width:100%; margin:8px 0 4px; padding:9px; border-radius:10px; border:1px solid var(--gold); background:rgba(255,215,0,.12); color:var(--gold); font-weight:700; font-size:13px; cursor:pointer; }
 .event-skip {
   margin-top:20px;
   padding:8px 24px;
@@ -1823,10 +1826,9 @@ async function submitRecord() {
           const killedName = hpRes.bossName || BOSS_DATA.name;
           try {
             localStorage.setItem('boss_hero', JSON.stringify({ name: nickname, date: TODAY, bossName: killedName }));
-            localStorage.setItem(`boss_defeated_seen_${killedName}`, '1'); // 自分の端末で同じ演出を2回見ないように
-            if (hpRes.defeatedAt) localStorage.setItem(`boss_defeated_seen_${killedName}@${hpRes.defeatedAt}`, '1');
           } catch(e) {}
-          showBossDefeated(nickname, hpRes.treasure || BOSS_DATA.treasure, killedName);
+          // 見たことにするのは「続ける」を押した時(showBossDefeated の中)
+          showBossDefeated(nickname, hpRes.treasure || BOSS_DATA.treasure, killedName, { at: hpRes.defeatedAt || '' });
         }
 
         // 大魔王の反撃！（1回の攻撃で何人かがねらわれる）
@@ -2523,7 +2525,58 @@ function showView(v,btn){
   if(v==='monthly') { renderMonthly(); }
 }
 
-function showBossDefeated(heroName, treasure, killedBossName) {
+/* ==== 演出の順番待ち ====
+   召喚・敵の攻撃・討伐・ボス登場・レベルアップ・マル単の一撃が重なると、どれもちゃんと見えなくなる。
+   ここに並べた演出は、前の演出が閉じてから1つずつ出す。 */
+const FXQ = []; let FXQ_T = 0;
+function fxBusy(){
+  return ['boss-event-overlay', 'boss-intro-overlay', 'levelup-overlay', 'attack-overlay']
+    .some(id => document.getElementById(id)?.classList.contains('show'))
+    || !!document.getElementById('summon-fx')
+    || !!document.getElementById('mq-strike')?.classList.contains('on');
+}
+function fxEnqueue(fn, key){
+  if (key && FXQ.some(q => q.key === key)) return;
+  FXQ.push({ fn, key }); fxPump();
+}
+function fxPump(){
+  if (FXQ_T) return;
+  const tick = () => {
+    FXQ_T = 0; if (!FXQ.length) return;
+    if (fxBusy() || document.hidden) { FXQ_T = setTimeout(tick, 700); return; }
+    const q = FXQ.shift();
+    try { q.fn(); } catch(e) { console.error('演出エラー:', e); }
+    if (FXQ.length) FXQ_T = setTimeout(tick, 900);
+  };
+  FXQ_T = setTimeout(tick, 600);
+}
+
+/* 討伐演出を「見た」かどうかは、生徒ごと(教室の共用端末でも1人ずつ見られる)。
+   見たことにするのは、宝が出たあと「タップして続ける」を押した時。 */
+function defeatSeenKey(name, at){
+  const who = currentStudent ? String(currentStudent.id) : 'guest';
+  return `boss_defeat_seen2_${who}_${name}${at ? '@' + at : ''}`;
+}
+function defeatSeen(d){
+  try { return !!(localStorage.getItem(defeatSeenKey(d.name, d.at)) || (!d.at && localStorage.getItem(defeatSeenKey(d.name, '')))); } catch(e) { return false; }
+}
+function markDefeatSeen(d){
+  try { localStorage.setItem(defeatSeenKey(d.name, d.at), '1'); if (!d.at) localStorage.setItem(defeatSeenKey(d.name, ''), '1'); } catch(e) {}
+}
+let DEFEAT_FX = null;   // いま出している(または順番待ちの)討伐演出
+
+function showBossDefeated(heroName, treasure, killedBossName, opts) {
+  opts = opts || {};
+  const d = { hero: heroName, treasure, name: killedBossName || BOSS_DATA?.name || 'ボス', at: opts.at || '', replay: !!opts.replay };
+  const key = 'defeat:' + d.name + '@' + d.at + (d.replay ? ':replay' : '');
+  if (DEFEAT_FX && DEFEAT_FX.key === key) return;
+  if (!d.replay) DEFEAT_FX = { key, d };
+  fxEnqueue(() => playBossDefeated(d), key);
+}
+
+function playBossDefeated(d) {
+  const heroName = d.hero, treasure = d.treasure, killedBossName = d.name;
+  BOSS_EVENT_NOW = d;
   const overlay = document.getElementById('boss-event-overlay');
   const t1 = document.getElementById('event-text-1');
   const t2 = document.getElementById('event-text-2');
@@ -2550,6 +2603,7 @@ function showBossDefeated(heroName, treasure, killedBossName) {
     t3.classList.add('show');
     if (treasureEl && treasure && String(treasure).trim() !== '') {
       treasureEl.textContent = `🎁 ドロップ：${treasure}`;
+      treasureEl.classList.toggle('legend', /伝説/.test(String(treasure)));
       treasureEl.classList.add('show');
     }
   }, 2500);
@@ -2568,8 +2622,17 @@ function showBossDefeated(heroName, treasure, killedBossName) {
     skip.classList.add('show');
   }, 6000);
 
-  // GASにボス討伐EXPを付与（参加者限定）
-  api('grantBossExp', {
+  // もう一度見る(図鑑から)の時は、EXPもボスの読みこみもしない
+  if (d.replay) return;
+
+  // GASにボス討伐EXPを付与（参加者限定）。同じ討伐はこの端末から1回だけ頼む(前のしくみで見た端末も頼みずみ)
+  let expAsked = false;
+  try {
+    const ek = `boss_exp_req_${killedBossName}@${d.at || ''}`;
+    expAsked = !!(localStorage.getItem(ek) || (d.at && localStorage.getItem(`boss_defeated_seen_${killedBossName}@${d.at}`)) || (!d.at && localStorage.getItem(`boss_defeated_seen_${killedBossName}`)));
+    localStorage.setItem(ek, '1');
+  } catch(e) {}
+  if (!expAsked) api('grantBossExp', {
     heroStudentId: currentStudent?.id,
     heroNickname: heroName,
     bossName: killedBossName || BOSS_DATA?.name || 'ボス',
@@ -2590,8 +2653,12 @@ function showBossDefeated(heroName, treasure, killedBossName) {
 }
 
 let pendingBossIntro = false;
+let BOSS_EVENT_NOW = null;
 function closeBossEvent() {
   document.getElementById('boss-event-overlay').classList.remove('show');
+  const d = BOSS_EVENT_NOW; BOSS_EVENT_NOW = null;
+  if (d && !d.replay) { markDefeatSeen(d); DEFEAT_FX = null; }
+  if (d && d.replay) return;   // 図鑑から見た時は、図鑑にもどるだけ
   // ボス討伐タブを表示
   showView('boss', [...document.querySelectorAll('.nav-btn')].find(b=>b.textContent.includes('ボス')));
   if (pendingBossIntro) { pendingBossIntro = false; setTimeout(showBossIntro, 800); }
@@ -2730,12 +2797,13 @@ function renderMyStatus() {
 }
 
 function showEnemyAttack(res) {
+  if (!STATUS_DEFS[res.status]) return;
+  // 討伐・召喚・ボス登場などの演出が出ている間は、終わるまで待ってから攻撃を見せる
+  fxEnqueue(() => playEnemyAttack(res));
+}
+function playEnemyAttack(res) {
   const def = STATUS_DEFS[res.status];
   if (!def) return;
-  // 討伐演出・ボス登場演出が出ている間は、終わるまで待ってから攻撃を見せる
-  const busy = ['boss-event-overlay', 'boss-intro-overlay', 'levelup-overlay']
-    .some(id => document.getElementById(id)?.classList.contains('show')) || document.getElementById('mq-strike')?.classList.contains('on');
-  if (busy) { setTimeout(() => showEnemyAttack(res), 1000); return; }
   const ov = document.getElementById('attack-overlay');
   const line = document.getElementById('atk-line');
   const icon = document.getElementById('atk-icon');
@@ -3388,45 +3456,34 @@ async function loadBossData() {
     }
   } catch(e) { console.error('ダメージログエラー:', e); }
 
-  // 討伐フラグがあれば演出を表示（全員対象）
-  if (BOSS_DATA && BOSS_DATA.defeated && BOSS_DATA.hero) {
-    const seenKey = `boss_defeated_seen_${BOSS_DATA.name}`;
+  // 討伐演出(全員対象):この子がまだ見ていない討伐のうち「いちばん新しい1つ」だけを見せる。
+  // 古いものは見たことにして流さない(新しい端末で開いても、前の討伐が次々に流れてこない)。
+  // 大魔王を倒したばかりなら、そのあと雑魚を倒していても大魔王の方を見せる(宝が大事なので)。
+  if (!DEFEAT_FX) {
     try {
-      if (!localStorage.getItem(seenKey)) {
-        localStorage.setItem(seenKey, '1');
-        defeatScheduled = true;
-        setTimeout(() => showBossDefeated(BOSS_DATA.hero, BOSS_DATA.treasure, BOSS_DATA.name), 800);
-        // フラグは消さない（各端末のローカルストレージで管理）
+      const tm = v => { const n = typeof v === 'number' ? v : Date.parse(v); return isNaN(n) ? 0 : n; };
+      const isMob = t => String(t || '').indexOf('mob') === 0;
+      const C = [];
+      recentBossDefeats.forEach(x => { if (x && x.name && x.hero && x.at) C.push({ name: x.name, hero: x.hero, treasure: x.treasure, at: x.at, mob: isMob(x.type), t: tm(x.at) }); });
+      if (BOSS_DATA && BOSS_DATA.defeated && BOSS_DATA.hero) {
+        const at = BOSS_DATA.defeatedAt || '';
+        if (!C.some(c => c.name === BOSS_DATA.name && (!at || c.at === at)))
+          C.push({ name: BOSS_DATA.name, hero: BOSS_DATA.hero, treasure: BOSS_DATA.treasure, at, mob: isMob(BOSS_DATA.type), t: tm(at) || Date.now() });
       }
-    } catch(e) {}
-  }
-
-  // ここ10日に倒された大魔王で、この端末でまだ演出を見ていないものがあれば見せる(古い順に1つずつ)。
-  // 名前が同じ大魔王(覚醒→ハロウィンで復活 など)もあるので、倒した日時で見分ける
-  if (!defeatScheduled && recentBossDefeats.length) {
-    try {
-      const seen = x => localStorage.getItem(`boss_defeated_seen_${x.name}@${x.at}`) || (!x.dup && localStorage.getItem(`boss_defeated_seen_${x.name}`));
-      const d = recentBossDefeats.find(x => x && x.name && x.hero && x.at && !seen(x));
-      if (d) {
-        localStorage.setItem(`boss_defeated_seen_${d.name}@${d.at}`, '1');
-        localStorage.setItem(`boss_defeated_seen_${d.name}`, '1');
-        defeatScheduled = true;
-        setTimeout(() => showBossDefeated(d.hero, d.treasure, d.name), 800);
+      if (previousDefeat && previousDefeat.name && previousDefeat.hero) {
+        const at = previousDefeat.at || previousDefeat.defeatedAt || '';
+        if (!C.some(c => c.name === previousDefeat.name && (!at || c.at === at)))
+          C.push({ name: previousDefeat.name, hero: previousDefeat.hero, treasure: previousDefeat.treasure, at, mob: isMob(previousDefeat.type), t: tm(at) || Date.now() - 1000 });
       }
-    } catch(e) {}
-  }
-
-  // 直前に討伐された敵がいれば、現在の敵が交代済みでも演出を表示（全員対象）。大魔王は上で見せるので、ここは雑魚だけ
-  if (!defeatScheduled && previousDefeat && previousDefeat.name && previousDefeat.hero && !recentBossDefeats.some(x => x && x.name === previousDefeat.name)) {
-    const seenKey = `boss_defeated_seen_${previousDefeat.name}`;
-    try {
-      if (!localStorage.getItem(seenKey)) {
-        localStorage.setItem(seenKey, '1');
+      const unseen = C.filter(c => !defeatSeen(c)).sort((a, b) => b.t - a.t);
+      const pick = unseen.find(c => !c.mob) || unseen[0];
+      if (pick) {
+        unseen.forEach(c => { if (c !== pick) markDefeatSeen(c); });
         defeatScheduled = true;
-        setTimeout(() => showBossDefeated(previousDefeat.hero, previousDefeat.treasure, previousDefeat.name), 800);
+        showBossDefeated(pick.hero, pick.treasure, pick.name, { at: pick.at });
       }
-    } catch(e) {}
-  }
+    } catch(e) { console.error('討伐演出の準備エラー:', e); }
+  } else defeatScheduled = true;
 
   // その日最初にボス画面を見た時、自分が今日与えたダメージを「攻撃」として再生
   if (currentStudent) {
@@ -3451,8 +3508,7 @@ async function loadBossData() {
       const introKey = `boss_intro_seen_${BOSS_DATA.type === 'boss_final' ? 'revive_' : ''}${BOSS_DATA.name}`;
       if (!localStorage.getItem(introKey)) {
         localStorage.setItem(introKey, '1');
-        if (defeatScheduled) pendingBossIntro = true;
-        else setTimeout(showBossIntro, 1000);
+        fxEnqueue(showBossIntro, 'intro');   // 討伐演出が並んでいれば、そのあとに出る
       }
     }
   } catch(e) {}
@@ -5760,7 +5816,7 @@ async function summonWeeklyCheck(){
     if (!seen || fresh) {
       try { localStorage.setItem('summon_seen_' + ws, '1'); } catch(e) {}
       replaySummon(ws, fresh && fresh.eff);
-      if (fresh && fresh.hpRes && fresh.hpRes.ok && fresh.hpRes.defeated) setTimeout(() => showBossDefeated('自習室の仲間', fresh.hpRes.treasure || BOSS_DATA.treasure, fresh.hpRes.bossName || BOSS_DATA.name), 6500);
+      if (fresh && fresh.hpRes && fresh.hpRes.ok && fresh.hpRes.defeated) showBossDefeated('自習室の仲間', fresh.hpRes.treasure || BOSS_DATA.treasure, fresh.hpRes.bossName || BOSS_DATA.name, { at: fresh.hpRes.defeatedAt || '' });   // 召喚の演出が終わってから出る
     }
     if (typeof renderBossView === 'function') renderBossView();
   } finally { SUMMON_CHECKING = false; }
@@ -5771,7 +5827,7 @@ function replaySummon(ws, eff){
   const t = SUMMONS.find(x => x.name === m[1]) || SUMMONS[SUMMONS.length - 1];
   // 先週の自習室に来ていない人には「週末なにがあったか」、小学生には「自習室ってなに？」のカットインを先に見せる
   const story = summonStory(ws, { joinedSkip: true });
-  summonFx(t, Number(m[2]) || 0, Number(log.damage) || 0, eff || (t.effect === 'cure' ? '来た仲間はみんな元気になった！' : ''), `${md(ws)}〜${md(sdAdd(ws, 6))} の`, story ? { story } : null);
+  fxEnqueue(() => summonFx(t, Number(m[2]) || 0, Number(log.damage) || 0, eff || (t.effect === 'cure' ? '来た仲間はみんな元気になった！' : ''), `${md(ws)}〜${md(sdAdd(ws, 6))} の`, story ? { story } : null), 'summon:' + ws);
 }
 function isKidViewer(){ return !!(currentStudent && String(currentStudent.grade || '').startsWith('小')); }
 /* カットインのデータ。joinedSkip:その週に来た子(小学生以外)には出さない。only:説明だけ(召喚の演出なし) */
@@ -5856,6 +5912,10 @@ function renderDex(){
     <div class="sub" style="margin-top:8px">⚔ 討伐 = 倒されるまでに一度でも攻撃した敵の数(10/26以降に倒した敵から記録)。👑 とどめ = 最後の一撃を入れた回数</div>
     <button class="pm-close" onclick="closeMember()">とじる</button>`;
 }
+function dexReplay(i){
+  const d = (DEX || [])[i]; if (!d) return;
+  showBossDefeated(d.hero, d.treasure, d.name, { at: d.at || '', replay: true });
+}
 function dexDetail(i){
   const d = (DEX || [])[i]; if (!d) return;
   const dt = d.at ? new Date(d.at) : null;
@@ -5865,6 +5925,7 @@ function dexDetail(i){
     <div class="sub" style="text-align:center">No.${d.no} ・ Lv${d.level} ・ HP ${Number(d.hp).toLocaleString()}${dt ? ` ・ ${dt.getMonth() + 1}/${dt.getDate()} 討伐` : ''}</div>
     <div class="pm-row"><span>👑 とどめを刺した英雄</span><b style="font-family:inherit">${esc(d.hero || '—')}</b></div>
     ${d.treasure ? `<div class="pm-row"><span>🎁 宝</span><span>${esc(d.treasure)}</span></div>` : ''}
+    ${d.hero ? `<button class="dex-replay" onclick="dexReplay(${i})">🎬 討伐の場面をもう一度見る</button>` : ''}
     <div style="margin-top:8px;font-size:12px;color:var(--gold)">⚔ 討伐した仲間(与えたダメージ)</div>${mem}
     <button class="pm-close" onclick="renderDex()">← 図鑑にもどる</button>`;
 }
