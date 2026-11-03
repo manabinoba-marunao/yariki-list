@@ -366,6 +366,13 @@ td.td-name { padding-left: 16px; text-align: left; }
   background: linear-gradient(90deg,transparent,var(--rpg-purple),var(--rpg-blue),var(--rpg-purple),transparent);
 }
 .boss-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+/* MAL CIRCLES のタイトル(ボス討伐の上) */
+.mc-title { text-align:center; margin:4px 0 16px; }
+.mc-title .mc-name { position:relative; display:inline-block; font-family:var(--font-game); font-size:22px; letter-spacing:.18em; color:#fff; padding:6px 18px; text-shadow:0 0 12px rgba(120,200,255,.6); }
+.mc-title .mc-name::before, .mc-title .mc-name::after { content:''; position:absolute; left:50%; top:50%; border-radius:50%; border:1.5px solid rgba(120,200,255,.55); transform:translate(-50%,-50%) scale(.4); opacity:0; animation:mc-ripple 3.6s ease-out infinite; width:150px; height:150px; pointer-events:none; }
+.mc-title .mc-name::after { animation-delay:1.8s; }
+@keyframes mc-ripple { 0%{transform:translate(-50%,-50%) scale(.3);opacity:.9} 100%{transform:translate(-50%,-50%) scale(1.6);opacity:0} }
+.mc-title .mc-copy { font-size:11px; color:#a9b8e0; margin-top:4px; letter-spacing:.06em; }
 .boss-label { font-family:var(--font-game); font-size:10px; color:var(--rpg-purple); letter-spacing:.15em; }
 .boss-period { font-size:10px; color:#8888bb; font-family:var(--mono); }
 .boss-main { display:flex; flex-direction:column; align-items:center; gap:12px; margin-bottom:16px; }
@@ -1124,6 +1131,10 @@ td.td-name { padding-left: 16px; text-align: left; }
 <!-- ════ ボス討伐ビュー ════ -->
 <div id="view-boss" class="view">
   <div class="boss-view">
+    <div class="mc-title">
+      <div class="mc-name">MAL CIRCLES</div>
+      <div class="mc-copy">その一問が、その一日が、大きな波紋になる。</div>
+    </div>
     <div class="boss-arena">
       <div class="boss-header">
         <div class="boss-label" id="boss-label-text">⚠ BOSS BATTLE</div>
@@ -1425,7 +1436,7 @@ async function api(action, body={}) {
 }
 
 
-/* ==== MAL QUEST 共通ログイン(やりきリスト・マル単で1回だけ) ==== */
+/* ==== MAL CIRCLES 共通ログイン(やりきリスト・マル単で1回だけ) ==== */
 const MQ_KEY = 'mq_login';
 function mqGet(){ try{ const v = JSON.parse(localStorage.getItem(MQ_KEY) || 'null'); return v && v.nickname ? v : null; }catch(e){ return null; } }
 function mqSet(o){ try{ localStorage.setItem(MQ_KEY, JSON.stringify(Object.assign({at: Date.now()}, o))); }catch(e){} }
@@ -2865,7 +2876,7 @@ function statusTagByNick(nick) {
   return st ? statusTagById(st.id) : '';
 }
 
-/* ==== MAL QUEST:ペンの剣(レベルで進化)と、今日戦った仲間 ==== */
+/* ==== MAL CIRCLES:ペンの剣(レベルで進化)と、今日戦った仲間 ==== */
 const WEAPONS = [
   { lv:40, icon:'🖋️', name:'万年筆の聖剣',   cls:'w5', verb:'聖剣の一閃' },
   { lv:20, icon:'🖊️', name:'ボールペンの鋼剣', cls:'w4', verb:'斬撃' },
@@ -3819,7 +3830,7 @@ function renderBossView() {
 }
 
 </script>
-<!-- MAL QUEST:ボスへの攻撃カットイン(やりきリスト・マル単 共通) v2 canvas -->
+<!-- MAL CIRCLES:ボスへの攻撃カットイン(やりきリスト・マル単 共通) v2 canvas -->
 <style>
 #mq-strike{position:fixed;inset:0;z-index:900;display:none;overflow:hidden;color:#fff;background:#05030f;font-family:'DotGothic16','Hiragino Sans','Noto Sans JP',sans-serif;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;-webkit-user-select:none}
 #mq-strike.on{display:block}
@@ -3902,7 +3913,7 @@ function renderBossView() {
 </div>
 <script>
 /* =========================================================
-   MAL QUEST 攻撃カットイン v2(canvas の光と粒子で描く)
+   MAL CIRCLES 攻撃カットイン v2(canvas の光と粒子で描く)
    mqStrike({kind:'punch'|'slash'|'magic', tier:'w2'..'w5', element:'fire'|'thunder'|'water'|'wind'|'earth',
              dmg, crit, hero, weaponHtml, weaponName, spell, boss:{name,hp,cur,imgUrl,svgHtml}})
    ========================================================= */
@@ -5564,7 +5575,7 @@ function roomBlock(){
 </script>
 
 <script>
-/* ==== MAL QUEST:自習室の召喚 と マルのバッジ ==== */
+/* ==== MAL CIRCLES:自習室の召喚 と マルのバッジ ==== */
 /* 召喚:1週間(月〜日)に自習室に来た人数で召喚獣が決まり、自習時間で威力が決まる。
    月曜に最初にだれかがアプリを開いたとき、先週の分が自動で発動。その週のうちに開いた全員に1回ずつ演出を見せる。
    威力 = 1週間の自習ポイント × 5 × 召喚獣の倍率(召喚獣ごとに上限:フクロウくん3千・巨大フクロウ6千・塾長1万・ロケット3万)。自習ポイント=自習時間(分)。1日2時間をこえた分は「ねばりボーナス」で1.5倍(1人1日4時間まで) */
@@ -6330,7 +6341,7 @@ async function toggleEquip(bid){
   } catch(e) { showToast('保存できませんでした(通信エラー)'); }
 }
 </script>
-<!-- MAL QUEST:アプリ間ジャンプ(左はしの小さなタブ。タップで開いてから移動。問題を解いている間は出さない) -->
+<!-- MAL CIRCLES:アプリ間ジャンプ(左はしの小さなタブ。タップで開いてから移動。問題を解いている間は出さない) -->
 <style>
 .mq-jump{position:fixed;left:0;bottom:calc(30% + env(safe-area-inset-bottom));z-index:150;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;transition:transform .2s ease}
 .mq-jump .mq-tab{display:flex;align-items:center;gap:2px;height:44px;padding:0 6px 0 8px;border:none;border-radius:0 14px 14px 0;background:#5b3fa0;color:#fff;font-size:18px;line-height:1;box-shadow:2px 3px 10px rgba(0,0,0,.25);opacity:.82;cursor:pointer}
