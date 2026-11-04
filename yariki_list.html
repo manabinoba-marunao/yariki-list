@@ -591,7 +591,7 @@ td.td-name { padding-left: 16px; text-align: left; }
 .pm-dmg.zero { color:#666688; }
 .pm-sheet-bg { position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:flex-end; justify-content:center; z-index:300; }
 .pm-sheet-bg.show { display:flex; }
-.pm-sheet { width:100%; max-width:480px; background:var(--rpg-surface); border:1px solid #4a4a7a; border-bottom:none; border-radius:18px 18px 0 0; padding:18px 18px 28px; color:#e8e6ff; }
+.pm-sheet { width:100%; max-width:480px; max-height:88vh; max-height:88dvh; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; background:var(--rpg-surface); border:1px solid #4a4a7a; border-bottom:none; border-radius:18px 18px 0 0; padding:18px 18px calc(28px + env(safe-area-inset-bottom)); color:#e8e6ff; }
 .pm-sheet h3 { margin:0 0 2px; font-family:var(--font-game); font-size:18px; color:#fff; }
 .pm-sheet .sub { font-size:11px; color:#8888bb; margin-bottom:12px; }
 .pm-row { display:flex; justify-content:space-between; padding:8px 0; border-top:1px solid var(--rpg-border); font-size:13px; }
@@ -6143,6 +6143,7 @@ function dexDetail(i){
     ${d.hero ? `<button class="dex-replay" onclick="dexReplay(${i})">🎬 討伐の場面をもう一度見る</button>` : ''}
     <div style="margin-top:8px;font-size:12px;color:var(--gold)">⚔ 討伐した仲間(与えたダメージ)</div>${mem}
     <button class="pm-close" onclick="renderDex()">← 図鑑にもどる</button>`;
+  const sh = document.querySelector('#pm-sheet .pm-sheet'); if (sh) sh.scrollTop = 0;
 }
 
 /* 召喚の演出は summon.html(全画面)で再生する。魔法陣は来た人数の数だけ円が重なる */
