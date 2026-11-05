@@ -5271,10 +5271,17 @@ async function sdReadRangePhoto(file){
   let r = null;
   try{
     const image = await shrinkImage(file, 1800);
-    r = await api('readRange', {image, mime:'image/jpeg', grade: st.grade||'', subjects: studySubjects(st), jukuTexts: studySubjects(st).map(s=>s+':'+jukuTexts(s).filter(x=>x!=='その他').join('/')).join(' ')});
+    const req = {image, mime:'image/jpeg', grade: st.grade||'', subjects: studySubjects(st), jukuTexts: studySubjects(st).map(s=>s+':'+jukuTexts(s).filter(x=>x!=='その他').join('/')).join(' ')};
+    // AIが混み合っているとき(high demand / overloaded / 429・503)は、少し待って自動でやり直す
+    for(let k=0; k<4; k++){
+      r = await api('readRange', req);
+      if(r && r.ok) break;
+      if(!/high demand|overload|try again|unavailable|rate|quota|429|503|529/i.test(String(r && r.error || ''))) break;
+      if(k<3){ const el = document.querySelector('#sv-modal-body .sv-note'); if(el) el.innerHTML = `🔮 AIが混み合っています。${k+1}回目のやり直し中…(このまま待っててね)`; await new Promise(z=>setTimeout(z, 4000*(k+1))); }
+    }
   }catch(e){ r = {ok:false, error:'写真を読みこめませんでした'}; }
   if(!r || !r.ok || !r.subjects){
-    const raw = String((r && (r.error || r.message)) || ''), msg = ((!/^AI/.test(raw) && /unknown action|不明なアクション|readRange/i.test(raw)) ? '先生がまだ「写真の読みとり」の準備をしていません。' : raw || '読みとれませんでした') + (raw ? `<br><small style="color:#999">(くわしく:${esc_(raw.slice(0,200))})</small>` : '');
+    const raw = String((r && (r.error || r.message)) || ''), busy = /high demand|overload|try again|unavailable|429|503|529/i.test(raw), msg = busy ? 'AIがとても混み合っていて、読みとれませんでした。少し時間をおいて、もう一度撮ってみてね。' + `<br><small style="color:#999">(くわしく:${esc_(raw.slice(0,200))})</small>` : ((!/^AI/.test(raw) && /unknown action|不明なアクション|readRange/i.test(raw)) ? '先生がまだ「写真の読みとり」の準備をしていません。' : raw || '読みとれませんでした') + (raw ? `<br><small style="color:#999">(くわしく:${esc_(raw.slice(0,200))})</small>` : '');
     document.getElementById('sv-modal-body').innerHTML = `<h4>読みとれませんでした</h4><p class="sv-note">${msg}<br>明るいところで、範囲表がまっすぐ全部うつるように撮りなおしてみてね。手で入れるときは、教科の「範囲を入れる」から。</p><div style="text-align:right"><button class="sv-btn" onclick="sdCloseModal()">とじる</button></div>`;
     return;
   }
