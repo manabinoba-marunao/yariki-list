@@ -1450,6 +1450,9 @@ function isTester(s) { return !!s && (String(s.nickname||'').startsWith('テス�
 function isTesterLog(l) { const raw = String((l && (l.nickname || l.name)) || '').replace(/\(マル単\)$/, ''); if (raw.startsWith('テスト')) return true;
   const st = (typeof studentByNick === 'function') ? studentByNick(raw) : null; return !!(st && isTester(st)); }
 function rosterStudents() { return STUDENTS.filter(s => !isTester(s)); }
+function isTesterId(id) { const st = STUDENTS.find(x => String(x.id) === String(id)); return !!(st && isTester(st)); }
+/* マル単から届いた装備など。テスト用アカウントは記録がなくても空の箱を用意して、ぜんぶ試せるようにする */
+function mqOf(id) { id = String(id); if (!MQB[id] && isTesterId(id)) MQB[id] = {}; return MQB[id]; }
 let ALL_RECORDS = {}; // {studentId: {date: [0/1/null x6]}}
 let currentStudent = null;
 let currentDone = new Set();
@@ -1676,6 +1679,7 @@ async function gachaUse(id, n) {
 }
 
 function showInputScreen() {
+  if (typeof testerTools === 'function') testerTools();
   document.getElementById('screen-pin').style.display = 'none';
   document.getElementById('screen-input').style.display = 'block';
   const gb = document.getElementById('s-gacha'); if (gb) gb.innerHTML = '';
@@ -1872,10 +1876,19 @@ async function submitRecord() {
       }
     }
 
+    // テスト用:攻撃の演出だけ見せる(ボスには送らない・HPは減らない)
+    if (tester && dmg > 0) {
+      if (kimatsu) setTimeout(showKimatsuImmune, 400);
+      else {
+        const myW = weaponOf(currentStudent.id, getLevelInfo(exp).lv);
+        mqStrike({ kind: myW.cls === 'w1' ? 'punch' : 'slash', dmg, crit:isCrit, hero:nickname, weaponHtml:weaponIcon(myW, {held:true}), weaponName:myW.name, tier:myW.cls,
+          boss: Object.assign({ name: BOSS_DATA ? BOSS_DATA.name : '大魔王', hp: BOSS_DATA ? Number(BOSS_DATA.hp) : 0, cur: BOSS_DATA ? Number(BOSS_DATA.currentHp ?? BOSS_DATA.hp) : null }, yarikiBossArt()) });
+      }
+    }
     updateRpgStatus(currentStudent.id);
     const effNote = stDef && sd.ok ? `（${stDef.icon}${stDef.name}：${stDef.short}）` : '';
     showToast(tester
-      ? `${done}個達成！記録しました(テスト用なのでボスへの攻撃はなし)`
+      ? `${done}個達成！🧪テスト用:演出だけで、ボスへの攻撃は0です`
       : kimatsu
       ? `${spellMsg}${done}個達成！EXP+${expGain}(期末の誘魔には、マル単のマルナで攻撃しよう！)`
       : sd.ok
@@ -1892,6 +1905,7 @@ async function submitRecord() {
 function backToNames() {
   mqClear();
   currentStudent = null; pinBuffer = '';
+  if (typeof testerTools === 'function') testerTools();
   MY_STATUS = null;
   const sb = document.getElementById('s-status-box');
   if (sb) sb.className = 'status-box';
@@ -2901,13 +2915,14 @@ const GIFTS = [
   { id:'mt_owl',    app:'マル単',       name:'きせかえ フクロウくん', desc:'マル単の特別きせかえ' },
   { id:'mt_world',  app:'マル単',       name:'きせかえ 塾長と世界旅行', desc:'マル単の特別きせかえ' },
 ];
-function giftsOf(id){ const m = MQB[String(id)]; return m && Array.isArray(m.gifts) ? m.gifts : []; }
+function giftsOf(id){ if (isTesterId(id)) return GIFTS.map(g => g.id);   // テスト用:景品をぜんぶ持っている
+  const m = MQB[String(id)]; return m && Array.isArray(m.gifts) ? m.gifts : []; }
 function hasGift(id, g){ return giftsOf(id).includes(g); }
 const OWL_PENCIL = { lv:0, icon:'✏️', name:'フクロウくんの鉛筆', cls:'w2', svg:'owl', verb:'フクロウ斬り', gift:true };
 /* その生徒が今持っている武器(フクロウくんの鉛筆を装備中ならそれ。攻撃力はレベルのまま) */
 function weaponOf(id, lv){
   const base = weaponFor(lv != null ? lv : levelOf(id));
-  const m = MQB[String(id)];
+  const m = mqOf(id);
   if (hasGift(id, 'owlpencil') && !(m && m.weapon === 'level')) return OWL_PENCIL;
   return base;
 }
@@ -2955,7 +2970,9 @@ function todayParty() {
     const m = STATUS_MAP[id];
     if (activeIds.has(id) && m && m.status && STATUS_DEFS[m.status]) get(id);
   });
-  const testers = new Set(STUDENTS.filter(isTester).map(s => String(s.id)));   // テスト用アカウントはボス戦に出さない
+  const myT = currentStudent && isTester(currentStudent) ? String(currentStudent.id) : null;
+  if (myT) get(myT);   // テスト用アカウントは、自分の画面にだけ自分を出す(かぶりもの・武器の見え方の確認用)
+  const testers = new Set(STUDENTS.filter(isTester).map(s => String(s.id)).filter(id => id !== myT));   // ほかの人の画面には出さない
   return Object.values(map).filter(m => !testers.has(String(m.id))).sort((a,b) => (b.hit+b.magic) - (a.hit+a.magic));
 }
 
@@ -5765,24 +5782,37 @@ function roomBlock(){
 
 <!-- 演出テスト:yariki_list.html?demo で開くと、ダメージを送らずに攻撃演出だけ試せる -->
 <script>
-(function(){
-  if (!/[?&]demo\b/.test(location.search)) return;
-  const box = document.createElement('div');
+function openDemoPanel(){
+  if (document.getElementById('demo-panel')) return;
+  const box = document.createElement('div'); box.id = 'demo-panel';
   box.style.cssText = 'position:fixed;left:8px;right:8px;top:8px;z-index:880;background:rgba(10,10,30,.95);border:1px solid #ffd700;border-radius:12px;padding:10px;color:#fff;font:12px sans-serif';
   const btn = (label, fn) => { const b = document.createElement('button'); b.textContent = label; b.style.cssText = 'margin:3px;padding:7px 10px;border-radius:8px;border:1px solid #4a4a7a;background:#1c1c38;color:#fff;font-size:12px'; b.onclick = fn; return b; };
   const boss = () => Object.assign({ name: (BOSS_DATA && BOSS_DATA.name) || '大魔王(テスト)', hp: (BOSS_DATA && Number(BOSS_DATA.hp)) || 50000, cur: (BOSS_DATA && Number(BOSS_DATA.currentHp ?? BOSS_DATA.hp)) || 30000 }, yarikiBossArt());
   const title = document.createElement('div'); title.textContent = '🎬 演出テスト(ダメージは送られません)'; title.style.cssText = 'color:#ffd700;margin-bottom:4px';
   box.appendChild(title);
   WEAPONS.slice().reverse().forEach(w => box.appendChild(btn(w.cls === 'w1' ? '👊 素手' : w.name, () => mqStrike({ kind: w.cls === 'w1' ? 'punch' : 'slash', dmg: 1234, crit: false, hero: 'テスト', weaponHtml: weaponIcon(w, {held:true}), weaponName: w.name, tier: w.cls, boss: boss() }))));
+  box.appendChild(btn('✏️ フクロウくんの鉛筆', () => mqStrike({ kind:'slash', dmg: 1234, crit:false, hero:'テスト', weaponHtml: weaponIcon(OWL_PENCIL, {held:true}), weaponName: OWL_PENCIL.name, tier: OWL_PENCIL.cls, boss: boss() })));
   box.appendChild(btn('⚡ 会心', () => { const w = WEAPONS[0]; mqStrike({ kind:'slash', dmg: 5678, crit: true, hero: 'テスト', weaponHtml: weaponIcon(w, {held:true}), weaponName: w.name, tier: w.cls, boss: boss() }); }));
   let demoLv = 1; const lvBtn = btn('マルナLv1', () => { demoLv = demoLv === 1 ? 5 : demoLv === 5 ? 10 : 1; lvBtn.textContent = 'マルナLv' + demoLv; });
   [['英語・木','wind'],['数学・金','thunder'],['国語・水','water'],['理科・火','fire'],['社会・土','earth']].forEach(([n,el]) =>
     box.appendChild(btn('🔮 ' + n, () => mqStrike({ kind:'magic', dmg: 240, crit:false, hero:'テスト', spell: n.split('・')[1] + 'のマルナ', element: el, mlv: demoLv, boss: boss() }))));
   box.appendChild(lvBtn);
   box.appendChild(btn('✕ 閉じる', () => box.remove()));
-  window.addEventListener('load', () => document.body.appendChild(box));
-  if (document.readyState === 'complete') document.body.appendChild(box);
-})();
+  document.body.appendChild(box);
+}
+window.addEventListener('load', () => testerTools());
+if (/[?&]demo\b/.test(location.search)) { if (document.readyState === 'complete') openDemoPanel(); else window.addEventListener('load', openDemoPanel); }
+/* テスト用アカウントでログインしている間だけ、左下に「🎬 演出テスト」ボタンを出す */
+function testerTools(){
+  let b = document.getElementById('demo-fab');
+  const on = !!(currentStudent && isTester(currentStudent));
+  if (!on) { if (b) b.remove(); const p = document.getElementById('demo-panel'); if (p) p.remove(); return; }
+  if (b) return;
+  b = document.createElement('button'); b.id = 'demo-fab'; b.type = 'button'; b.textContent = '🎬 演出テスト';
+  b.style.cssText = 'position:fixed;left:10px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:870;padding:9px 13px;border-radius:999px;border:1px solid #ffd700;background:rgba(10,10,30,.92);color:#ffd700;font-size:13px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,.45)';
+  b.onclick = () => { const p = document.getElementById('demo-panel'); if (p) p.remove(); else openDemoPanel(); };
+  document.body.appendChild(b);
+}
 </script>
 
 <script>
@@ -6268,7 +6298,7 @@ const HATS = [
 function titleTag(id){ const h = typeof wornHat === 'function' ? wornHat(id) : null; return h && h.title ? ` <span style="color:#ffd700;font-weight:700">🌏${esc(h.title)}</span>` : ''; }
 async function toggleOwlPencil(){
   if (!currentStudent) return;
-  const id = String(currentStudent.id), m = MQB[id]; if (!m) return;
+  const id = String(currentStudent.id), m = mqOf(id); if (!m) return;
   const next = m.weapon === 'level' ? '' : 'level';
   m.weapon = next; openMember(id); renderParty(); if (typeof renderBossView === 'function') renderBossView();
   const ok = await writeMQ({ weapon: next });
@@ -6470,13 +6500,14 @@ function hatSVG(h, opt){
   return `<svg class="${opt.cls || ''}" viewBox="${vb}" ${opt.size ? `width="${opt.size}" height="${Math.round(opt.size * (opt.head ? .96 : 1))}"` : ''} xmlns="http://www.w3.org/2000/svg" aria-label="${esc(h.name)}">${head}${HAT_IMG[h.id] ? `<image href="${HAT_IMG[h.id]}" x="0" y="0" width="100" height="100"/>` : hatArt(h.id)}</svg>`;
 }
 function hatsOf(id){
+  if (isTesterId(id)) return HATS.slice();   // テスト用:かぶりものをぜんぶ持っている
   const m = MQB[String(id)]; if (!m) return [];
   const g = Array.isArray(m.gdone) ? m.gdone : [], maru = Number(m.maru) || 0;
   const gifts = Array.isArray(m.gifts) ? m.gifts : [];
   return HATS.filter(h => h.gift ? gifts.includes(h.gift) : h.maru ? maru >= h.maru : g.some(k => h.re.test(k)));
 }
 function wornHat(id){
-  const m = MQB[String(id)]; if (!m) return null;
+  const m = mqOf(id); if (!m) return null;
   const own = hatsOf(id); if (!own.length) return null;
   if (typeof m.hat === 'string') return m.hat === '' ? null : (own.find(h => h.id === m.hat) || null);
   return own.slice().sort((a, b) => b.rank - a.rank)[0];   // まだ選んでいなければ、いちばんレアなもの
@@ -6502,7 +6533,7 @@ function hatSection(id){
 }
 async function wearHat(hid){
   if (!currentStudent) return;
-  const id = String(currentStudent.id), m = MQB[id]; if (!m) return;
+  const id = String(currentStudent.id), m = mqOf(id); if (!m) return;
   const cur = wornHat(id);
   const next = hid === '' ? '' : (cur && cur.id === hid ? '' : hid);   // もう一度押すとぬぐ
   m.hat = next; openMember(id); renderParty(); if (typeof renderBossView === 'function') renderBossView();
