@@ -3878,6 +3878,20 @@ function renderBossView() {
 .mqs-hero{position:absolute;left:9%;bottom:17%;width:84px;text-align:center;opacity:0;animation:mqsHeroIn .45s .2s cubic-bezier(.2,1.3,.4,1) forwards}
 .mqs-hero.dash{animation:mqsHeroIn .45s .2s forwards,mqsDash .62s cubic-bezier(.6,0,.2,1) forwards}
 .mqs-face{position:relative;width:62px;height:62px;margin:0 auto;border-radius:50%;background:radial-gradient(circle at 35% 30%,#45458a,#1a1a38);border:2px solid #ffd76a;display:flex;align-items:center;justify-content:center;font-size:25px;font-weight:700;box-shadow:0 0 18px rgba(255,215,106,.55)}
+.mqs-hat{position:absolute;left:-36px;top:-53px;width:135px;height:135px;z-index:2;pointer-events:none;line-height:0;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+.mqs-hat svg{display:block;width:135px;height:135px;overflow:visible}
+.mqs-hat.r2{filter:drop-shadow(0 0 5px rgba(255,215,0,.8)) drop-shadow(0 2px 3px rgba(0,0,0,.5))}
+.mqs-hat.r3{filter:drop-shadow(0 0 8px #ffd700) drop-shadow(0 0 2px #fff)}
+.mqs-face.has-hat .mqs-letter{transform:translateY(7px);font-size:21px}
+.mqs-medal{position:absolute;left:50%;top:40px;transform:translateX(-50%);z-index:3;line-height:0;filter:drop-shadow(0 1px 2px rgba(0,0,0,.7))}
+.mqs-medal svg{display:block}
+.mqs-zan{position:absolute;left:7%;top:12%;z-index:6;font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;font-weight:900;font-size:min(13vw,64px);color:#fff;writing-mode:vertical-rl;letter-spacing:.05em;text-shadow:0 0 12px #b06bff,0 0 30px #6a2bff,0 4px 0 #2a0a4a;opacity:0;pointer-events:none}
+.mqs-zan.go{animation:mqsZan 1.5s ease-out forwards}
+@keyframes mqsZan{0%{opacity:0;transform:scale(2.4)}12%{opacity:1;transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:scale(1.05)}}
+.mqs-owleye{position:absolute;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle,#fff 0 25%,#ffd84a 45%,rgba(255,200,40,0) 72%);z-index:6;opacity:0;pointer-events:none}
+.mqs-owleye.go{animation:mqsEye .7s ease-out forwards}
+@keyframes mqsEye{0%{opacity:0;transform:scale(.2)}35%{opacity:1;transform:scale(1.6)}100%{opacity:0;transform:scale(.8)}}
+.mqs-wpn{z-index:4}
 .mqs-wpn{position:absolute;right:-20px;bottom:-8px;line-height:0;transform:rotate(35deg);transform-origin:50% 85%;filter:drop-shadow(0 2px 3px #000)}
 .mqs-wpn svg{height:66px;width:auto;display:block}
 .mqs-wpn.fist{font-size:30px;line-height:1;transform:none;right:-18px;bottom:0}
@@ -4159,6 +4173,44 @@ function mqsHitBoss(o, extra){
   if(navigator.vibrate) try{ navigator.vibrate(o.crit ? [70,40,110] : 70); }catch(e){}
 }
 
+/* ---- フクロウくんの鉛筆:小さな「不苦労斬り」(巨大フクロウくんの召喚の技を、ひとりで) ----
+   闇がおりて目が光る → 消える → 連続の斬撃 → 「不苦労斬り」→ 金のX字斬りでとどめ */
+function mqsOwlGiri(o, B, H){
+  const d = MQS.dpr, bx = B.x, by = B.y, bw = B.w, T = 1650; o._hitAt = T;
+  const st = document.getElementById('mq-strike'), stage = document.getElementById('mqs-stage'), hero = document.getElementById('mqs-hero');
+  // 闇(画面を暗く)
+  mqsFx(80, 1900, (ctx, t) => { const a = t < .15 ? t/.15 : t > .8 ? (1-t)/.2 : 1; ctx.globalAlpha = a*.6; ctx.fillStyle = '#0a0418'; ctx.fillRect(0, 0, MQS.W, MQS.H); ctx.globalAlpha = 1; });
+  // 目が光る
+  mqsAt(380, () => { if(!st || !hero) return; const r = hero.querySelector('.mqs-face').getBoundingClientRect(), s = st.getBoundingClientRect();
+    [-.22, .22].forEach(k => { const e = document.createElement('div'); e.className = 'mqs-owleye'; e.style.left = (r.left - s.left + r.width*(.5+k) - 7) + 'px'; e.style.top = (r.top - s.top + r.height*.42 - 7) + 'px'; st.appendChild(e); requestAnimationFrame(() => e.classList.add('go')); }); });
+  // 消える(羽が舞う)
+  mqsAt(820, () => { if(hero) hero.animate([{opacity:1, transform:'scale(1)'}, {opacity:0, transform:'scale(1.15)', filter:'blur(5px)'}], {duration:240, fill:'forwards'});
+    mqsBurst(H.x, H.y, 16, { color:'#c9a77a', type:'leaf', min:2, max:6, g:.06, lmin:40, lmax:70, smin:5, smax:9, p:{vr:.15, drag:.96} });
+    mqsBurst(H.x, H.y, 20, { color:'#b06bff', min:3, max:10, lmin:12, lmax:22 }); });
+  // 連続の斬撃(紫と白)
+  const L = [[-.6,-.7,.6,.7],[.6,-.7,-.6,.7],[-.8,0,.8,.05],[.7,-.4,-.7,.5]];
+  L.forEach((z, i) => mqsAt(1000 + i*140, () => { const r = bw*.8;
+    mqsSlash({ x0:bx+z[0]*r, y0:by+z[1]*r, x1:bx+z[2]*r, y1:by+z[3]*r, bend:(i%2?-24:24)*d, width:16*d, color:'#e9dcff', glow:'#a46bff', dur:80, fade:240 });
+    mqsAt(80, () => { mqsShake(6); mqsBurst(bx+mqsRand(-.2,.2)*bw, by+mqsRand(-.2,.2)*bw, 12, { color:'#d6b8ff', min:4, max:12, lmin:10, lmax:20 }); }); }));
+  // 「不苦労斬り」
+  mqsAt(1420, () => { if(!st || !stage) return; const z = document.createElement('div'); z.className = 'mqs-zan'; z.textContent = '不苦労斬り';
+    const sr = stage.getBoundingClientRect(), rr = st.getBoundingClientRect(); z.style.left = (sr.left - rr.left + sr.width*.06) + 'px'; st.appendChild(z); requestAnimationFrame(() => z.classList.add('go')); });
+  // とどめの金のX字斬り
+  mqsAt(T - 150, () => { const r = bw*1.05; mqsSlash({ x0:bx-r, y0:by-r, x1:bx+r, y1:by+r, bend:0, width:30*d, color:'#ffe680', glow:'#ffd700', dur:110, fade:420 }); });
+  mqsAt(T, () => { const r = bw*1.05;
+    mqsSlash({ x0:bx+r, y0:by-r, x1:bx-r, y1:by+r, bend:0, width:30*d, color:'#ffe680', glow:'#ffd700', dur:110, fade:420 });
+    mqsFlash(.75, 200); mqsSpeedLines(bx, by, 0, 380); mqsShake(20); mqsHitBoss(o);
+    mqsRing(bx, by, bw*1.3, '#c89bff', 0, 560, 12); mqsRing(bx, by, bw*.8, '#ffd700', 80, 460, 8);
+    mqsFlare(bx, by, 240, '#ffd700', 0, 420);
+    mqsBurst(bx, by, 60, { color:'#ffffff', min:6, max:18, lmin:14, lmax:30 });
+    mqsBurst(bx, by, 24, { color:'#a46bff', type:'glow', min:2, max:7, lmin:20, lmax:35, smin:10, smax:22 });
+    mqsBurst(bx, by, 22, { color:'#c9a77a', type:'leaf', min:3, max:9, g:.08, lmin:40, lmax:70, smin:5, smax:9, p:{vr:.2, drag:.96} });
+    const w = document.getElementById('mqs-word'); if(w){ w.textContent = 'ザシュッ!!'; w.className = 'mqs-word'; w.style.setProperty('--w1', '#f3e6ff'); w.style.setProperty('--w2', '#7a3dff'); void w.offsetWidth; w.classList.add('go'); }
+  });
+  // もどってくる
+  mqsAt(T + 380, () => { if(hero) hero.animate([{opacity:0, transform:'scale(.9)', filter:'blur(4px)'}, {opacity:1, transform:'scale(1)', filter:'blur(0)'}], {duration:300, fill:'forwards'}); });
+}
+
 /* ---- 武器・属性ごとの演出 ---- */
 function mqsPlay(o, B, H){
   const d = MQS.dpr, bx = B.x, by = B.y, bw = B.w;
@@ -4179,6 +4231,7 @@ function mqsPlay(o, B, H){
     return;
   }
 
+  if(o.kind === 'slash' && o.owl){ mqsOwlGiri(o, B, H); return; }
   if(o.kind === 'slash'){
     const tier = o.tier || 'w3', S = MQS_TIERS[tier];
     if(tier === 'w2'){ // 鉛筆:2連の素早い斬り+削りかす+黒鉛の粉
@@ -4317,6 +4370,7 @@ function mqStrikeClose(){
   if (wasOn && showToast.q && showToast.q.length) { const q = showToast.q.splice(0); let at = 300; q.forEach(([m, ms]) => { setTimeout(() => showToast(m, ms), at); at += (ms || 2800) + 300; }); }
   clearTimeout(mqsTimer); MQS.timers.forEach(clearTimeout); MQS.timers = [];
   cancelAnimationFrame(MQS.raf); MQS.raf = 0; MQS.fx = []; MQS.parts = []; MQS.shake = 0;
+  if(el) el.querySelectorAll('.mqs-zan,.mqs-owleye').forEach(x => x.remove());
 }
 
 function mqStrike(o){
@@ -4331,11 +4385,20 @@ function mqStrike(o){
   const magic = o.kind === 'magic', punch = o.kind === 'punch';
   const E = magic ? MQS_ELEMENTS[o.element] : null;
   const face = mqsEsc(Array.from(o.hero || '？')[0] || '？');
+  // 装備したまま攻撃:かぶりもの・首のメダルをカットインのキャラにもつける
+  const cs = typeof currentStudent !== 'undefined' ? currentStudent : null;
+  const hid = o.heroId != null ? String(o.heroId)
+    : (cs && (o.hero === (cs.nickname || cs.name) || o.hero === cs.name || o.hero === 'テスト')) ? String(cs.id)
+    : (typeof studentByNick === 'function' && studentByNick(String(o.hero || '').replace(/\((マル単|紙)\)$/, '')) || {}).id;
+  const hat = hid != null && typeof wornHat === 'function' ? wornHat(hid) : null;
+  const medal = hid != null && typeof equippedBadges === 'function' ? equippedBadges(hid)[0] : null;
+  const gear = (hat ? `<span class="mqs-hat r${hat.rank}">${hatSVG(hat)}</span>` : '') + (medal && typeof medalSVG === 'function' ? `<span class="mqs-medal">${medalSVG(medal, 27)}</span>` : '');
+  o.owl = o.owl || (!magic && typeof OWL_PENCIL !== 'undefined' && o.weaponName === OWL_PENCIL.name);
   const wpn = magic ? `<span class="mqs-wpn fist">${E ? E.icon : '🔮'}</span>`
     : (o.weaponHtml && o.weaponHtml.indexOf('<svg') === 0 ? `<span class="mqs-wpn">${o.weaponHtml}</span>` : `<span class="mqs-wpn fist">${o.weaponHtml || '👊'}</span>`);
   const digits = Array.from((Number(o.dmg)||0).toLocaleString()).map((c,i) => `<span style="animation-delay:${i*45}ms">${c}</span>`).join('');
-  const label = magic ? (E ? `${E.icon} MARUNA ATTACK${o.mlv ? ' ・ マルナLv' + o.mlv : ''}` : '🔮 MARUNA ATTACK') : punch ? '👊 PUNCH' : '⚔ ATTACK';
-  const msg = magic ? `${mqsEsc(o.spell || 'マル単のマルナ')}！` : punch ? 'こぶしでパンチ！' : `${mqsEsc(o.weaponName || '')}で攻撃！`;
+  const label = magic ? (E ? `${E.icon} MARUNA ATTACK${o.mlv ? ' ・ マルナLv' + o.mlv : ''}` : '🔮 MARUNA ATTACK') : punch ? '👊 PUNCH' : o.owl ? '🦉 FUKUROU-GIRI' : '⚔ ATTACK';
+  const msg = magic ? `${mqsEsc(o.spell || 'マル単のマルナ')}！` : punch ? 'こぶしでパンチ！' : o.owl ? 'フクロウくんの鉛筆で 不苦労斬り！' : `${mqsEsc(o.weaponName || '')}で攻撃！`;
   st.innerHTML = `
     <div class="mqs-title">${label}</div>
     <div class="mqs-boss" id="mqs-boss"><div class="bart whole">${art}</div><div class="bart half a">${art}</div><div class="bart half b">${art}</div></div>
@@ -4345,7 +4408,7 @@ function mqStrike(o){
     <div class="mqs-word" id="mqs-word"></div>
     <div class="mqs-crit" id="mqs-crit">${o.crit ? (magic ? '✦ 大マルナ ✦' : '✦ CRITICAL ✦') : ''}</div>
     <div class="mqs-dmg ${o.crit ? 'crit' : ''}" id="mqs-dmg">${digits}<i>ダメージ</i></div>
-    <div class="mqs-hero" id="mqs-hero"><div class="mqs-face">${face}${wpn}</div><div class="mqs-hname">${mqsEsc(o.hero || '')}</div></div>
+    <div class="mqs-hero" id="mqs-hero"><div class="mqs-face ${hat ? 'has-hat' : ''}">${gear}<span class="mqs-letter">${face}</span>${wpn}</div><div class="mqs-hname">${mqsEsc(o.hero || '')}</div></div>
     <div class="mqs-msg" id="mqs-msg"><b>${(Number(o.dmg)||0).toLocaleString()}</b> ダメージ！<small>${msg}・タップでとじる</small></div>`;
   root.classList.add('on');
   // 割れた半分(聖剣用)
@@ -4359,8 +4422,8 @@ function mqStrike(o){
   const H = { x:(hr.left + hr.width/2 - rr.left)*MQS.dpr, y:(hr.top + hr.height/2 - rr.top)*MQS.dpr };
   MQS.raf = requestAnimationFrame(mqsLoop);
   mqsPlay(o, B, H);
-  if(!magic && o.tier !== 'w3'){ const h = document.getElementById('mqs-hero'); mqsAt(Math.max(300, (o._hitAt||820) - 385), () => h && h.classList.add('dash')); }
-  const T = o._hitAt || 900, endAt = T + (o.tier === 'w5' && !magic ? 1700 : 1150);
+  if(!magic && o.tier !== 'w3' && !o.owl){ const h = document.getElementById('mqs-hero'); mqsAt(Math.max(300, (o._hitAt||820) - 385), () => h && h.classList.add('dash')); }
+  const T = o._hitAt || 900, endAt = T + (o.tier === 'w5' && !magic ? 1700 : o.owl ? 1500 : 1150);
   mqsAt(endAt, () => { const m = document.getElementById('mqs-msg'); if(m) m.classList.add('go'); });
   mqsTimer = setTimeout(mqStrikeClose, endAt + 3600);
 }
@@ -5790,12 +5853,12 @@ function openDemoPanel(){
   const boss = () => Object.assign({ name: (BOSS_DATA && BOSS_DATA.name) || '大魔王(テスト)', hp: (BOSS_DATA && Number(BOSS_DATA.hp)) || 50000, cur: (BOSS_DATA && Number(BOSS_DATA.currentHp ?? BOSS_DATA.hp)) || 30000 }, yarikiBossArt());
   const title = document.createElement('div'); title.textContent = '🎬 演出テスト(ダメージは送られません)'; title.style.cssText = 'color:#ffd700;margin-bottom:4px';
   box.appendChild(title);
-  WEAPONS.slice().reverse().forEach(w => box.appendChild(btn(w.cls === 'w1' ? '👊 素手' : w.name, () => mqStrike({ kind: w.cls === 'w1' ? 'punch' : 'slash', dmg: 1234, crit: false, hero: 'テスト', weaponHtml: weaponIcon(w, {held:true}), weaponName: w.name, tier: w.cls, boss: boss() }))));
-  box.appendChild(btn('✏️ フクロウくんの鉛筆', () => mqStrike({ kind:'slash', dmg: 1234, crit:false, hero:'テスト', weaponHtml: weaponIcon(OWL_PENCIL, {held:true}), weaponName: OWL_PENCIL.name, tier: OWL_PENCIL.cls, boss: boss() })));
-  box.appendChild(btn('⚡ 会心', () => { const w = WEAPONS[0]; mqStrike({ kind:'slash', dmg: 5678, crit: true, hero: 'テスト', weaponHtml: weaponIcon(w, {held:true}), weaponName: w.name, tier: w.cls, boss: boss() }); }));
+  WEAPONS.slice().reverse().forEach(w => box.appendChild(btn(w.cls === 'w1' ? '👊 素手' : w.name, () => mqStrike({ kind: w.cls === 'w1' ? 'punch' : 'slash', dmg: 1234, crit: false, hero: (currentStudent ? (currentStudent.nickname || currentStudent.name) : 'テスト'), weaponHtml: weaponIcon(w, {held:true}), weaponName: w.name, tier: w.cls, boss: boss() }))));
+  box.appendChild(btn('✏️ フクロウくんの鉛筆', () => mqStrike({ kind:'slash', dmg: 1234, crit:false, hero:(currentStudent ? (currentStudent.nickname || currentStudent.name) : 'テスト'), weaponHtml: weaponIcon(OWL_PENCIL, {held:true}), weaponName: OWL_PENCIL.name, tier: OWL_PENCIL.cls, boss: boss() })));
+  box.appendChild(btn('⚡ 会心', () => { const w = WEAPONS[0]; mqStrike({ kind:'slash', dmg: 5678, crit: true, hero: (currentStudent ? (currentStudent.nickname || currentStudent.name) : 'テスト'), weaponHtml: weaponIcon(w, {held:true}), weaponName: w.name, tier: w.cls, boss: boss() }); }));
   let demoLv = 1; const lvBtn = btn('マルナLv1', () => { demoLv = demoLv === 1 ? 5 : demoLv === 5 ? 10 : 1; lvBtn.textContent = 'マルナLv' + demoLv; });
   [['英語・木','wind'],['数学・金','thunder'],['国語・水','water'],['理科・火','fire'],['社会・土','earth']].forEach(([n,el]) =>
-    box.appendChild(btn('🔮 ' + n, () => mqStrike({ kind:'magic', dmg: 240, crit:false, hero:'テスト', spell: n.split('・')[1] + 'のマルナ', element: el, mlv: demoLv, boss: boss() }))));
+    box.appendChild(btn('🔮 ' + n, () => mqStrike({ kind:'magic', dmg: 240, crit:false, hero:(currentStudent ? (currentStudent.nickname || currentStudent.name) : 'テスト'), spell: n.split('・')[1] + 'のマルナ', element: el, mlv: demoLv, boss: boss() }))));
   box.appendChild(lvBtn);
   box.appendChild(btn('✕ 閉じる', () => box.remove()));
   document.body.appendChild(box);
