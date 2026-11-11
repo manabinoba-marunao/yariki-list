@@ -1222,7 +1222,7 @@ td.td-name { padding-left: 16px; text-align: left; }
         border:1px solid var(--gold);border-radius:8px;padding:8px 12px;
         margin-bottom:10px;font-family:var(--font-game);font-size:11px;color:var(--gold);
         text-align:center;">
-        ⚔ 今月の英雄：<span id="hero-name"></span>が大魔王にトドメを刺した！
+        ⚔ 今月の英雄：<span id="hero-name"></span>が<span id="hero-boss">大魔王</span>にトドメを刺した！
       </div>
       <div class="party-wrap">
         <div class="party-title">⚔ 今日いっしょに戦った仲間</div>
@@ -2622,7 +2622,7 @@ function playBossDefeated(d) {
 
   // フェーズ2: 英雄称号
   setTimeout(() => {
-    t2.textContent = `⚔ ${heroName} が大魔王にトドメを刺した！`;
+    t2.textContent = `⚔ ${heroName} が${killedBossName || 'ボス'}にトドメを刺した！`;   // モブ(ゴブリン・ゴーストなど)はその名前で出す
     t2.classList.add('show');
     t3.textContent = `全員に +300 EXP！英雄に +500 EXP！`;
     t3.classList.add('show');
@@ -3783,6 +3783,7 @@ function renderBossView() {
     if (hero && heroBanner && heroName) {
       heroBanner.style.display = 'block';
       heroName.textContent = hero.name;
+      const hb = document.getElementById('hero-boss'); if (hb) hb.textContent = hero.bossName || 'ボス';   // モブならその名前
     }
   } catch(e) {}
 
