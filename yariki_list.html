@@ -676,6 +676,8 @@ td.td-name { padding-left: 16px; text-align: left; }
 @keyframes rw-spin{to{transform:rotate(360deg)}}
 .rw-icon{position:relative;font-size:96px;line-height:1;animation:rw-pop .7s cubic-bezier(.2,1.6,.4,1) .15s both}
 .rw-icon svg{width:150px;height:auto;display:block}
+.rw-icon.rw-medal{line-height:normal;font-size:16px;font-family:'Hiragino Sans','Noto Sans JP',sans-serif}
+.rw-icon.rw-medal svg{width:120px}
 @keyframes rw-pop{from{transform:scale(.2) rotate(-25deg);opacity:0}to{transform:none;opacity:1}}
 .rw-big{font-family:var(--font-game);font-size:58px;color:#fff;line-height:1}
 .rw-name{font-family:var(--font-game);font-size:20px;color:#fff;margin:6px 0 2px}
@@ -2611,6 +2613,21 @@ function playReward(r){
       <span class="rw-rank r${h.rank}">${HAT_RANK[h.rank] || ''}</span>
       <div class="rw-name">${esc(h.name)}</div>
       <div class="rw-sub">${esc(h.cond)}${h.title ? `<br>称号「${esc(h.title)}」もついてくる！` : ''}<br>なかまの画面で、かぶりものを選べるよ</div>`;
+  } else if (r.kind === 'medal') {
+    const b = r.b; rare = b.tier >= 3 ? 3 : 2;
+    const tn = ({1:'銅', 2:'銀', 3:'金'})[b.tier];
+    html = `<div class="rw-kind">${r.up ? 'メダルが進化！' : 'NEW メダル！'}</div>
+      <div class="rw-stage"><div class="rw-rays"></div><div class="rw-icon rw-medal"><img alt="" width="120" src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(medalSVG(b, 120).replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" '))}"></div></div>
+      <div class="rw-name">${esc(b.name || '')}${tn && !String(b.id).startsWith('m:') ? `(${tn})` : ''}</div>
+      <div class="rw-sub">マル単でがんばった証！<br>なかまの画面で、メダルを着けられるよ</div>`;
+  } else if (r.kind === 'news') {
+    rare = 2;
+    const items = r.items.slice(0, 4).map(x => `<div class="rw-extra" style="display:flex;gap:10px;align-items:center;text-align:left">
+      <span style="flex:none;line-height:0">${x.hat ? hatSVG(x.hat, { head:true, size:54 }) : '<span style="font-size:40px;line-height:1">🎁</span>'}</span>
+      <span><b>${esc(x.name)}</b><br><span style="font-size:12px;color:#d9d4ff">${esc(x.cond)}</span></span></div>`).join('');
+    html = `<div class="rw-kind">新しいごほうび登場！</div>
+      <div class="rw-sub">こんなごほうびが増えたよ。ねらってみよう！</div>${items}
+      ${r.items.length > 4 ? `<div class="rw-sub" style="margin-top:8px">ほかにも ${r.items.length - 4} こ！なかまの画面で見てね</div>` : ''}`;
   } else {
     const ow = weaponFor(r.from), nw = weaponFor(r.to), ot = getTitle(r.from), nt = getTitle(r.to);
     const wIc = (w, cls) => `<span class="w ${cls}">${weaponIcon(w, { held:true })}</span>`;
@@ -2644,7 +2661,24 @@ function rewardCheck(){
     else { const fresh = own.filter(h => !s.hats.includes(h));
       fresh.forEach(h => { const hat = HATS.find(x => x.id === h); if (hat) showReward({ kind:'hat', hat }); });
       if (fresh.length) p.hats = [...new Set([...s.hats, ...own])]; }
+    // メダル:新しく取った/銅→銀→金に上がった
+    const bs = badgesOf(id), bk = bs.map(b => b.id + ':' + b.tier);
+    if (!Array.isArray(s.medals)) p.medals = bk;
+    else { const fresh = bs.filter(b => !s.medals.includes(b.id + ':' + b.tier));
+      fresh.slice(0, 3).forEach(b => showReward({ kind:'medal', b, up: s.medals.some(k => k.startsWith(b.id + ':')) }));
+      if (fresh.length) p.medals = [...new Set([...s.medals, ...bk])]; }
   }
+  // 新しいごほうび(かぶりもの・景品)がアプリに増えたら、まだ持っていなくても知らせる
+  const cat = HATS.map(h => 'h:' + h.id).concat(GIFTS.map(g => 'g:' + g.id));
+  if (!Array.isArray(s.catalog)) p.catalog = cat;
+  else { const add = cat.filter(k => !s.catalog.includes(k));
+    if (add.length) {
+      const owned = new Set((p.hats || s.hats || []));
+      const items = add.map(k => { const [t, i] = [k.slice(0, 1), k.slice(2)];
+        if (t === 'h') { const h = HATS.find(x => x.id === i); return h && !owned.has(h.id) ? { hat:h, name:h.name, cond:h.cond } : null; }
+        const g = GIFTS.find(x => x.id === i); return g ? { name:g.name, cond:'ガチャ大会の景品(' + g.app + ')' } : null; }).filter(Boolean);
+      if (items.length) showReward({ kind:'news', items });
+      p.catalog = [...new Set([...s.catalog, ...cat])]; } }
   if (Object.keys(p).length) rwPatch(id, p);
 }
 /* ガチャ券:前に見たときより増えていたら出す(使って減ったときは、覚え直すだけ) */
