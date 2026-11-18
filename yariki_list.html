@@ -133,6 +133,10 @@ body { font-family: var(--font); background: var(--bg); color: var(--ink); min-h
 .gacha-card .gc-row b{font-family:var(--mono)}
 .gacha-card .gc-bar{height:8px;background:#F3E3B5;border-radius:99px;overflow:hidden;margin-top:3px}
 .gacha-card .gc-bar i{display:block;height:100%;background:linear-gradient(90deg,#F59E0B,#EF4444);border-radius:99px}
+.gacha-card .gc-how{background:#fff;border:1px solid #F3E3B5;border-radius:10px;padding:8px 10px;margin-top:4px}
+.gacha-card .gc-ht{font-size:12px;font-weight:900;color:#B45309}
+.gacha-card .gc-n{display:inline-flex;width:18px;height:18px;border-radius:50%;background:#F59E0B;color:#fff;font-size:11px;font-weight:900;align-items:center;justify-content:center;margin-right:6px}
+.gacha-card .gc-st{float:right;font-size:11px;color:var(--ink2)}
 .gacha-card .gc-note{font-size:11px;color:var(--ink2);margin-top:8px;line-height:1.5}
 .t-gacha{background:var(--surface2);border:1.5px solid #E8B93A;border-radius:var(--radius);padding:14px 16px;margin-bottom:20px}
 .t-gacha table{width:100%;font-size:12px}
@@ -661,6 +665,33 @@ td.td-name { padding-left: 16px; text-align: left; }
 .rpg-exp-label { font-size:9px; color:#8888bb; font-family:var(--mono); flex-shrink:0; }
 .rpg-atk { font-size:10px; color:var(--rpg-red); font-family:var(--mono); margin-top:4px; }
 
+/* ごほうびの演出(ガチャ券・かぶりもの・レベル/武器/称号) */
+.rw-overlay{position:fixed;inset:0;background:radial-gradient(circle at 50% 40%,rgba(40,30,90,.94),rgba(5,5,18,.96));display:flex;align-items:center;justify-content:center;z-index:520;opacity:0;pointer-events:none;transition:opacity .3s;overflow:hidden}
+.rw-overlay.show{opacity:1;pointer-events:all}
+.rw-box{position:relative;z-index:2;text-align:center;max-width:340px;width:88vw;animation:levelup-pop .45s cubic-bezier(.34,1.56,.64,1)}
+.rw-kind{font-family:var(--font-game);font-size:26px;color:var(--gold);text-shadow:0 0 14px #ffb300;margin-bottom:6px;animation:glow-pulse 1s ease-in-out infinite alternate}
+.rw-stage{position:relative;width:180px;height:180px;margin:6px auto 4px;display:flex;align-items:center;justify-content:center}
+.rw-rays{position:absolute;inset:-30px;border-radius:50%;background:repeating-conic-gradient(rgba(255,215,0,.28) 0 10deg,transparent 10deg 24deg);animation:rw-spin 9s linear infinite;-webkit-mask:radial-gradient(circle,#000 30%,transparent 70%);mask:radial-gradient(circle,#000 30%,transparent 70%)}
+.rw-overlay.r3 .rw-rays{background:repeating-conic-gradient(rgba(255,120,240,.35) 0 10deg,rgba(255,215,0,.3) 10deg 20deg,transparent 20deg 30deg)}
+@keyframes rw-spin{to{transform:rotate(360deg)}}
+.rw-icon{position:relative;font-size:96px;line-height:1;animation:rw-pop .7s cubic-bezier(.2,1.6,.4,1) .15s both}
+.rw-icon svg{width:150px;height:auto;display:block}
+@keyframes rw-pop{from{transform:scale(.2) rotate(-25deg);opacity:0}to{transform:none;opacity:1}}
+.rw-big{font-family:var(--font-game);font-size:58px;color:#fff;line-height:1}
+.rw-name{font-family:var(--font-game);font-size:20px;color:#fff;margin:6px 0 2px}
+.rw-sub{font-size:13px;color:#d9d4ff;line-height:1.6;margin-bottom:6px}
+.rw-rank{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:99px;background:#3a3a6a;color:#fff;margin-bottom:4px}
+.rw-rank.r2{background:#2563eb}.rw-rank.r3{background:linear-gradient(90deg,#f59e0b,#ec4899)}
+.rw-extra{margin:10px auto 0;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,215,0,.45);color:#fff;font-size:14px;animation:rw-pop .6s cubic-bezier(.2,1.6,.4,1) both}
+.rw-extra b{color:var(--gold);font-family:var(--font-game)}
+.rw-wpn{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:6px;font-size:28px}
+.rw-wpn .w{display:inline-flex;width:30px;height:70px;align-items:center;justify-content:center}
+.rw-wpn .w svg{width:100%;height:100%}
+.rw-wpn .w.new{width:40px;height:94px;filter:drop-shadow(0 0 10px #ffd700)}
+.rw-btn{margin-top:16px;padding:11px 30px;background:var(--gold);color:#0d0d1a;border:none;border-radius:8px;font-family:var(--font-game);font-size:14px;cursor:pointer}
+.rw-conf{position:absolute;z-index:1;top:-12px;width:9px;height:14px;border-radius:2px;animation:rw-fall linear forwards;pointer-events:none}
+@keyframes rw-fall{to{transform:translateY(110vh) rotate(720deg)}}
+@media (prefers-reduced-motion:reduce){.rw-rays,.rw-icon,.rw-kind,.rw-conf{animation:none}}
 /* レベルアップオーバーレイ */
 .levelup-overlay {
   position:fixed; inset:0; background:rgba(0,0,0,.88);
@@ -1278,6 +1309,8 @@ td.td-name { padding-left: 16px; text-align: left; }
   <button class="event-skip" id="event-skip" onclick="closeBossEvent()">タップして続ける ▶</button>
 </div>
 
+<!-- ごほうびの演出 -->
+<div class="rw-overlay" id="rw-overlay" role="dialog" aria-modal="true" aria-live="polite"><div class="rw-box" id="rw-box"></div></div>
 <!-- レベルアップ演出 -->
 <div class="levelup-overlay" id="levelup-overlay">
   <div class="levelup-box">
@@ -1601,16 +1634,18 @@ async function loadGacha() {
   const per = res.perDmg || 20000, need = res.needDays || 15;
   const t = (res.tickets || {})[String(sid)] || { available: 0, toNext: per, monthDays: 0 };
   const md = (res.start || '2026-11-01').slice(5).replace(/^0/, '').replace('-', '/').replace('/0', '/');
+  const how = (prog) => `<div class="gc-how"><div class="gc-ht">🎟 ガチャ券がもらえる3つの方法</div>
+    <div class="gc-row"><span class="gc-n">1</span>ダメージを <b>${per.toLocaleString()}</b> ためるごとに1枚${prog ? `<span class="gc-st">あと <b>${prog.toNext.toLocaleString()}</b></span><div class="gc-bar"><i style="width:${prog.pct}%"></i></div>` : ''}</div>
+    <div class="gc-row"><span class="gc-n">2</span>1か月に <b>${need}</b> 日以上やったら1枚${prog ? `<span class="gc-st">${prog.days} / ${need}日${prog.days >= need ? ' ✓ゲット!' : ''}</span><div class="gc-bar"><i style="width:${prog.dpct}%"></i></div>` : ''}</div>
+    <div class="gc-row"><span class="gc-n">3</span>ボスに<b>とどめ</b>を刺したら1枚</div></div>
+    <div class="gc-note">たまった券は、教室の「ガチャの日」に本物のガチャで使えるよ!</div>`;
   if (res.today < res.start) {
-    box.innerHTML = `<div class="gacha-card"><div class="gc-top"><span class="gc-title">🎰 ガチャ券</span><span class="gc-num">${md} スタート!</span></div>
-      <div class="gc-note">ダメージ${per.toLocaleString()}ごとに1枚、ボスにとどめを刺したら1枚、1か月に${need}日以上やったら1枚。<br>たまった券は、教室の「ガチャの日」に本物のガチャで使えるよ!</div></div>`;
+    box.innerHTML = `<div class="gacha-card"><div class="gc-top"><span class="gc-title">🎰 ガチャ券</span><span class="gc-num">${md} スタート!</span></div>${how(null)}</div>`;
     return;
   }
   const got = per - t.toNext, pct = Math.round(got / per * 100), dpct = Math.min(100, Math.round(t.monthDays / need * 100));
-  box.innerHTML = `<div class="gacha-card"><div class="gc-top"><span class="gc-title">🎰 ガチャ券</span><span class="gc-num">×<b>${t.available}</b> 枚</span></div>
-    <div class="gc-row">次の1枚まで あと <b>${t.toNext.toLocaleString()}</b> ダメージ<div class="gc-bar"><i style="width:${pct}%"></i></div></div>
-    <div class="gc-row">今月やった日 <b>${t.monthDays}</b> / ${need}日 ${t.monthDays >= need ? '✓ 今月の1枚ゲット!' : ''}<div class="gc-bar"><i style="width:${dpct}%"></i></div></div>
-    <div class="gc-note">ボスにとどめを刺した英雄にも1枚!券は教室の「ガチャの日」に使えるよ。</div></div>`;
+  box.innerHTML = `<div class="gacha-card"><div class="gc-top"><span class="gc-title">🎰 ガチャ券</span><span class="gc-num">×<b>${t.available}</b> 枚</span></div>${how({ toNext: t.toNext, pct, days: t.monthDays, dpct })}</div>`;
+  rewardTickets(String(sid), Number(t.available) || 0);
 }
 
 let GACHA_T = null;
@@ -1791,11 +1826,8 @@ async function submitRecord() {
 
     const newInfo = getLevelInfo(exp + expGain);
     if (newInfo.lv > oldLv) {
-      setTimeout(() => {
-        document.getElementById('levelup-num').textContent = newInfo.lv;
-        document.getElementById('levelup-title-text').textContent = getTitle(newInfo.lv);
-        document.getElementById('levelup-overlay').classList.add('show');
-      }, 600);
+      showReward({ kind:'level', from: oldLv, to: newInfo.lv });
+      rwPatch(String(currentStudent.id), { lv: newInfo.lv });
     }
 
     // 期末の誘魔には習慣の攻撃(打撃・斬撃)は効かない。ダメージは送らず、「届かない」演出だけ
@@ -2550,12 +2582,84 @@ function showView(v,btn){
   if(v==='monthly') { renderMonthly(); }
 }
 
+/* ==== ごほうびの演出:ガチャ券・かぶりもの・レベルアップ(武器・称号が変わったらそれも) ====
+   「見たもの」は生徒ごとに端末に覚えておき、増えた分だけ出す(初めての端末では今の状態を覚えるだけ)。 */
+function rwKey(id){ return 'rewardSeen_' + id; }
+function rwSeen(id){ try { return JSON.parse(localStorage.getItem(rwKey(id)) || 'null'); } catch(e) { return null; } }
+function rwPatch(id, p){ const o = Object.assign(rwSeen(id) || {}, p); try { localStorage.setItem(rwKey(id), JSON.stringify(o)); } catch(e) {} }
+function showReward(r){ fxEnqueue(() => playReward(r)); }
+function rwConfetti(ov, n){
+  const cs = ['#ffd700','#ff6b9d','#6be0ff','#a3ff6b','#ff9f43','#c49bff'];
+  for (let i = 0; i < n; i++) { const c = document.createElement('i'); c.className = 'rw-conf';
+    c.style.left = Math.random()*100 + 'vw'; c.style.background = cs[i % cs.length];
+    c.style.animationDuration = (1.8 + Math.random()*1.6) + 's'; c.style.animationDelay = (Math.random()*.6) + 's';
+    ov.appendChild(c); setTimeout(() => c.remove(), 4200); }
+}
+function playReward(r){
+  const ov = document.getElementById('rw-overlay'), box = document.getElementById('rw-box');
+  if (!ov || !box) return;
+  let html = '', rare = 0;
+  if (r.kind === 'ticket') {
+    html = `<div class="rw-kind">ガチャ券ゲット！</div>
+      <div class="rw-stage"><div class="rw-rays"></div><div class="rw-icon">🎟️</div></div>
+      <div class="rw-name">+${r.n} 枚</div>
+      <div class="rw-sub">いま <b style="color:#ffd700">${r.total}</b> 枚もっているよ<br>教室の「ガチャの日」に本物のガチャを回せる！</div>`;
+  } else if (r.kind === 'hat') {
+    const h = r.hat; rare = h.rank;
+    html = `<div class="rw-kind">NEW かぶりもの！</div>
+      <div class="rw-stage"><div class="rw-rays"></div><div class="rw-icon">${hatSVG(h, { head:true, size:150 })}</div></div>
+      <span class="rw-rank r${h.rank}">${HAT_RANK[h.rank] || ''}</span>
+      <div class="rw-name">${esc(h.name)}</div>
+      <div class="rw-sub">${esc(h.cond)}${h.title ? `<br>称号「${esc(h.title)}」もついてくる！` : ''}<br>なかまの画面で、かぶりものを選べるよ</div>`;
+  } else {
+    const ow = weaponFor(r.from), nw = weaponFor(r.to), ot = getTitle(r.from), nt = getTitle(r.to);
+    const wIc = (w, cls) => `<span class="w ${cls}">${weaponIcon(w, { held:true })}</span>`;
+    html = `<div class="rw-kind">LEVEL UP！</div>
+      <div class="rw-stage" style="height:120px"><div class="rw-rays"></div><div class="rw-icon"><div class="rw-big">Lv ${r.to}</div></div></div>
+      <div class="rw-sub">${r.to - r.from > 1 ? `Lv ${r.from} → Lv ${r.to}` : 'つよくなった！'}</div>`;
+    if (nw.name !== ow.name) { rare = 2;
+      html += `<div class="rw-extra" style="animation-delay:.5s">⚔ 武器が進化した！
+        <div class="rw-wpn">${wIc(ow, '')}<span>→</span>${wIc(nw, 'new')}</div><b>${esc(nw.name)}</b></div>`; }
+    if (nt !== ot) { rare = Math.max(rare, 2);
+      html += `<div class="rw-extra" style="animation-delay:.8s">👑 称号が変わった！<br><b>「${esc(nt)}」</b></div>`; }
+  }
+  box.innerHTML = html + `<div><button class="rw-btn" id="rw-next">つぎへ ▶</button></div>`;
+  box.style.animation = 'none'; void box.offsetWidth; box.style.animation = '';
+  ov.classList.toggle('r3', rare >= 3);
+  ov.classList.add('show');
+  rwConfetti(ov, rare >= 3 ? 70 : rare >= 2 ? 45 : 28);
+  const close = () => ov.classList.remove('show');
+  document.getElementById('rw-next').onclick = close;
+}
+/* なかま・ボスの画面を読み直したときに、増えたもの(レベル・かぶりもの)があれば出す */
+function rewardCheck(){
+  if (!currentStudent) return;
+  const id = String(currentStudent.id), s = rwSeen(id) || {}, p = {};
+  const lv = levelOf(id);
+  if (typeof s.lv !== 'number') p.lv = lv;
+  else if (lv > s.lv) { showReward({ kind:'level', from: s.lv, to: lv }); p.lv = lv; }
+  if (MQB_OK && !isTesterId(id)) {
+    const own = hatsOf(id).map(h => h.id);
+    if (!Array.isArray(s.hats)) p.hats = own;
+    else { const fresh = own.filter(h => !s.hats.includes(h));
+      fresh.forEach(h => { const hat = HATS.find(x => x.id === h); if (hat) showReward({ kind:'hat', hat }); });
+      if (fresh.length) p.hats = [...new Set([...s.hats, ...own])]; }
+  }
+  if (Object.keys(p).length) rwPatch(id, p);
+}
+/* ガチャ券:前に見たときより増えていたら出す(使って減ったときは、覚え直すだけ) */
+function rewardTickets(id, n){
+  const s = rwSeen(id) || {};
+  if (typeof s.tk === 'number' && n > s.tk) showReward({ kind:'ticket', n: n - s.tk, total: n });
+  if (s.tk !== n) rwPatch(id, { tk: n });
+}
+
 /* ==== 演出の順番待ち ====
    召喚・敵の攻撃・討伐・ボス登場・レベルアップ・マル単の一撃が重なると、どれもちゃんと見えなくなる。
    ここに並べた演出は、前の演出が閉じてから1つずつ出す。 */
 const FXQ = []; let FXQ_T = 0;
 function fxBusy(){
-  return ['boss-event-overlay', 'boss-intro-overlay', 'levelup-overlay', 'attack-overlay']
+  return ['boss-event-overlay', 'boss-intro-overlay', 'levelup-overlay', 'attack-overlay', 'rw-overlay']
     .some(id => document.getElementById(id)?.classList.contains('show'))
     || !!document.getElementById('summon-fx')
     || !!document.getElementById('mq-strike')?.classList.contains('on');
@@ -5902,7 +6006,7 @@ function mqExtrasLoad(force){
   Promise.all([
     (typeof loadVisits === 'function' ? loadVisits() : Promise.resolve()),
     loadMQB(),
-  ]).finally(() => { MQX_BUSY = false; renderParty(); renderSummon(); giftNotice(); });
+  ]).finally(() => { MQX_BUSY = false; renderParty(); renderSummon(); giftNotice(); rewardCheck(); });
 }
 function giftNotice(){
   if (!currentStudent) return;
@@ -5914,7 +6018,8 @@ function giftNotice(){
   showToast(`🎁 ガチャ大会の景品「${names.join('」「')}」が届いたよ！`, 5000);
   try { localStorage.setItem(k, JSON.stringify(giftsOf(id))); } catch(e) {}
 }
-function loadMQB(){ return api('getAllStudy', {}).then(a => { if (a && a.ok && a.data) { ROOMFIX = {}; Object.entries(a.data).forEach(([k, v]) => { try { const o = JSON.parse(v); if (o && o.mq) MQB[k] = o.mq; collectRoomFix(k, o); } catch(e){} }); applyRoomFix(); } }).catch(() => {}); }
+let MQB_OK = false;
+function loadMQB(){ return api('getAllStudy', {}).then(a => { if (a && a.ok && a.data) { MQB_OK = true; ROOMFIX = {}; Object.entries(a.data).forEach(([k, v]) => { try { const o = JSON.parse(v); if (o && o.mq) MQB[k] = o.mq; collectRoomFix(k, o); } catch(e){} }); applyRoomFix(); } }).catch(() => {}); }
 /* 自分の学習データのセルに mq の項目を足して保存(メダル・召喚ボタンで使う) */
 async function writeMQ(patch){
   if (!currentStudent) return false;
