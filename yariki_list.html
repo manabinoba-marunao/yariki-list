@@ -4601,6 +4601,11 @@ function mqStrike(o){
 .tm-total b{font-family:var(--mono);color:var(--ink);font-size:14px}
 .tm-undo{background:none;border:none;color:var(--ink3);font:700 11px var(--font);text-decoration:underline;cursor:pointer;padding:0}
 /* ふりかえり(円グラフ) */
+.sr.locked .rg{font-size:11px}
+.lk-row{display:grid;grid-template-columns:4.2em 1fr 3em;gap:8px;align-items:center;font-size:11px;color:var(--ink2)}
+.lk-row .pbar{margin:4px 0}
+.lk-row b{font:500 11px var(--mono);text-align:right;color:var(--ink)}
+.lk-at{font-size:11px;color:var(--accent);font-weight:700;margin-top:4px}
 .cz.nx .nx-btns{display:flex;gap:8px;margin-top:10px}
 .cz.nx .nx-btns button{flex:1;padding:11px 8px;border-radius:10px;border:none;background:var(--accent);color:#fff;font:900 14px var(--font);cursor:pointer}
 .cz.nx .nx-btns button.ghost{background:#fff;color:var(--accent);border:1.5px solid var(--accent)}
@@ -4941,9 +4946,9 @@ function mqStrike(o){
      先生側のスプレッドシート(saveStudy/getStudy)が使えるときは同期する
    - 先生が決める「ミッション」と「テスト日程」は下の定数で管理
    ============================================================ */
-const STUDY_TESTS = [   // 期末テストの日程(学校ごと)
-  {id:'t1111', label:'11/11(水)〜13(金)の学校', start:'2026-11-11'},
-  {id:'t1117', label:'11/17(火)〜18(水)の学校', start:'2026-11-17'}
+const STUDY_TESTS = [   // 期末テストの日程(学校ごと)。end = テスト最終日(この次の日から記録は確定・操作できない)
+  {id:'t1111', label:'11/11(水)〜13(金)の学校', start:'2026-11-11', end:'2026-11-13'},
+  {id:'t1117', label:'11/17(火)〜18(水)の学校', start:'2026-11-17', end:'2026-11-18'}
 ];
 const STUDY_MISSIONS = [ // 先生が決める大きな目標。grade は「中3」「中」「小」「高」「全」のように書く
   {id:'m3-nyushi', grade:'中3', text:'入試テキスト(Sロード・シリウス)で、中学の学習内容をぜんぶ終える', due:'2026-11-30'}
@@ -5240,7 +5245,7 @@ function sdNextTest(){
   sdSave(); renderStudy(); showToast('🐟 次の登竜門へ！ テストの日を選んで範囲を入れよう');
 }
 function testOverBox(){
-  return `<div class="cz clear nx"><div class="cz-h">🏁 テストおつかれさま！</div>この期末の結果は「📊 ふりかえり」の<b style="font-size:13px;font-family:var(--font)">登竜門のあゆみ</b>に残りました。
+  return `<div class="cz clear nx"><div class="cz-h">🏁 テストおつかれさま！</div>🔒 テストが終わったので、この期末の記録は確定しました(見ることはできますが、もう動かせません)。結果は「📊 ふりかえり」の<b style="font-size:13px;font-family:var(--font)">登竜門のあゆみ</b>に残りました。
     <div class="nx-btns"><button class="ghost" onclick="sdPane='review';renderStudy();setTimeout(()=>{const e=document.getElementById('hist');if(e)e.scrollIntoView({behavior:'smooth'})},50)">📊 あゆみを見る</button><button onclick="sdNextTest()">次のテストへ →</button></div></div>`;
 }
 const STEP_LABEL = ['🐟 一ノ門の手前','⛩ 一ノ門 突破','⛩⛩ 二ノ門 突破','🐉 登竜成就'];
@@ -5375,7 +5380,7 @@ function goalRange(g){ const u=g.unit; return u==='p' ? `p.${g.from}〜p.${g.to}
 function goalSources(){
   const out = [];
   const termName = '期末テスト';
-  if(testDate()) Object.entries(SD.test.subj||{}).forEach(([s,r])=>{
+  if(testDate() && !termLocked()) Object.entries(SD.test.subj||{}).forEach(([s,r])=>{
     if(!r || r.from==null) return;
     const lap = curLap(r);
     if(lap<3) works(r).forEach(w=>{ if(wProg(w,lap)>=1) return; const p=w.laps[lap]||0;
@@ -5447,6 +5452,7 @@ function sdApplyGoal(g){
   if(!g.src) return '';
   const k = String(g.src).split(':');
   if(k[0]==='term'){
+    if(termLocked()) return '';
     const r = SD.test.subj[k[1]]; if(!r) return '';
     if(k[2]==='j'){ if(!r.juku) return ''; r.juku.done = Math.min(r.juku.to, Math.max(r.juku.done||0, g.to)); if(r.juku.done>=r.juku.to) sdBadge(`${k[1]} 塾ワーク`); }
     else { const i = Number(k[2].slice(1)), w = workAt(r, Number(k[3]||0)); if(!w) return ''; w.laps[i] = Math.min(w.to, Math.max(w.laps[i]||0, g.to)); if(lapProg(r,i)>=1) sdBadge(`${k[1]} ワーク${i+1}周`); }
@@ -5467,6 +5473,10 @@ function sdGoalDel(id){ if(!confirm('この目標を消しますか？')) return
 
 /* ---------- 期末テスト 克己登竜門 ---------- */
 function testDate(){ const t = STUDY_TESTS.find(x=>x.id===SD.test.id); return t ? t.start : SD.test.date; }
+/* テストが終わったら(最終日の次の日から)期末の登竜門は確定。見られるけど、進み具合・範囲は動かせない */
+function testEndOf(d){ const t = STUDY_TESTS.find(x=>x.id===((d||SD).test||{}).id); const td = dTestDate(d||SD); return t && t.end ? t.end : (td ? sdAdd(td, 2) : null); }
+function termLocked(d){ const e = testEndOf(d||SD); return !!(e && sdToday() > e); }
+function lockMsg(){ if(!termLocked()) return false; showToast('🔒 テストが終わったので、この期末の記録は確定しています'); return true; }
 /* 学校ワークは教科ごとに最大3冊。1冊目は r.from/r.to/r.laps(r.wname)、2冊目以降は r.extra[] */
 const MAX_WORKS = 3;
 const WORK_NAMES = ['学校ワーク','教科書準拠ワーク','漢字ワーク','文法ワーク','計算ワーク','単語帳','プリント','資料集ワーク'];
@@ -5535,7 +5545,8 @@ function testCard(st){
   const step = !all1 ? 0 : !all3 ? 1 : !allJ ? 2 : 3;
   const c = crisisOf(SD, td), toTest = sdDiff(td, today), gs = gateStats();
   let box;
-  if(setRows.length && toTest < -2) box = testOverBox();
+  const locked = termLocked();
+  if(setRows.length && locked) box = testOverBox();
   else if(step===0 && !setRows.length) box = `<div class="cz yellow"><div class="cz-h">⚠ まず範囲を入れよう</div>一ノ門「学校ワーク完遂」の締め切りは <b>${sdLabel(sdAdd(td,-WORK_LEAD_DAYS))}</b>。各教科のワークの範囲を入れてね。</div>`;
   else if(step===0){
     const msg = {
@@ -5551,13 +5562,22 @@ function testCard(st){
   } else if(step===3) box = `<div class="cz clear"><div class="cz-h">🐉 登竜成就！</div>すべての門をやぶった。テストまであと <b>${Math.max(0,toTest)}</b> 日、自信をもって挑もう！</div>`;
   else box = `<div class="cz clear"><div class="cz-h">⛩ 一ノ門 突破！</div>テストまであと <b>${Math.max(0,toTest)}</b> 日。${step===1?'二ノ門:ワークを3周して完璧に。':'三ノ門:塾ワークで仕上げよう。'}</div>`;
   return `<div class="sv-card gate">${title}${head}
-    ${rangeHelpBar(st)}
+    ${locked?'':rangeHelpBar(st)}
     <div class="gates">${GATES.map((g,i)=>`<div class="${step>i?'ok':step===i?'now':''}">${step===i?'<span class="koi">🐟</span>':step>i?'<span class="koi">⛩</span>':''}${g}</div>`).join('')}<div class="${step===3?'ok dragon':''}">${step===3?'🐉':'竜'}</div></div>
     ${box}
     ${gs&&gs.n?`<div class="gate-team">一ノ門 突破:<b>${gs.cleared}</b> / ${gs.n} 名${gs.cleared<gs.n?'　まだの人は急げ！':'　全員突破！'}</div>`:''}
-    ${rows.map(({s,r})=>subjRow(s,r,step)).join('')}
+    ${locked ? rows.filter(x=>x.r.from!=null).map(({s,r})=>subjRowLocked(s,r)).join('') : rows.map(({s,r})=>subjRow(s,r,step)).join('')}
     ${SD.badges.length?`<div class="badge-row">${SD.badges.slice(-8).map(b=>`<span>🏅 ${esc_(b.t)}</span>`).join('')}</div>`:''}
   </div>`;
+}
+function subjRowLocked(s, r){
+  const ws = works(r), lap = curLap(r), j = r.juku || {};
+  const b = SD.badges.find(x=>x.k===(SD.test.id||SD.test.date)+':'+s+' ワーク1周'), td = testDate();
+  let h = `<div class="sr locked"><div class="h">${s}<span class="lap ${lap===0?'l1':lap>=3?'done':''}">${lap>=3?'ワーク3周クリア':lap+'周'}</span><span class="rg">${ws.length>1?`${ws.length}冊`:`p.${r.from}〜${r.to}`} 🔒</span></div>`;
+  [0,1,2].forEach(i=>{ const p = Math.round(lapProg(r,i)*100); h += `<div class="lk-row"><span>${i+1}周目</span><div class="pbar ${i===0&&p<100?'l1':''}"><i style="width:${p}%"></i></div><b>${p}%</b></div>`; });
+  if(j.from!=null){ const p = Math.round(Math.min(1,Math.max(0,((j.done||0)-j.from+1)/(j.to-j.from+1)))*100); h += `<div class="lk-row"><span>塾ワーク</span><div class="pbar"><i style="width:${p}%"></i></div><b>${p}%</b></div>`; }
+  if(b && td) h += `<div class="lk-at">1周目を終えた日:${sdLabel(b.d)}(テスト${sdDiff(td,b.d)}日前)</div>`;
+  return h + '</div>';
 }
 function subjRow(s, r, step){
   const j = r.juku || {};
@@ -5605,6 +5625,7 @@ function sdSetTest(v){
   sdSave(); renderStudy();
 }
 function sdSetPage(s, i, v, wi){
+  if(lockMsg()) return;
   const r = SD.test.subj[s]; if(!r) return;
   const w = workAt(r, wi); if(!w) return;
   const n = parseInt(v,10);
@@ -5613,6 +5634,7 @@ function sdSetPage(s, i, v, wi){
   sdSave(); renderStudy();
 }
 function sdSetJuku(s, v){
+  if(lockMsg()) return;
   const r = SD.test.subj[s]; if(!r||!r.juku) return;
   const n = parseInt(v,10); r.juku.done = isNaN(n) ? 0 : Math.min(r.juku.to, Math.max(0,n));
   if(r.juku.done >= r.juku.to) sdBadge(`${s} 塾ワーク`);
@@ -5627,6 +5649,7 @@ function sdBadge(t){
 /* テスト範囲の入力:学校ワーク(最大3冊)+塾ワーク */
 let RG = null;
 function sdOpenRange(s){
+  if(lockMsg()) return;
   const r = SD.test.subj[s] || {}, j = r.juku || {};
   sdSetSubj = s;
   const ws = works(r).map(w=>({name:w.name, from:w.from, to:w.to}));
@@ -5667,6 +5690,7 @@ function rgAddWork(){ rgRead(); if(RG.works.length>=MAX_WORKS) return; RG.works.
 function rgDelWork(k){ rgRead(); RG.works.splice(k,1); renderRangeModal(); }
 function sdCloseModal(){ document.getElementById('sv-modal').classList.remove('on'); }
 function sdSaveRange(){
+  if(lockMsg()) return;
   rgRead();
   const s = sdSetSubj, old = SD.test.subj[s] || {}, oldW = works(old);
   const filled = RG.works.filter(w=>w.from!=null || w.to!=null);
@@ -5682,7 +5706,7 @@ function sdSaveRange(){
   else if(RG.jfrom!=null || RG.jto!=null){ showToast('塾ワークのページを正しく入れてね'); return; }
   SD.test.subj[s] = r; RG = null; sdCloseModal(); sdSave(); renderStudy();
 }
-function sdClearRange(){ delete SD.test.subj[sdSetSubj]; sdCloseModal(); sdSave(); renderStudy(); }
+function sdClearRange(){ if(lockMsg()) return; delete SD.test.subj[sdSetSubj]; sdCloseModal(); sdSave(); renderStudy(); }
 
 /* ==== 範囲をかんたんに入れる ====
    ① 範囲表の写真をとる → AIが学校ワーク・塾ワークのページを読みとる(先生側のGASで readRange)
@@ -5717,6 +5741,7 @@ function rangeHelpBar(st){
 }
 /* 読みとった範囲・友だちの範囲を自分の登竜門に入れる。map = {教科:{works:[{name,from,to}], juku:{name,from,to}|null}} */
 function sdApplyRanges(map){
+  if(lockMsg()) return 0;
   let n = 0;
   Object.entries(map).forEach(([s, x])=>{
     const ws = (x.works||[]).filter(w=>w && w.from!=null && w.to!=null && w.to>=w.from).slice(0, MAX_WORKS);
@@ -5743,6 +5768,7 @@ function subjToMap(subj){
 /* ② 同じ学校・同じ学年の子の範囲 */
 let RM = null;
 function sdOpenMates(){
+  if(lockMsg()) return;
   RM = rangeMates(currentStudent);
   document.getElementById('sv-modal-body').innerHTML = `<h4>👥 同じ学校の${esc_(currentStudent.grade||'')}の範囲を使う</h4>
     <p class="sv-note">同じテストを選んだ人が入れた範囲です。選ぶと、その範囲が自分の登竜門に入ります(進み具合は自分のまま)。ちがうところは、あとで「変更」で直してね。</p>
@@ -5760,6 +5786,7 @@ function sdUseMate(i){
 /* ① 範囲表の写真 */
 let RP = null;
 function sdPhotoRange(){
+  if(lockMsg()) return;
   const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
   inp.onchange = ()=>{ const f = inp.files && inp.files[0]; if(f) sdReadRangePhoto(f); };
   inp.click();
