@@ -4600,6 +4600,37 @@ function mqStrike(o){
 .tm-total{display:flex;justify-content:space-between;font-size:12px;color:var(--ink2);margin-top:10px;border-top:1px dashed var(--border);padding-top:8px}
 .tm-total b{font-family:var(--mono);color:var(--ink);font-size:14px}
 .tm-undo{background:none;border:none;color:var(--ink3);font:700 11px var(--font);text-decoration:underline;cursor:pointer;padding:0}
+/* ふりかえり(円グラフ) */
+.sv-tabs{display:flex;gap:6px;margin:-4px 0 14px;background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:4px}
+.sv-tabs button{flex:1;border:none;background:none;border-radius:999px;padding:9px 6px;font:900 13px var(--font);color:var(--ink2);cursor:pointer}
+.sv-tabs button[aria-pressed=true]{background:var(--ink);color:#fff}
+.rv-per{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.rv-per button{flex:1 1 auto;font:700 12px var(--font);padding:7px 10px;border-radius:999px;border:1.5px solid var(--border);background:#fff;color:var(--ink2);cursor:pointer;white-space:nowrap}
+.rv-per button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+.rv-range{font-size:11px;color:var(--ink3);text-align:center;margin-bottom:6px}
+.rv-pie{display:block;margin:4px auto 6px;width:220px;height:220px}
+.rv-pie text{font-family:var(--font)}
+.rv-list{margin-top:6px}
+.rv-row{display:grid;grid-template-columns:14px 3.6em 1fr auto;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
+.rv-row:last-child{border-bottom:none}
+.rv-row .dot{width:12px;height:12px;border-radius:3px}
+.rv-row .nm{font-weight:900}
+.rv-row .bar{height:8px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.rv-row .bar i{display:block;height:100%;border-radius:4px}
+.rv-row .v{font:500 12px var(--mono);text-align:right;white-space:nowrap}
+.rv-row .v small{color:var(--ink3);margin-left:4px}
+.rv-row.zero{color:var(--ink3)}
+.rv-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px}
+.rv-stats div{background:var(--surface2);border-radius:10px;padding:8px 4px;text-align:center;font-size:11px;color:var(--ink2);font-weight:700}
+.rv-stats b{display:block;font:500 17px var(--mono);color:var(--ink);margin-top:2px}
+.rv-days{display:flex;align-items:flex-end;gap:2px;height:110px;margin:8px 0 2px;border-bottom:1.5px solid var(--border)}
+.rv-days .d{flex:1;display:flex;flex-direction:column-reverse;min-width:0;height:100%}
+.rv-days .d i{display:block;width:100%}
+.rv-days .d.test{background:repeating-linear-gradient(45deg,transparent 0 4px,rgba(192,57,43,.08) 4px 8px)}
+.rv-dl{display:flex;justify-content:space-between;font:500 10px var(--mono);color:var(--ink3)}
+.rv-hint{background:var(--accent-light);border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.7;margin-top:10px}
+.rv-hint li{margin-left:1.1em}
+.rv-go{display:block;width:100%;margin-top:10px;padding:10px;border:1.5px solid var(--border);background:#fff;border-radius:10px;font:800 13px var(--font);color:var(--ink);cursor:pointer}
 /* ミッション */
 .ms{border-left:5px solid var(--warn);background:var(--warn-light);border-radius:10px;padding:12px 14px;margin-bottom:8px}
 .ms .t{font-weight:900;font-size:14px;line-height:1.5}
@@ -4969,11 +5000,12 @@ function renderStudy(){
   if(sdSid!==st.id){ sdOpen(st); return; }
   root.innerHTML = `
     <div class="sv-head"><h2>📚 学習管理</h2><span class="who">${esc_(st.name)}(${esc_(st.grade||'')})</span><span class="sv-sync" id="sv-sync">${sdSyncLabel()}</span></div>
-    ${rulesCard()}
+    <div class="sv-tabs"><button aria-pressed="${sdPane!=='review'}" onclick="sdPane='main';renderStudy();scrollTo(0,0)">⏱ 学習管理</button><button aria-pressed="${sdPane==='review'}" onclick="sdPane='review';renderStudy();scrollTo(0,0)">📊 ふりかえり</button></div>
+    ${sdPane==='review' ? reviewCard(st) : `${rulesCard()}
     ${timerCard(st)}
     ${missionCard(st)}
     ${goalCard(st)}
-    ${gateCard(st)}`;
+    ${gateCard(st)}`}`;
   sdStartTick();
 }
 function esc_(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -4998,8 +5030,78 @@ function timerCard(st){
     <div class="tm-bar">${total?subs.filter(s=>per[s]>0).map(s=>`<i style="width:${per[s]/total*100}%;background:${SUBJ_COLOR[s]}"></i>`).join(''):''}</div>
     <div class="tm-legend">${subs.map(s=>`<span class="${per[s]?'':'zero'}"><i class="dot" style="background:${per[s]?SUBJ_COLOR[s]:'#ddd'}"></i>${s} <b>${fmtMin(per[s])}</b></span>`).join('')}</div>
     <div class="tm-total"><span>今日の合計 <b>${fmtMin(total)}</b></span><span>この7日間 <b>${fmtMin(week)}</b></span></div>
+    <button class="rv-go" onclick="sdPane='review';renderStudy();scrollTo(0,0)">📊 ふりかえり(円グラフ)を見る</button>
     ${last&&sdKey(last.a)===today&&!run?`<div style="text-align:right;margin-top:6px"><button class="tm-undo" onclick="sdTimerUndo()">直前の記録(${esc_(last.s)} ${fmtMin((last.b-last.a)/6e4)})を取り消す</button></div>`:''}
   </div>`;
+}
+/* ---------- ふりかえり(教科ごとの勉強時間を円グラフで) ---------- */
+let sdPane = 'main', rvPer = null;
+function rvPeriods(){
+  const today = sdToday(), list = [];
+  const td = testDate();
+  if(td){ // テスト初日の4週間前〜テスト最終日あたり
+    const a = sdAdd(td, -27), b = sdAdd(td, 2);
+    list.push({id:'test', label:'期末テスト前4週間', a, b: b>today ? today : b, test: td});
+  }
+  list.push({id:'7', label:'この7日間', a: sdAdd(today,-6), b: today});
+  list.push({id:'30', label:'この30日間', a: sdAdd(today,-29), b: today});
+  list.push({id:'all', label:'ぜんぶ', a: SD.sessions.length ? sdKey(Math.min(...SD.sessions.map(x=>x.a))) : today, b: today});
+  return list;
+}
+function rvPie(subs, per, total){
+  const R = 80, C = 2*Math.PI*R, W = 30;
+  let off = 0, segs = '';
+  if(total>0) subs.filter(s=>per[s]>0).forEach(s=>{
+    const len = per[s]/total*C;
+    segs += `<circle cx="110" cy="110" r="${R}" fill="none" stroke="${SUBJ_COLOR[s]||'#6b6760'}" stroke-width="${W}" stroke-dasharray="${len} ${C-len}" stroke-dashoffset="${-off}" transform="rotate(-90 110 110)"/>`;
+    const pc = per[s]/total;
+    if(pc >= 0.07){ const ang = (off+len/2)/C*2*Math.PI - Math.PI/2;
+      segs += `<text x="${110+R*Math.cos(ang)}" y="${110+R*Math.sin(ang)+4}" text-anchor="middle" font-size="12" font-weight="900" fill="#fff">${Math.round(pc*100)}%</text>`; }
+    off += len;
+  });
+  return `<svg class="rv-pie" viewBox="0 0 220 220" role="img" aria-label="教科ごとの勉強時間">
+    <circle cx="110" cy="110" r="${R}" fill="none" stroke="#eee" stroke-width="${W}"/>${segs}
+    <text x="110" y="104" text-anchor="middle" font-size="12" font-weight="700" fill="#6b6760">合計</text>
+    <text x="110" y="128" text-anchor="middle" font-size="${total>=600?18:20}" font-weight="900" fill="#1a1a1a">${fmtMin(total)}</text></svg>`;
+}
+function reviewCard(st){
+  const subs = [...studySubjects(st), 'その他'];
+  const pers = rvPeriods();
+  const P = pers.find(x=>x.id===rvPer) || pers[0];
+  const ss = SD.sessions.filter(x=>{ const k=sdKey(x.a); return k>=P.a && k<=P.b; });
+  const per = {}; subs.forEach(s=>per[s]=0);
+  ss.forEach(x=>{ per[x.s] = (per[x.s]||0) + (x.b-x.a)/6e4; });
+  const total = Object.values(per).reduce((a,b)=>a+b,0);
+  const nDays = Math.max(1, sdDiff(P.b, P.a)+1);
+  const byDay = {}; ss.forEach(x=>{ const k=sdKey(x.a); (byDay[k]=byDay[k]||{}); byDay[k][x.s]=(byDay[k][x.s]||0)+(x.b-x.a)/6e4; });
+  const studied = Object.keys(byDay).length;
+  const days = Array.from({length:nDays},(_,i)=>sdAdd(P.a,i));
+  const dayTot = d=>Object.values(byDay[d]||{}).reduce((a,b)=>a+b,0);
+  const maxDay = Math.max(30, ...days.map(dayTot));
+  const main = subs.slice(0,5), ranked = subs.filter(s=>per[s]>0).sort((a,b)=>per[b]-per[a]);
+  const zero = main.filter(s=>!per[s]);
+  const tips = [];
+  if(total>0){
+    tips.push(`いちばん長く勉強したのは <b>${ranked[0]}</b>(${Math.round(per[ranked[0]]/total*100)}%)。`);
+    if(zero.length) tips.push(`<b>${zero.join('・')}</b> は記録が0分。テスト前にさわれていたかな？`);
+    else { const low = main.slice().sort((a,b)=>per[a]-per[b])[0]; if(per[low]/total < 0.1) tips.push(`<b>${low}</b> が少なめ(${Math.round(per[low]/total*100)}%)。次はどう配分する？`); }
+    tips.push(`${nDays}日のうち <b>${studied}日</b> 記録あり。量が、質を生む。`);
+    if(P.test){ const last7 = days.filter(d=>d>=sdAdd(P.test,-7)).reduce((a,d)=>a+dayTot(d),0);
+      if(last7/total > 0.6) tips.push(`勉強時間の <b>${Math.round(last7/total*100)}%</b> がテスト直前の1週間に集中。課題は「2週間前」までに！`); }
+  }
+  return `<div class="sv-card"><h3>📊 勉強時間のふりかえり<span class="sub">タイマーの記録から</span></h3>
+    <div class="rv-per">${pers.map(x=>`<button aria-pressed="${x.id===P.id}" onclick="rvPer='${x.id}';renderStudy()">${x.label}</button>`).join('')}</div>
+    <div class="rv-range">${sdLabel(P.a)} 〜 ${sdLabel(P.b)}${P.test?`(テスト ${sdLabel(P.test)})`:''}</div>
+    ${total>0 ? rvPie(subs, per, total) : `<div class="sv-empty">この期間のタイマー記録はまだありません。<br>「⏱ 学習管理」のタイマーで記録しよう！</div>`}
+    ${total>0?`<div class="rv-list">${subs.filter(s=>s!=='その他'||per[s]>0).map(s=>`<div class="rv-row ${per[s]?'':'zero'}"><i class="dot" style="background:${per[s]?SUBJ_COLOR[s]:'#ddd'}"></i><span class="nm">${s}</span><span class="bar"><i style="width:${total?per[s]/total*100:0}%;background:${SUBJ_COLOR[s]}"></i></span><span class="v">${fmtMin(per[s])}<small>${total?Math.round(per[s]/total*100):0}%</small></span></div>`).join('')}</div>`:''}
+  </div>
+  ${total>0?`<div class="sv-card"><h3>📅 毎日の積み重ね<span class="sub">1日ごとの勉強時間</span></h3>
+    <div class="rv-stats"><div>勉強した日<b>${studied}/${nDays}日</b></div><div>1日平均<b>${fmtMin(total/nDays)}</b></div><div>いちばん多い日<b>${fmtMin(Math.max(...days.map(dayTot)))}</b></div></div>
+    <div class="rv-days">${days.map(d=>`<div class="d ${P.test&&d>=P.test?'test':''}" title="${sdLabel(d)} ${fmtMin(dayTot(d))}">${subs.filter(s=>byDay[d]&&byDay[d][s]).map(s=>`<i style="height:${byDay[d][s]/maxDay*100}%;background:${SUBJ_COLOR[s]}"></i>`).join('')}</div>`).join('')}</div>
+    <div class="rv-dl"><span>${sdLabel(P.a)}</span><span>${sdLabel(P.b)}</span></div>
+    <div class="rv-hint"><ul>${tips.map(t=>`<li>${t}</li>`).join('')}</ul></div>
+  </div>`:''}
+  <div class="sv-note" style="text-align:center">※ タイマーの記録は60日間のこっています</div>`;
 }
 let sdTimerPick = null;
 function sdTimerStart(){
