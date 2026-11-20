@@ -4601,6 +4601,34 @@ function mqStrike(o){
 .tm-total b{font-family:var(--mono);color:var(--ink);font-size:14px}
 .tm-undo{background:none;border:none;color:var(--ink3);font:700 11px var(--font);text-decoration:underline;cursor:pointer;padding:0}
 /* ふりかえり(円グラフ) */
+.tg-note{font-size:12px;color:var(--ink2);background:var(--surface2);border-radius:8px;padding:7px 10px;margin:-4px 0 10px;line-height:1.6}
+.kk-wrap{overflow-x:auto;margin:4px 0 6px}
+.kk{border-collapse:separate;border-spacing:4px;margin:0 auto;width:auto;min-width:0}
+.kk tr,.kk tr:hover{background:none !important}
+.kk td,.kk th{padding:0 !important;border:none !important;background:none !important}
+.kk th{font-size:12px;font-weight:900;text-align:center;white-space:nowrap;padding:0 2px}
+.kk th small{display:block;font:500 9px var(--mono);color:var(--ink3)}
+.kk tr th:first-child{text-align:right;padding-right:6px !important}
+.kk td button{width:42px;height:38px;border-radius:9px;border:2px dashed var(--border);background:#fff;font:800 14px var(--mono);color:#fff;cursor:pointer}
+.kk td button.on{border:2px solid var(--c);background:var(--c)}
+.kk-pick b{display:block;font-size:12px;margin:8px 0 4px}
+.kk-chips{display:flex;flex-wrap:wrap;gap:6px}
+.kk-chips label{display:inline-flex !important;flex-direction:row !important;align-items:center;gap:4px !important;font:700 13px var(--font) !important;color:var(--ink) !important;background:#fff;border:1.5px solid var(--border);border-radius:999px;padding:6px 10px}
+.kk-chips label small{font:500 10px var(--mono);color:var(--ink3)}
+.kk-chips input{width:auto !important;margin:0}
+.rvt-head{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.rvt-head div{flex:1;text-align:center}
+.rvt-head b{display:block;font-size:17px;font-weight:900}
+.rvt-head small{font-size:11px;color:var(--ink2)}
+.rvt-head button{font:800 13px var(--font);padding:8px 12px;border-radius:10px;border:1.5px solid var(--border);background:#fff;cursor:pointer}
+.rvt-head button:disabled{opacity:.3}
+.sd-rv{display:block;width:100%;margin:10px 0 6px;padding:10px;border-radius:10px;border:1.5px solid #2a6b4e;background:#e8f3ee;color:#2a6b4e;font:800 13px var(--font);cursor:pointer}
+.sd-tg{margin-top:8px;border-top:1px dashed #ddd;padding-top:6px}
+.sd-tg div{display:grid;grid-template-columns:minmax(0,9em) 1fr auto;gap:8px;align-items:center;font-size:12px;padding:3px 0}
+.sd-tg div span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.sd-tg .bar{display:block;height:7px;background:#eee;border-radius:4px;overflow:hidden}
+.sd-tg .bar i{display:block;height:100%}
+.sd-tg .n{font-family:var(--mono);font-size:11px;color:#6b6760}
 .sv-tabs{display:flex;gap:6px;margin:-4px 0 14px;background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:4px}
 .sv-tabs button{flex:1;border:none;background:none;border-radius:999px;padding:9px 6px;font:900 13px var(--font);color:var(--ink2);cursor:pointer}
 .sv-tabs button[aria-pressed=true]{background:var(--ink);color:#fff}
@@ -4890,7 +4918,7 @@ function rulesCard(){
 const WORK_LEAD_DAYS = 14;  // 学校ワーク1周目の締め切り = テスト初日の何日前か
 const TIMER_MAX_MIN = 180;  // 止め忘れ対策:1回の記録は最大3時間
 
-const SUBJ_COLOR = {'英語':'#2563eb','数学':'#d97706','算数':'#d97706','国語':'#c0392b','理科':'#16a34a','社会':'#7c3aed','その他':'#6b6760'};
+const SUBJ_COLOR = {'英語':'#2563eb','数学':'#d97706','算数':'#d97706','国語':'#c0392b','理科':'#16a34a','社会':'#7c3aed','その他':'#6b6760','読書':'#0d9488'};
 function stageOf(st){ const g = String(st && st.grade || ''); return g.startsWith('小') ? '小' : g.startsWith('高') ? '高' : '中'; }
 function studySubjects(st){ return stageOf(st)==='小' ? ['国語','算数','理科','社会','英語'] : ['英語','数学','国語','理科','社会']; }
 function studyMaterials(st){
@@ -5001,7 +5029,7 @@ function renderStudy(){
   root.innerHTML = `
     <div class="sv-head"><h2>📚 学習管理</h2><span class="who">${esc_(st.name)}(${esc_(st.grade||'')})</span><span class="sv-sync" id="sv-sync">${sdSyncLabel()}</span></div>
     <div class="sv-tabs"><button aria-pressed="${sdPane!=='review'}" onclick="sdPane='main';renderStudy();scrollTo(0,0)">⏱ 学習管理</button><button aria-pressed="${sdPane==='review'}" onclick="sdPane='review';renderStudy();scrollTo(0,0)">📊 ふりかえり</button></div>
-    ${sdPane==='review' ? reviewCard(st) : `${rulesCard()}
+    ${sdPane==='review' ? reviewCard(st, SD) : `${rulesCard()}
     ${timerCard(st)}
     ${missionCard(st)}
     ${goalCard(st)}
@@ -5036,16 +5064,16 @@ function timerCard(st){
 }
 /* ---------- ふりかえり(教科ごとの勉強時間を円グラフで) ---------- */
 let sdPane = 'main', rvPer = null;
-function rvPeriods(){
+function rvPeriods(d){
   const today = sdToday(), list = [];
-  const td = testDate();
+  const td = dTestDate(d);
   if(td){ // テスト初日の4週間前〜テスト最終日あたり
     const a = sdAdd(td, -27), b = sdAdd(td, 2);
     list.push({id:'test', label:'期末テスト前4週間', a, b: b>today ? today : b, test: td});
   }
   list.push({id:'7', label:'この7日間', a: sdAdd(today,-6), b: today});
   list.push({id:'30', label:'この30日間', a: sdAdd(today,-29), b: today});
-  list.push({id:'all', label:'ぜんぶ', a: SD.sessions.length ? sdKey(Math.min(...SD.sessions.map(x=>x.a))) : today, b: today});
+  const ss0 = d.sessions||[]; list.push({id:'all', label:'ぜんぶ', a: ss0.length ? sdKey(Math.min(...ss0.map(x=>x.a))) : today, b: today});
   return list;
 }
 function rvPie(subs, per, total){
@@ -5064,11 +5092,12 @@ function rvPie(subs, per, total){
     <text x="110" y="104" text-anchor="middle" font-size="12" font-weight="700" fill="#6b6760">合計</text>
     <text x="110" y="128" text-anchor="middle" font-size="${total>=600?18:20}" font-weight="900" fill="#1a1a1a">${fmtMin(total)}</text></svg>`;
 }
-function reviewCard(st){
+function reviewCard(st, d, re){
+  d = d || SD; re = re || 'renderStudy()';
   const subs = [...studySubjects(st), 'その他'];
-  const pers = rvPeriods();
+  const pers = rvPeriods(d);
   const P = pers.find(x=>x.id===rvPer) || pers[0];
-  const ss = SD.sessions.filter(x=>{ const k=sdKey(x.a); return k>=P.a && k<=P.b; });
+  const ss = (d.sessions||[]).filter(x=>{ const k=sdKey(x.a); return k>=P.a && k<=P.b; });
   const per = {}; subs.forEach(s=>per[s]=0);
   ss.forEach(x=>{ per[x.s] = (per[x.s]||0) + (x.b-x.a)/6e4; });
   const total = Object.values(per).reduce((a,b)=>a+b,0);
@@ -5076,7 +5105,7 @@ function reviewCard(st){
   const byDay = {}; ss.forEach(x=>{ const k=sdKey(x.a); (byDay[k]=byDay[k]||{}); byDay[k][x.s]=(byDay[k][x.s]||0)+(x.b-x.a)/6e4; });
   const studied = Object.keys(byDay).length;
   const days = Array.from({length:nDays},(_,i)=>sdAdd(P.a,i));
-  const dayTot = d=>Object.values(byDay[d]||{}).reduce((a,b)=>a+b,0);
+  const dayTot = k=>Object.values(byDay[k]||{}).reduce((a,b)=>a+b,0);
   const maxDay = Math.max(30, ...days.map(dayTot));
   const main = subs.slice(0,5), ranked = subs.filter(s=>per[s]>0).sort((a,b)=>per[b]-per[a]);
   const zero = main.filter(s=>!per[s]);
@@ -5086,18 +5115,18 @@ function reviewCard(st){
     if(zero.length) tips.push(`<b>${zero.join('・')}</b> は記録が0分。テスト前にさわれていたかな？`);
     else { const low = main.slice().sort((a,b)=>per[a]-per[b])[0]; if(per[low]/total < 0.1) tips.push(`<b>${low}</b> が少なめ(${Math.round(per[low]/total*100)}%)。次はどう配分する？`); }
     tips.push(`${nDays}日のうち <b>${studied}日</b> 記録あり。量が、質を生む。`);
-    if(P.test){ const last7 = days.filter(d=>d>=sdAdd(P.test,-7)).reduce((a,d)=>a+dayTot(d),0);
+    if(P.test){ const last7 = days.filter(k=>k>=sdAdd(P.test,-7)).reduce((a,k)=>a+dayTot(k),0);
       if(last7/total > 0.6) tips.push(`勉強時間の <b>${Math.round(last7/total*100)}%</b> がテスト直前の1週間に集中。課題は「2週間前」までに！`); }
   }
   return `<div class="sv-card"><h3>📊 勉強時間のふりかえり<span class="sub">タイマーの記録から</span></h3>
-    <div class="rv-per">${pers.map(x=>`<button aria-pressed="${x.id===P.id}" onclick="rvPer='${x.id}';renderStudy()">${x.label}</button>`).join('')}</div>
+    <div class="rv-per">${pers.map(x=>`<button aria-pressed="${x.id===P.id}" onclick="rvPer='${x.id}';${re}">${x.label}</button>`).join('')}</div>
     <div class="rv-range">${sdLabel(P.a)} 〜 ${sdLabel(P.b)}${P.test?`(テスト ${sdLabel(P.test)})`:''}</div>
-    ${total>0 ? rvPie(subs, per, total) : `<div class="sv-empty">この期間のタイマー記録はまだありません。<br>「⏱ 学習管理」のタイマーで記録しよう！</div>`}
+    ${total>0 ? rvPie(subs, per, total) : `<div class="sv-empty">この期間のタイマー記録はまだありません。${d===SD?'<br>「⏱ 学習管理」のタイマーで記録しよう！':''}</div>`}
     ${total>0?`<div class="rv-list">${subs.filter(s=>s!=='その他'||per[s]>0).map(s=>`<div class="rv-row ${per[s]?'':'zero'}"><i class="dot" style="background:${per[s]?SUBJ_COLOR[s]:'#ddd'}"></i><span class="nm">${s}</span><span class="bar"><i style="width:${total?per[s]/total*100:0}%;background:${SUBJ_COLOR[s]}"></i></span><span class="v">${fmtMin(per[s])}<small>${total?Math.round(per[s]/total*100):0}%</small></span></div>`).join('')}</div>`:''}
   </div>
   ${total>0?`<div class="sv-card"><h3>📅 毎日の積み重ね<span class="sub">1日ごとの勉強時間</span></h3>
     <div class="rv-stats"><div>勉強した日<b>${studied}/${nDays}日</b></div><div>1日平均<b>${fmtMin(total/nDays)}</b></div><div>いちばん多い日<b>${fmtMin(Math.max(...days.map(dayTot)))}</b></div></div>
-    <div class="rv-days">${days.map(d=>`<div class="d ${P.test&&d>=P.test?'test':''}" title="${sdLabel(d)} ${fmtMin(dayTot(d))}">${subs.filter(s=>byDay[d]&&byDay[d][s]).map(s=>`<i style="height:${byDay[d][s]/maxDay*100}%;background:${SUBJ_COLOR[s]}"></i>`).join('')}</div>`).join('')}</div>
+    <div class="rv-days">${days.map(k=>`<div class="d ${P.test&&k>=P.test?'test':''}" title="${sdLabel(k)} ${fmtMin(dayTot(k))}">${subs.filter(s=>byDay[k]&&byDay[k][s]).map(s=>`<i style="height:${byDay[k][s]/maxDay*100}%;background:${SUBJ_COLOR[s]}"></i>`).join('')}</div>`).join('')}</div>
     <div class="rv-dl"><span>${sdLabel(P.a)}</span><span>${sdLabel(P.b)}</span></div>
     <div class="rv-hint"><ul>${tips.map(t=>`<li>${t}</li>`).join('')}</ul></div>
   </div>`:''}
@@ -5630,11 +5659,44 @@ function sdUsePhoto(){
 }
 
 /* ---------- 登竜門:期末テスト以外の目標(単元テスト・入試など) ---------- */
-const TARGET_KINDS = ['単元テスト','実力テスト','模試','入試','検定','その他'];
+const TARGET_KINDS = [   // 登竜門に足せる目標の種類(上から順に選択肢に出る)
+  {k:'入試対策', ic:'🎯', modes:[['text','入試テキストを終わらせる'],['kako','過去問演習']], note:'入試テキスト(Sロード・シリウス)を終わらせる/過去問を年度ごとに解く'},
+  {k:'テスト直し', ic:'🔁', modes:[['統一テスト','統一テスト'],['実力テスト','実力テスト']], note:'まちがえた問題を、できるまで最低3回やりなおす'},
+  {k:'読書', ic:'📖', note:'読む本と、ページ(または冊数)を入れよう'},
+  {k:'冬特訓', ic:'❄️', note:'冬特訓でやる教材と範囲'},
+  {k:'夏特訓', ic:'🌻', note:'夏特訓でやる教材と範囲'},
+  {k:'単元テスト', ic:'📝'}, {k:'実力テスト', ic:'📝'}, {k:'模試', ic:'📝'}, {k:'入試', ic:'🌸'}, {k:'検定', ic:'🏅'}, {k:'その他', ic:'⭐'}
+];
+const KAKO_YEARS_BACK = 8, KAKO_DEFAULT = 6;   // 過去問:えらべる年数 / はじめからチェックが入る年数
+function kakoLatest(){ const n = new Date(); return n.getMonth() >= 3 ? n.getFullYear() : n.getFullYear() - 1; }   // 4月以降はその年の3月の入試が最新
+function kakoLabel(y){ return y >= 2019 ? `R${y-2018}` : `H${y-1988}`; }
+function kakoLong(y){ return (y >= 2019 ? `令和${y-2018 === 1 ? '元' : y-2018}` : `平成${y-1988}`) + `年度(${y})`; }
+function kindOf(t){ return TARGET_KINDS.find(x=>x.k===(t&&t.kind)) || {k:(t&&t.kind)||'その他', ic:'⭐'}; }
+function tgIcon(t){ return kindOf(t).ic; }
+function isKako(t){ return t && t.kind==='入試対策' && t.mode==='kako'; }
+function tgUnit(t){ return isKako(t) ? '回' : ''; }
+function tgProg(t){
+  if(isKako(t)){ const k = t.kako||{years:[],subs:[],done:{}}; let n=0, d=0; k.years.forEach(y=>k.subs.forEach(s=>{ n++; if(k.done[y+'|'+s]!=null) d++; })); return {n, d}; }
+  let n=0, d=0; (t.items||[]).forEach(it=>{ const x=itemProg(it); n+=x.n; d+=x.d; }); return {n, d};
+}
+function tgMats(t, st){
+  const k = t && t.kind;
+  if(k==='入試対策') return ['Sロード','シリウス','入試の過去問'];
+  if(k==='テスト直し') return [t.mode||'統一テスト', '解き直しノート'];
+  if(k==='読書') return [];
+  if(k==='冬特訓') return ['冬期テキスト', ...studyMaterials(st).filter(m=>m!=='その他')];
+  if(k==='夏特訓') return ['夏期テキスト', ...studyMaterials(st).filter(m=>m!=='その他')];
+  return [...studyMaterials(st).filter(m=>m!=='その他'), '過去問'];
+}
+function tgUnits(t){
+  if(t && t.kind==='読書') return [['p','ページ'],['冊','冊']];
+  if(t && t.kind==='テスト直し') return [['問','問'],['p','ページ'],['回','回']];
+  return [['p','ページ'],['章','章'],['回','回'],['問','問'],['冊','冊']];
+}
 function gateTabs(){
   const tab = SD.gateTab || 'term', ts = SD.targets || [];
   return `<div class="gtabs"><button aria-pressed="${tab==='term'}" onclick="sdGateTab('term')">期末テスト</button>
-    ${ts.map(t=>`<button aria-pressed="${tab===t.id}" onclick="sdGateTab('${t.id}')">${esc_(t.name)}</button>`).join('')}
+    ${ts.map(t=>`<button aria-pressed="${tab===t.id}" onclick="sdGateTab('${t.id}')">${tgIcon(t)} ${esc_(t.name)}</button>`).join('')}
     <button class="add" onclick="sdOpenTarget()">＋ 目標を足す</button></div>`;
 }
 function sdGateTab(id){ SD.gateTab = id; sdSave(); renderStudy(); }
@@ -5645,17 +5707,20 @@ function gateCard(st){
 }
 function itemProg(it){ const n = it.to-it.from+1, d = Math.max(0, Math.min(it.to, it.done||0) - it.from + 1); return {n, d, p: n>0 ? d/n : 0}; }
 function targetBody(t){
+  if(isKako(t)) return kakoBody(t);
   const today = sdToday(), items = t.items||[];
   const left = t.date ? sdDiff(t.date, today) : null;
-  let n=0, d=0; items.forEach(it=>{ const x=itemProg(it); n+=x.n; d+=x.d; });
+  let {n, d} = tgProg(t);
+  const kn = kindOf(t);
   const rest = n-d;
   const pace = left!=null && left>0 && rest>0 ? Math.ceil(rest/left) : null;
-  const title = `<div class="gate-title"><span class="kanji">克己</span><div><b>登竜門</b><small>${esc_(t.kind)}：${esc_(t.name)}</small></div>${t.date?`<span class="td">${esc_(t.kind)}<br>${sdLabel(t.date)}</span>`:''}</div>`;
+  const title = `<div class="gate-title"><span class="kanji">克己</span><div><b>登竜門</b><small>${kn.ic} ${esc_(t.kind)}：${esc_(t.name)}</small></div>${t.date?`<span class="td">${t.kind==='読書'?'読みきる日':t.kind.endsWith('特訓')||t.kind==='テスト直し'||t.kind==='入試対策'?'しめきり':esc_(t.kind)}<br>${sdLabel(t.date)}</span>`:''}</div>
+    ${kn.note?`<div class="tg-note">${kn.ic} ${kn.note}</div>`:''}`;
   let box;
-  if(!items.length) box = `<div class="cz yellow"><div class="cz-h">⚠ まず範囲を入れよう</div>下の「＋ 教材と範囲を足す」から、やる教材と範囲を入れてね。</div>`;
-  else if(rest<=0) box = `<div class="cz clear"><div class="cz-h">🐉 登竜成就！</div>ぜんぶの範囲を終えた。${left!=null&&left>=0?`本番まであと <b>${left}</b> 日、弱点を克服しよう！`:''}</div>`;
+  if(!items.length) box = `<div class="cz yellow"><div class="cz-h">⚠ まず範囲を入れよう</div>下の「＋ ${t.kind==='読書'?'本':'教材と範囲'}を足す」から、${t.kind==='読書'?'読む本とページ':'やる教材と範囲'}を入れてね。</div>`;
+  else if(rest<=0) box = `<div class="cz clear"><div class="cz-h">🐉 登竜成就！</div>${t.kind==='読書'?'ぜんぶ読みきった！':'ぜんぶの範囲を終えた。'}${left!=null&&left>=0&&!['読書','冬特訓','夏特訓','テスト直し'].includes(t.kind)?`本番まであと <b>${left}</b> 日、弱点を克服しよう！`:''}</div>`;
   else if(left!=null && left<0) box = `<div class="cz over"><div class="cz-h">⛔ 日にちをすぎた</div>のこり <b>${rest}</b>。先生と相談して、次の目標を決めよう。</div>`;
-  else box = `<div class="cz ${pace!=null&&pace>=10?'red':'green'}"><div class="cz-h">${left!=null?`本番まであと ${left} 日`:'日にち未定'}</div>
+  else box = `<div class="cz ${pace!=null&&pace>=10?'red':'green'}"><div class="cz-h">${left!=null?`${['入試','単元テスト','実力テスト','模試','検定','入試対策'].includes(t.kind)?'本番':'しめきり'}まであと ${left} 日`:'日にち未定'}</div>
       <div class="cz-bar"><i style="width:${n?Math.round(d/n*100):0}%"></i></div>
       <div class="cz-m">のこり <b>${rest}</b> / ${n}${pace?`　1日 <b>${pace}</b> ずつで間に合う`:''}</div></div>`;
   const rows = items.map(it=>{ const x = itemProg(it), u = it.unit||'p';
@@ -5663,8 +5728,44 @@ function targetBody(t){
       <div class="pbar"><i style="width:${Math.round(x.p*100)}%"></i></div>
       ${x.p<1?`<div class="ctl">${u==='p'?'p.':''}<input type="number" inputmode="numeric" value="${(it.done||0)>=it.from?it.done:''}" placeholder="${it.from}" onchange="sdSetItem('${t.id}','${it.id}',this.value)"> ${u==='p'?'':u}まで終わった　<button class="all" onclick="sdSetItem('${t.id}','${it.id}',${it.to})">ぜんぶ終わった</button></div>`:'<div class="ctl">✅ 終わった！</div>'}</div>`; }).join('');
   return `${title}${box}${rows}
-    <button class="sv-add" onclick="sdOpenItem('${t.id}')">＋ 教材と範囲を足す</button>
+    <button class="sv-add" onclick="sdOpenItem('${t.id}')">＋ ${t.kind==='読書'?'本':'教材と範囲'}を足す</button>
     <div style="text-align:right;margin-top:8px"><button style="font:700 12px var(--font);color:var(--accent);background:none;border:none;text-decoration:underline;cursor:pointer;padding:0" onclick="sdOpenTarget('${t.id}')">この目標(名前・日にち)を直す</button></div>`;
+}
+
+/* ---------- 過去問演習:年度 × 教科の表をタップしてチェック ---------- */
+function kakoBody(t){
+  const k = t.kako || (t.kako = {years:[], subs:[], done:{}});
+  const today = sdToday(), left = t.date ? sdDiff(t.date, today) : null;
+  const {n, d} = tgProg(t), rest = n - d;
+  const pace = left!=null && left>0 && rest>0 ? Math.ceil(rest/left*7) : null;   // 1週間に何回
+  const title = `<div class="gate-title"><span class="kanji">克己</span><div><b>登竜門</b><small>🎯 入試対策：${esc_(t.name)}</small></div>${t.date?`<span class="td">しめきり<br>${sdLabel(t.date)}</span>`:''}</div>
+    <div class="tg-note">🎯 1マス = 1年度の1教科。解いて丸つけ・直しまでしたらタップ。点数も入れられます。</div>`;
+  let box;
+  if(!n) box = `<div class="cz yellow"><div class="cz-h">⚠ 年度と教科をえらぼう</div>下の「年度・教科をえらぶ」から決めてね。</div>`;
+  else if(rest<=0) box = `<div class="cz clear"><div class="cz-h">🐉 登竜成就！</div>えらんだ過去問をぜんぶ解ききった！ 2周目でまちがえた問題をつぶそう。</div>`;
+  else box = `<div class="cz ${left!=null&&left<0?'over':pace!=null&&pace>=10?'red':'green'}"><div class="cz-h">${left!=null?(left<0?'しめきりをすぎた':`しめきりまであと ${left} 日`):'しめきり未定'}</div>
+      <div class="cz-bar"><i style="width:${n?Math.round(d/n*100):0}%"></i></div>
+      <div class="cz-m">のこり <b>${rest}</b> / ${n} 回${pace?`　1週間に <b>${pace}</b> 回ずつで間に合う`:''}</div></div>`;
+  const grid = n ? `<div class="kk-wrap"><table class="kk"><tr><th></th>${k.years.map(y=>`<th>${kakoLabel(y)}<small>${y}</small></th>`).join('')}</tr>
+    ${k.subs.map(s=>`<tr><th style="color:${SUBJ_COLOR[s]||'#333'}">${s}</th>${k.years.map(y=>{ const v = k.done[y+'|'+s], on = v!=null;
+      return `<td><button class="${on?'on':''}" style="--c:${SUBJ_COLOR[s]||'#2a6b4e'}" onclick="kakoTap('${t.id}',${y},'${s}')">${on?(typeof v==='number'?v:'✓'):''}</button></td>`; }).join('')}</tr>`).join('')}</table></div>` : '';
+  return `${title}${box}${grid}
+    <button class="sv-add" onclick="sdOpenTarget('${t.id}')">年度・教科をえらぶ / しめきりを直す</button>`;
+}
+function kakoTap(tid, y, s){
+  const t = (SD.targets||[]).find(x=>x.id===tid); if(!t||!t.kako) return;
+  const key = y+'|'+s, v = t.kako.done[key];
+  if(v==null){
+    const a = prompt(`${kakoLong(y)} ${s}\n解き終わったら、点数を入れてね(わからなければ空のままOK)`, '');
+    if(a===null) return;
+    const sc = parseInt(String(a).replace(/[０-９]/g, c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)), 10);
+    t.kako.done[key] = isNaN(sc) ? true : sc;   // 点数なしは true(=✓)
+    showToast(`🏅 ${kakoLabel(y)} ${s} クリア！`);
+  } else {
+    if(!confirm(`${kakoLong(y)} ${s} のチェックを外しますか？`)) return;
+    delete t.kako.done[key];
+  }
+  sdSave(); renderStudy();
 }
 function sdSetItem(tid, iid, v){
   const t = (SD.targets||[]).find(x=>x.id===tid), it = t && t.items.find(x=>x.id===iid); if(!it) return;
@@ -5673,27 +5774,75 @@ function sdSetItem(tid, iid, v){
   sdSave(); renderStudy();
 }
 let sdEditT = null, sdEditI = null;
+let TGF = null;   // 目標フォームの入力中の値
 function sdOpenTarget(id){
   const t = id ? (SD.targets||[]).find(x=>x.id===id) : null; sdEditT = id || null;
-  document.getElementById('sv-modal-body').innerHTML = `<h4>${t?'目標を直す':'登竜門に目標を足す'}</h4>
-    <p class="sv-note">単元テスト・入試・模試・検定など。期末テストとは別に、いくつでも足せます。</p>
-    <div class="gform">
-      <label>種類<select id="tg-kind">${TARGET_KINDS.map(k=>`<option ${t&&t.kind===k?'selected':''}>${k}</option>`).join('')}</select></label>
-      <label>本番の日<input id="tg-date" type="date" value="${t&&t.date||''}"></label>
-      <label class="full">名前<input id="tg-name" placeholder="例:数学 二次関数の単元テスト / 高校入試" value="${t?esc_(t.name):''}"></label>
-      <div class="full" style="display:flex;gap:8px;justify-content:space-between">
-        ${t?`<button class="sv-btn ghost" onclick="sdDelTarget()">この目標を消す</button>`:'<span></span>'}
-        <span style="display:flex;gap:8px"><button class="sv-btn ghost" onclick="sdCloseModal()">やめる</button><button class="sv-btn" onclick="sdSaveTarget()">保存</button></span></div>
-    </div>`;
+  const ly = kakoLatest();
+  TGF = t ? {kind:t.kind, mode:t.mode||'', name:t.name, date:t.date||'', years:(t.kako&&t.kako.years)||[], subs:(t.kako&&t.kako.subs)||[], auto:false}
+          : {kind:TARGET_KINDS[0].k, mode:TARGET_KINDS[0].modes[0][0], name:'', date:'', years:[], subs:[], auto:true};
+  if(!TGF.years.length) TGF.years = Array.from({length:KAKO_DEFAULT},(_,i)=>ly-i);
+  if(!TGF.subs.length) TGF.subs = studySubjects(currentStudent).slice(0,5);
+  tgFormRender();
   document.getElementById('sv-modal').classList.add('on');
 }
+function tgAutoName(){
+  const K = TARGET_KINDS.find(x=>x.k===TGF.kind) || {};
+  if(TGF.kind==='入試対策') return TGF.mode==='kako' ? '過去問演習' : '入試テキスト';
+  if(TGF.kind==='テスト直し') return (TGF.mode||'統一テスト')+'の直し';
+  return K.k || TGF.kind;
+}
+function tgRead(){
+  const g = id=>document.getElementById(id);
+  if(g('tg-kind')) TGF.kind = g('tg-kind').value;
+  if(g('tg-mode')) TGF.mode = g('tg-mode').value;
+  if(g('tg-date')) TGF.date = g('tg-date').value;
+  if(g('tg-name')){ const v = g('tg-name').value.trim(); if(v && v!==TGF._auto) TGF.auto = false; TGF.name = v; }
+  if(document.querySelector('.kk-pick')){
+    TGF.years = [...document.querySelectorAll('.kk-y:checked')].map(x=>Number(x.value)).sort((a,b)=>b-a);
+    TGF.subs = [...document.querySelectorAll('.kk-s:checked')].map(x=>x.value);
+  }
+}
+function tgChange(){
+  tgRead();
+  const K = TARGET_KINDS.find(x=>x.k===TGF.kind) || {};
+  if(K.modes && !K.modes.some(m=>m[0]===TGF.mode)) TGF.mode = K.modes[0][0];
+  if(!K.modes) TGF.mode = '';
+  if(TGF.auto || !TGF.name) { TGF.name = ''; TGF.auto = true; }
+  tgFormRender();
+}
+function tgFormRender(){
+  const K = TARGET_KINDS.find(x=>x.k===TGF.kind) || {}, editing = !!sdEditT;
+  const auto = tgAutoName(); TGF._auto = auto;
+  const ly = kakoLatest(), kako = TGF.kind==='入試対策' && TGF.mode==='kako';
+  const subsAll = studySubjects(currentStudent).slice(0,5);
+  document.getElementById('sv-modal-body').innerHTML = `<h4>${editing?'目標を直す':'登竜門に目標を足す'}</h4>
+    <p class="sv-note">期末テストとは別に、いくつでも足せます。</p>
+    <div class="gform">
+      <label>種類<select id="tg-kind" onchange="tgChange()">${TARGET_KINDS.map(x=>`<option value="${x.k}" ${TGF.kind===x.k?'selected':''}>${x.ic} ${x.k}</option>`).join('')}</select></label>
+      ${K.modes?`<label>${TGF.kind==='テスト直し'?'どのテスト':'やること'}<select id="tg-mode" onchange="tgChange()">${K.modes.map(([v,l])=>`<option value="${v}" ${TGF.mode===v?'selected':''}>${l}</option>`).join('')}</select></label>`:`<label>${TGF.kind==='読書'?'読みきる日':['冬特訓','夏特訓'].includes(TGF.kind)?'特訓の最終日':'本番の日'}<input id="tg-date" type="date" value="${TGF.date||''}"></label>`}
+      ${K.modes?`<label class="full">${['入試対策','テスト直し'].includes(TGF.kind)?'しめきり':'本番の日'}<input id="tg-date" type="date" value="${TGF.date||''}"></label>`:''}
+      <label class="full">名前<input id="tg-name" placeholder="${esc_(auto)}" value="${esc_(TGF.auto?'':TGF.name)}"></label>
+      ${K.note?`<div class="full sv-note">${K.ic} ${K.note}</div>`:''}
+      ${kako?`<div class="full kk-pick"><b>年度 <small style="font-weight:600;color:var(--ink2)">(はじめは${KAKO_DEFAULT}年分にチェック)</small></b>
+        <div class="kk-chips">${Array.from({length:KAKO_YEARS_BACK},(_,i)=>ly-i).map(y=>`<label><input type="checkbox" class="kk-y" value="${y}" ${TGF.years.includes(y)?'checked':''}>${kakoLabel(y)}<small>${y}</small></label>`).join('')}</div>
+        <b>教科</b><div class="kk-chips">${subsAll.map(s=>`<label><input type="checkbox" class="kk-s" value="${s}" ${TGF.subs.includes(s)?'checked':''}>${s}</label>`).join('')}</div></div>`:''}
+      <div class="full" style="display:flex;gap:8px;justify-content:space-between">
+        ${editing?`<button class="sv-btn ghost" onclick="sdDelTarget()">この目標を消す</button>`:'<span></span>'}
+        <span style="display:flex;gap:8px"><button class="sv-btn ghost" onclick="sdCloseModal()">やめる</button><button class="sv-btn" onclick="sdSaveTarget()">保存</button></span></div>
+    </div>`;
+}
 function sdSaveTarget(){
-  const kind = document.getElementById('tg-kind').value, date = document.getElementById('tg-date').value || null;
-  const name = document.getElementById('tg-name').value.trim() || kind;
+  tgRead();
+  const kind = TGF.kind, mode = TGF.mode || null, date = TGF.date || null;
+  const name = TGF.name || tgAutoName();
+  const kako = kind==='入試対策' && mode==='kako';
+  if(kako && (!TGF.years.length || !TGF.subs.length)){ showToast('年度と教科を1つ以上えらんでね'); return; }
   SD.targets = SD.targets || [];
-  if(sdEditT){ const t = SD.targets.find(x=>x.id===sdEditT); if(t) Object.assign(t, {kind, name, date}); }
-  else { const id = 'g'+Date.now().toString(36); SD.targets.push({id, kind, name, date, items:[]}); SD.gateTab = id; }
-  sdCloseModal(); sdSave(); renderStudy();
+  let t;
+  if(sdEditT){ t = SD.targets.find(x=>x.id===sdEditT); if(t) Object.assign(t, {kind, mode, name, date}); }
+  else { const id = 'g'+Date.now().toString(36); t = {id, kind, mode, name, date, items:[]}; SD.targets.push(t); SD.gateTab = id; }
+  if(t && kako){ const old = t.kako || {done:{}}; t.kako = {years: TGF.years.slice(), subs: TGF.subs.slice(), done: old.done || {}}; }
+  TGF = null; sdCloseModal(); sdSave(); renderStudy();
 }
 function sdDelTarget(){
   if(!confirm('この目標と、入れた範囲をぜんぶ消しますか？')) return;
@@ -5705,12 +5854,12 @@ function sdOpenItem(tid, iid){
   const t = (SD.targets||[]).find(x=>x.id===tid); if(!t) return;
   const it = iid ? t.items.find(x=>x.id===iid) : null; sdEditT = tid; sdEditI = iid || null;
   const st = currentStudent, subs=[...studySubjects(st),'その他'];
-  const units = [['p','ページ'],['章','章'],['回','回'],['問','問']];
+  const units = tgUnits(t), book = t.kind==='読書';
   document.getElementById('sv-modal-body').innerHTML = `<h4>${esc_(t.name)}：教材と範囲</h4>
     <div class="gform">
-      <label>教科<select id="ti-subj">${subs.map(s=>`<option ${it&&it.subj===s?'selected':''}>${s}</option>`).join('')}</select></label>
+      ${book?`<input type="hidden" id="ti-subj" value="読書">`:`<label>教科<select id="ti-subj">${subs.map(s=>`<option ${it&&it.subj===s?'selected':''}>${s}</option>`).join('')}</select></label>`}
       <label>単位<select id="ti-unit">${units.map(([v,l])=>`<option value="${v}" ${it&&it.unit===v?'selected':''}>${l}</option>`).join('')}</select></label>
-      <label class="full">教材<input id="ti-mat" list="ti-mats" placeholder="例:Sロード / 過去問" value="${it?esc_(it.mat):''}"><datalist id="ti-mats">${studyMaterials(st).filter(m=>m!=='その他').map(m=>`<option value="${m}">`).join('')}<option value="過去問"></datalist></label>
+      <label class="full">${book?'本の名前':'教材'}<input id="ti-mat" list="ti-mats" placeholder="${book?'例:星の王子さま':'例:'+esc_(tgMats(t,st).slice(0,2).join(' / '))}" value="${it?esc_(it.mat):''}"><datalist id="ti-mats">${tgMats(t,st).map(m=>`<option value="${esc_(m)}">`).join('')}</datalist></label>
       <label class="full">どこからどこまで<span class="rng"><input id="ti-from" type="number" inputmode="numeric" value="${it?it.from:''}"><span>〜</span><input id="ti-to" type="number" inputmode="numeric" value="${it?it.to:''}"></span></label>
       <div class="full" style="display:flex;gap:8px;justify-content:space-between">
         ${it?`<button class="sv-btn ghost" onclick="sdDelItem()">消す</button>`:'<span></span>'}
@@ -5723,7 +5872,7 @@ function sdSaveItem(){
   const g = id=>document.getElementById(id).value.trim();
   const from = parseInt(g('ti-from'),10), to = parseInt(g('ti-to'),10);
   if(isNaN(from)||isNaN(to)||to<from){ showToast('範囲を数字で正しく入れてね'); return; }
-  const data = {subj:g('ti-subj'), unit:g('ti-unit'), mat:g('ti-mat')||'教材', from, to};
+  const data = {subj:g('ti-subj'), unit:g('ti-unit'), mat:g('ti-mat')||(g('ti-subj')==='読書'?'本':'教材'), from, to};
   if(sdEditI){ const it = t.items.find(x=>x.id===sdEditI); if(it) Object.assign(it, data); }
   else t.items.push(Object.assign({id:'i'+Date.now().toString(36), done:0}, data));
   sdCloseModal(); sdSave(); renderStudy();
@@ -6046,6 +6195,8 @@ function sdCard(r){
     const goals = (d.goals||[]).filter(g=>!g.done || sdDiff(today, g.doneAt||today) < 7);
     det = `<div class="sd-det">
       ${subs.length?subs.map(([s,x])=>{ const lap=curLap(x), i=Math.min(lap,2), p=Math.round(lapProg(x,i)*100); return `<div class="sd-sub"><span>${s}</span><span class="tag">${lap>=3?'3周クリア':(lap+1)+'周目'}</span><i class="bar"><i style="width:${lap>=3?100:p}%;background:${lap===0?'#dc2626':'#2a6b4e'}"></i></i><span class="n">${(x.extra||[]).length?`${works(x).length}冊 ${totalPages(x)}p`:`p.${x.from}〜${x.to}${lap<3?` / ${(x.laps||[])[i]||'-'}まで`:''}`}</span></div>`; }).join(''):'<p class="sv-note">テスト範囲はまだ入っていません</p>'}
+      ${tgSummary(d)}
+      <button class="sd-rv" onclick="event.stopPropagation();rvTeacher(${esc_(JSON.stringify(r.st.id))})">📊 ふりかえり(勉強時間の円グラフ)を見る</button>
       <div class="sd-time">7日間の教科別:${Object.keys(per).length?Object.entries(per).sort((a,b)=>b[1]-a[1]).map(([s,m])=>`<span style="color:${SUBJ_COLOR[s]||'#555'}">${s} ${fmtMin(m)}</span>`).join('　'):'記録なし'}</div>
       ${goals.length?`<div class="sd-goals">${goals.map(g=>`<div class="${g.done?'done':g.due<today?'late':''}">${g.done?'✅':g.due<today?'⚠':'□'} ${esc_(g.subj)}｜${esc_(g.mat)} ${goalRange(g)} 〜${sdLabel(g.due)}</div>`).join('')}</div>`:'<div class="sd-goals"><div>今週の目標:なし</div></div>'}
     </div>`;
@@ -6059,6 +6210,28 @@ function sdCard(r){
     ${r.visit&&r.visit.n?`<div class="r3"><span>🚪 自習室 7日で <b>${r.visit.n}</b>回・<b>${fmtMin(r.visit.min)}</b></span></div>`:''}
     ${det}
   </div>`;
+}
+
+/* ---------- 先生用:生徒ごとのふりかえり(円グラフ) ---------- */
+let RVT = null;
+function rvTeacher(id){
+  RVT = id;
+  const st = STUDENTS.find(x=>String(x.id)===String(id)); if(!st) return;
+  const d = Object.assign(sdBlank(), TEAM[String(id)]||{});
+  const list = rosterStudents().filter(s=>DASH.filter==='all' || s.grade===DASH.filter);
+  const i = list.findIndex(x=>String(x.id)===String(id));
+  const nav = j=>{ const x = list[j]; return x ? `rvTeacher(${esc_(JSON.stringify(x.id))})` : ''; };
+  document.getElementById('sv-modal-body').innerHTML = `
+    <div class="rvt-head"><button ${i>0?'':'disabled'} onclick="${nav(i-1)}">‹ 前</button><div><b>${esc_(st.name)}</b><small>${esc_(st.grade||'')}　${i+1} / ${list.length}</small></div><button ${i>=0&&i<list.length-1?'':'disabled'} onclick="${nav(i+1)}">次 ›</button></div>
+    ${reviewCard(st, d, `rvTeacher(${esc_(JSON.stringify(id))})`)}
+    <button class="sv-btn ghost" style="width:100%;margin-top:10px" onclick="sdCloseModal()">とじる</button>`;
+  document.getElementById('sv-modal').classList.add('on');
+  const b = document.getElementById('sv-modal-body'); if(b) b.scrollTop = 0;
+}
+function tgSummary(d){
+  const ts = (d.targets||[]); if(!ts.length) return '';
+  return `<div class="sd-tg">${ts.map(t=>{ const x = tgProg(t), p = x.n ? Math.round(x.d/x.n*100) : 0;
+    return `<div><span>${tgIcon(t)} ${esc_(t.name)}</span><i class="bar"><i style="width:${p}%;background:#2a6b4e"></i></i><span class="n">${x.n?`${x.d}/${x.n}${tgUnit(t)}`:'範囲なし'}${t.date?` ・${sdLabel(t.date)}`:''}</span></div>`; }).join('')}</div>`;
 }
 function roomBlock(){
   if(!VISITS) return `<div class="room"><b>🚪 自習室</b><span class="sv-note">来室記録を読み込めませんでした(自習室アプリの更新が必要かも)</span></div>`;
