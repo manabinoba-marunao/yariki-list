@@ -4601,6 +4601,54 @@ function mqStrike(o){
 .tm-total b{font-family:var(--mono);color:var(--ink);font-size:14px}
 .tm-undo{background:none;border:none;color:var(--ink3);font:700 11px var(--font);text-decoration:underline;cursor:pointer;padding:0}
 /* ふりかえり(円グラフ) */
+.cz.nx .nx-btns{display:flex;gap:8px;margin-top:10px}
+.cz.nx .nx-btns button{flex:1;padding:11px 8px;border-radius:10px;border:none;background:var(--accent);color:#fff;font:900 14px var(--font);cursor:pointer}
+.cz.nx .nx-btns button.ghost{background:#fff;color:var(--accent);border:1.5px solid var(--accent)}
+.hg{width:100%;min-width:0;border-collapse:separate;border-spacing:4px;table-layout:fixed}
+.hg th,.hg td{padding:0 !important;border:none !important;background:none}
+.hg tr,.hg tr:hover{background:none !important}
+.hg th{font-size:12px;font-weight:900;color:var(--ink2)}
+.hg tr th:first-child{width:3em;text-align:right;padding-right:4px !important}
+.hg td{border-radius:10px !important;padding:8px 2px !important;text-align:center;background:var(--surface2) !important}
+.hg td b{display:block;font-size:18px;line-height:1.2}
+.hg td small{display:block;font-size:10px;font-weight:700;color:var(--ink2)}
+.hg td.em{color:var(--ink3);font-size:12px}
+.hg td.s1{background:#fff7d6 !important}.hg td.s2{background:#e8f3ee !important}.hg td.s3{background:#d4ecdf !important}
+.hg-key{font-size:10px;color:var(--ink3);text-align:center;margin:4px 0 12px}
+.ht{border-top:1px dashed var(--border);padding-top:10px}
+.ht-row{display:grid;grid-template-columns:5em 1fr 3.4em 1fr 4.6em;gap:6px;align-items:center;font-size:12px;padding:4px 0}
+.ht-row.hd{font-size:10px;color:var(--ink2);font-weight:700;line-height:1.35;align-items:end}
+.ht-row.hd small{display:block;color:var(--ink3)}
+.ht-row .lb{font-weight:900;white-space:nowrap}
+.ht-row .v{font:500 11px var(--mono);text-align:right;white-space:nowrap}
+.ht-bar{position:relative;height:12px;background:var(--surface2);border-radius:6px;overflow:hidden}
+.ht-bar i{display:block;height:100%;border-radius:6px}
+.ht-bar i.ok{background:var(--accent)}.ht-bar i.ng{background:var(--danger)}
+.ht-bar.t i{background:#2563eb}
+.ht-bar em{position:absolute;top:0;bottom:0;width:2px;background:var(--ink)}
+.hd-card{padding:14px}
+.hd-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;margin-bottom:8px}
+.hd-h b{font-size:15px;font-weight:900}
+.hd-h small{font-size:11px;color:var(--ink2);width:100%;order:3}
+.hd-h .st{margin-left:auto;font-size:11px;font-weight:900;padding:3px 9px;border-radius:999px;background:var(--surface2)}
+.hd-h .st.s3{background:#1c1a16;color:#f6c453}.hd-h .st.s1,.hd-h .st.s2{background:var(--accent-light);color:var(--accent)}
+.hd-gates{display:flex;gap:4px;margin-bottom:8px}
+.hd-gates span{flex:1;text-align:center;font-size:10px;font-weight:700;padding:5px 2px;border-radius:8px;background:var(--surface2);color:var(--ink3);border:1.5px solid var(--border)}
+.hd-gates span b{display:block;font-size:12px}
+.hd-gates span.ok{background:var(--accent-light);color:var(--accent);border-color:var(--accent)}
+.hd-t{width:100%;min-width:0;border-collapse:collapse;font-size:12px}
+.hd-t tr,.hd-t tr:hover{background:none !important;border-bottom:1px solid var(--border)}
+.hd-t th,.hd-t td{padding:5px 3px !important;text-align:center}
+.hd-t tr:first-child th{font-size:10px;color:var(--ink2)}
+.hd-t tr th:first-child{text-align:left}
+.hd-t td small{display:block;font-size:10px}
+.hd-t td.ok small{color:var(--accent);font-weight:700}.hd-t td.ng small,.hd-t td.ng{color:var(--danger)}
+.hd-t input{width:52px;font:700 14px var(--mono);padding:4px;border:1.5px solid var(--border);border-radius:6px;text-align:center}
+.hd-time{font-size:12px;color:var(--ink2);margin-top:8px}
+.hd-time b{color:var(--ink);font-family:var(--mono)}
+.hd-time .tm-bar{margin:6px 0 0;height:10px}
+.hd-edit{display:flex;align-items:center;gap:8px;margin-top:8px}
+.hd-edit select{font:700 12px var(--font);padding:5px;border:1.5px solid var(--border);border-radius:8px;background:#fff}
 .tg-note{font-size:12px;color:var(--ink2);background:var(--surface2);border-radius:8px;padding:7px 10px;margin:-4px 0 10px;line-height:1.6}
 .kk-wrap{overflow-x:auto;margin:4px 0 6px}
 .kk{border-collapse:separate;border-spacing:4px;margin:0 auto;width:auto;min-width:0}
@@ -5026,10 +5074,11 @@ function renderStudy(){
   const st = currentStudent;
   if(!st){ root.innerHTML = '<div class="sv-login"><p>学習管理を使うには、<br>まず「🎒 生徒」でログインしてね。</p><button class="sv-btn" onclick="showView(\'student\', document.querySelector(\'.top-nav .nav-btn\'))">ログインする</button></div>'; return; }
   if(sdSid!==st.id){ sdOpen(st); return; }
+  if(sdAutoArchive(st)) sdSave();
   root.innerHTML = `
     <div class="sv-head"><h2>📚 学習管理</h2><span class="who">${esc_(st.name)}(${esc_(st.grade||'')})</span><span class="sv-sync" id="sv-sync">${sdSyncLabel()}</span></div>
     <div class="sv-tabs"><button aria-pressed="${sdPane!=='review'}" onclick="sdPane='main';renderStudy();scrollTo(0,0)">⏱ 学習管理</button><button aria-pressed="${sdPane==='review'}" onclick="sdPane='review';renderStudy();scrollTo(0,0)">📊 ふりかえり</button></div>
-    ${sdPane==='review' ? reviewCard(st, SD) : `${rulesCard()}
+    ${sdPane==='review' ? reviewCard(st, SD) + histCard(st, SD, true) : `${rulesCard()}
     ${timerCard(st)}
     ${missionCard(st)}
     ${goalCard(st)}
@@ -5132,6 +5181,112 @@ function reviewCard(st, d, re){
   </div>`:''}
   <div class="sv-note" style="text-align:center">※ タイマーの記録は60日間のこっています</div>`;
 }
+
+/* ==================== 登竜門のあゆみ(期末テストごとの記録) ====================
+   テストの日をすぎると、その期末の結果(ワーク何周・1周目を終えた日・塾ワーク・勉強時間)を SD.history に自動で残す。
+   「次のテストへ」で範囲をリセットしても、記録は残る。中1〜中3の1〜3学期を並べて、準備のしかたの変化を見られる。 */
+const TERMS = ['1学期','2学期','3学期'];
+function termOf(td){ const m = sdParse(td).getMonth()+1; return m>=4&&m<=8 ? '1学期' : m>=9 ? '2学期' : '3学期'; }
+function gradeOrder(g){ g = String(g||''); const st = g.startsWith('小')?0:g.startsWith('高')?2:1; return st*10 + (parseInt(g.replace(/\D/g,''),10)||0); }
+function snapTest(d, st){
+  const td = dTestDate(d); if(!td || !d.test) return null;
+  const tkey = d.test.id || d.test.date;
+  const subs = Object.entries(d.test.subj||{}).filter(([,r])=>r&&r.from!=null);
+  if(!subs.length) return null;
+  const dl = sdAdd(td, -WORK_LEAD_DAYS);
+  const bd = k=>{ const b = (d.badges||[]).find(x=>x.k===tkey+':'+k); return b ? b.d : null; };
+  const S = {};
+  subs.forEach(([sj,r])=>{
+    const j = r.juku, lap = curLap(r);
+    S[sj] = {pg: totalPages(r), lap, p1: Math.round(lapProg(r,0)*100), at1: lap>=1 ? bd(`${sj} ワーク1周`) : null, at3: lap>=3 ? bd(`${sj} ワーク3周`) : null,
+      j: j&&j.from!=null ? Math.round(Math.min(1, Math.max(0, ((j.done||0)-j.from+1)/(j.to-j.from+1)))*100) : null};
+  });
+  const v = Object.values(S);
+  const g1 = v.every(x=>x.lap>=1), g2 = v.every(x=>x.lap>=3), g3 = g2 && v.every(x=>x.j==null || x.j>=100);
+  const g1on = g1 && v.every(x=>x.at1 && x.at1<=dl);
+  const a = sdAdd(td,-27), b = sdAdd(td,2), per = {}; let total = 0; const days = new Set(); let last7 = 0;
+  (d.sessions||[]).forEach(x=>{ const k = sdKey(x.a); if(k<a||k>b) return; const m=(x.b-x.a)/6e4; per[x.s]=(per[x.s]||0)+m; total+=m; days.add(k); if(k>=sdAdd(td,-7)) last7+=m; });
+  return {k: tkey, td, grade: (st&&st.grade)||'', term: termOf(td), subj: S, step: !g1?0:!g2?1:!g3?2:3, g1on,
+    study: {per, total: Math.round(total), days: days.size, last7: total ? Math.round(last7/total*100) : 0}, scores: {}};
+}
+/* 記録とあわせる:学年・学期・点数は前のまま、勉強時間は多いほう(60日で古いタイマー記録が消えても減らさない) */
+function mergeHist(old, nw){
+  if(!old) return nw;
+  const r = Object.assign({}, nw, {grade: old.grade || nw.grade, term: old.term || nw.term, scores: old.scores || {}});
+  if(old.study && old.study.total > nw.study.total) r.study = old.study;
+  return r;
+}
+function histOf(d, st){   // 記録 + (テストが終わっていてまだ記録していない今の期末)
+  const H = (d.history||[]).slice();
+  const td = dTestDate(d);
+  if(td && sdDiff(sdToday(), td) >= 0){ const n = snapTest(d, st); if(n){ const i = H.findIndex(h=>h.k===n.k); if(i>=0) H[i] = mergeHist(H[i], n); else H.push(n); } }
+  return H.sort((x,y)=>x.td.localeCompare(y.td));
+}
+function sdAutoArchive(st){   // 生徒の端末で、テストの日をすぎたら自動で記録
+  if(!SD || !SD.test) return false;
+  const td = testDate(); if(!td || sdDiff(sdToday(), td) < 0) return false;
+  const n = snapTest(SD, st); if(!n) return false;
+  SD.history = SD.history || [];
+  const i = SD.history.findIndex(h=>h.k===n.k), m = mergeHist(i>=0 ? SD.history[i] : null, n);
+  if(i>=0 && JSON.stringify(SD.history[i]) === JSON.stringify(m)) return false;
+  if(i>=0) SD.history[i] = m; else SD.history.push(m);
+  return true;
+}
+function sdNextTest(){
+  const td = testDate();
+  sdAutoArchive(currentStudent);
+  if(!confirm('この期末の結果は「ふりかえり」の「登竜門のあゆみ」に残ります。\n範囲をリセットして、次のテストの準備をはじめますか？')) return;
+  SD.test = {id:null, date:null, subj:{}}; SD.gateTab = 'term';
+  sdSave(); renderStudy(); showToast('🐟 次の登竜門へ！ テストの日を選んで範囲を入れよう');
+}
+function testOverBox(){
+  return `<div class="cz clear nx"><div class="cz-h">🏁 テストおつかれさま！</div>この期末の結果は「📊 ふりかえり」の<b style="font-size:13px;font-family:var(--font)">登竜門のあゆみ</b>に残りました。
+    <div class="nx-btns"><button class="ghost" onclick="sdPane='review';renderStudy();setTimeout(()=>{const e=document.getElementById('hist');if(e)e.scrollIntoView({behavior:'smooth'})},50)">📊 あゆみを見る</button><button onclick="sdNextTest()">次のテストへ →</button></div></div>`;
+}
+const STEP_LABEL = ['🐟 一ノ門の手前','⛩ 一ノ門 突破','⛩⛩ 二ノ門 突破','🐉 登竜成就'];
+function histCard(st, d, edit){
+  const H = histOf(d, st);
+  if(!H.length) return `<div class="sv-card" id="hist"><h3>🏯 登竜門のあゆみ<span class="sub">期末テストごとの記録</span></h3><div class="sv-empty">期末テストが終わると、ここに結果が残ります。</div></div>`;
+  const grades = [...new Set(H.map(h=>h.grade).concat(st.grade ? [st.grade] : []))].filter(Boolean).sort((a,b)=>gradeOrder(a)-gradeOrder(b));
+  const cell = (g,t)=>{ const h = H.filter(x=>x.grade===g && x.term===t).pop(); if(!h) return `<td class="em">—</td>`;
+    const dd = h1Days(h); return `<td class="s${h.step}"><b>${['🐟','⛩','⛩⛩','🐉'][h.step]}</b><small>${dd!=null?`1周目 ${dd}日前`:'1周目 未完'}</small></td>`; };
+  const maxMin = Math.max(60, ...H.map(h=>h.study.total||0));
+  const trend = H.map(h=>{ const dd = h1Days(h), w = dd==null ? 0 : Math.max(4, Math.min(100, dd/28*100));
+    return `<div class="ht-row"><span class="lb">${esc_(h.grade)} ${esc_(h.term)}</span>
+      <span class="ht-bar"><i class="${dd==null?'':dd>=WORK_LEAD_DAYS?'ok':'ng'}" style="width:${w}%"></i><em style="left:${WORK_LEAD_DAYS/28*100}%"></em></span><span class="v">${dd==null?'未完':dd+'日前'}</span>
+      <span class="ht-bar t"><i style="width:${(h.study.total||0)/maxMin*100}%"></i></span><span class="v">${fmtMin(h.study.total||0)}</span></div>`; }).join('');
+  return `<div class="sv-card" id="hist"><h3>🏯 登竜門のあゆみ<span class="sub">期末テストごとの準備の記録</span></h3>
+    <table class="hg"><tr><th></th>${TERMS.map(t=>`<th>${t}</th>`).join('')}</tr>${grades.map(g=>`<tr><th>${esc_(g)}</th>${TERMS.map(t=>cell(g,t)).join('')}</tr>`).join('')}</table>
+    <div class="hg-key">🐟 一ノ門の手前　⛩ ワーク1周　⛩⛩ ワーク3周　🐉 塾ワークまで完了</div>
+    <div class="ht"><div class="ht-row hd"><span class="lb"></span><span>学校ワーク1周目を終えたのは<br>テストの何日前？<small>(線＝2週間前)</small></span><span></span><span>テスト前4週間の<br>勉強時間</span><span></span></div>${trend}</div>
+  </div>
+  ${H.slice().reverse().map(h=>histDetail(st, h, edit)).join('')}`;
+}
+function h1Days(h){   // 全教科のワーク1周目がそろった日が、テストの何日前か
+  const v = Object.values(h.subj); if(!v.length || v.some(x=>!x.at1)) return null;
+  const last = v.map(x=>x.at1).sort().pop(); return sdDiff(h.td, last);
+}
+function histDetail(st, h, edit){
+  const subs = Object.keys(h.subj), dl = sdAdd(h.td, -WORK_LEAD_DAYS);
+  const per = h.study.per || {}, tot = h.study.total || 0;
+  const g = [['一ノ門 ワーク完遂', h.step>=1, h.step>=1 ? (h.g1on?'期限内':'期限後') : 'とどかず'], ['二ノ門 ワーク三周', h.step>=2, h.step>=2?'突破':'とどかず'], ['三ノ門 塾ワーク', h.step>=3, h.step>=3?'突破':'とどかず']];
+  const hasSc = Object.values(h.scores||{}).some(x=>x!=null && x!=='');
+  return `<div class="sv-card hd-card"><div class="hd-h"><b>${esc_(h.grade)}・${esc_(h.term)} 期末</b><small>テスト ${sdLabel(h.td)}　一ノ門の期限 ${sdLabel(dl)}</small><span class="st s${h.step}">${STEP_LABEL[h.step]}</span></div>
+    <div class="hd-gates">${g.map(([n,ok,t])=>`<span class="${ok?'ok':''}">${n}<b>${t}</b></span>`).join('')}</div>
+    <table class="hd-t"><tr><th></th><th>1周目を終えた日</th><th>周回</th><th>塾ワーク</th>${hasSc||edit?'<th>点数</th>':''}</tr>
+      ${subs.map(sj=>{ const x = h.subj[sj], dd = x.at1 ? sdDiff(h.td, x.at1) : null, sc = (h.scores||{})[sj];
+        return `<tr><th style="color:${SUBJ_COLOR[sj]||'#333'}">${sj}</th>
+          <td class="${x.at1?(x.at1<=dl?'ok':'ng'):'ng'}">${x.at1?`${sdLabel(x.at1)}<small>${dd}日前</small>`:x.lap>=1?'済(日付なし)':`${x.p1}%まで`}</td>
+          <td>${x.lap>=3?'3周 ✓':x.lap+'周'}</td><td>${x.j==null?'—':x.j+'%'}</td>
+          ${hasSc||edit?`<td>${edit?`<input type="number" inputmode="numeric" value="${sc??''}" placeholder="点" onchange="sdHistScore('${h.k}','${sj}',this.value)">`:(sc??'—')}</td>`:''}</tr>`; }).join('')}</table>
+    <div class="hd-time"><span>テスト前4週間 <b>${fmtMin(tot)}</b>(${h.study.days||0}日)${tot?`・直前1週間に <b>${h.study.last7}%</b>`:''}</span>
+      ${tot?`<div class="tm-bar">${Object.entries(per).filter(([,m])=>m>0).map(([sj,m])=>`<i style="width:${m/tot*100}%;background:${SUBJ_COLOR[sj]||'#999'}" title="${sj} ${fmtMin(m)}"></i>`).join('')}</div>`:''}</div>
+    ${edit?`<div class="hd-edit"><select onchange="sdHistTerm('${h.k}',this.value)">${[...TERMS,'前期','後期'].map(t=>`<option ${h.term===t?'selected':''}>${t}</option>`).join('')}</select><span class="sv-note">学期がちがうときは直してね</span></div>`:''}
+  </div>`;
+}
+function sdHistGet(k){ sdAutoArchive(currentStudent); return (SD.history||[]).find(h=>h.k===k); }
+function sdHistScore(k, sj, v){ const h = sdHistGet(k); if(!h) return; h.scores = h.scores||{}; const n = parseInt(v,10); if(isNaN(n)) delete h.scores[sj]; else h.scores[sj] = Math.max(0, Math.min(100, n)); sdSave(); }
+function sdHistTerm(k, t){ const h = sdHistGet(k); if(!h) return; h.term = t; sdSave(); renderStudy(); }
 let sdTimerPick = null;
 function sdTimerStart(){
   const st = currentStudent; const subs=[...studySubjects(st),'その他'];
@@ -5380,7 +5535,8 @@ function testCard(st){
   const step = !all1 ? 0 : !all3 ? 1 : !allJ ? 2 : 3;
   const c = crisisOf(SD, td), toTest = sdDiff(td, today), gs = gateStats();
   let box;
-  if(step===0 && !setRows.length) box = `<div class="cz yellow"><div class="cz-h">⚠ まず範囲を入れよう</div>一ノ門「学校ワーク完遂」の締め切りは <b>${sdLabel(sdAdd(td,-WORK_LEAD_DAYS))}</b>。各教科のワークの範囲を入れてね。</div>`;
+  if(setRows.length && toTest < -2) box = testOverBox();
+  else if(step===0 && !setRows.length) box = `<div class="cz yellow"><div class="cz-h">⚠ まず範囲を入れよう</div>一ノ門「学校ワーク完遂」の締め切りは <b>${sdLabel(sdAdd(td,-WORK_LEAD_DAYS))}</b>。各教科のワークの範囲を入れてね。</div>`;
   else if(step===0){
     const msg = {
       over:  ['⛔ 締め切りをすぎた！','まだ <b>'+c.left+'</b> ページ残っている。今日と明日で終わらせる覚悟で！ 先生にも相談しよう。'],
@@ -5439,6 +5595,11 @@ function sdCountdown(){
   el.textContent = `${Math.floor(s/86400)}日 ${String(Math.floor(s/3600)%24).padStart(2,'0')}:${String(Math.floor(s/60)%60).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
 }
 function sdSetTest(v){
+  const old = testDate(), had = Object.values(SD.test.subj||{}).some(r=>r&&r.from!=null);
+  if(old && had && sdDiff(sdToday(), old) >= 0 && v !== SD.test.id){
+    sdAutoArchive(currentStudent); SD.test.subj = {};
+    showToast('前の期末の結果は「ふりかえり」に残しました');
+  }
   if(v==='custom'){ SD.test.id=null; SD.test.date=''; }
   else { SD.test.id = v||null; SD.test.date = null; }
   sdSave(); renderStudy();
@@ -6196,7 +6357,7 @@ function sdCard(r){
     det = `<div class="sd-det">
       ${subs.length?subs.map(([s,x])=>{ const lap=curLap(x), i=Math.min(lap,2), p=Math.round(lapProg(x,i)*100); return `<div class="sd-sub"><span>${s}</span><span class="tag">${lap>=3?'3周クリア':(lap+1)+'周目'}</span><i class="bar"><i style="width:${lap>=3?100:p}%;background:${lap===0?'#dc2626':'#2a6b4e'}"></i></i><span class="n">${(x.extra||[]).length?`${works(x).length}冊 ${totalPages(x)}p`:`p.${x.from}〜${x.to}${lap<3?` / ${(x.laps||[])[i]||'-'}まで`:''}`}</span></div>`; }).join(''):'<p class="sv-note">テスト範囲はまだ入っていません</p>'}
       ${tgSummary(d)}
-      <button class="sd-rv" onclick="event.stopPropagation();rvTeacher(${esc_(JSON.stringify(r.st.id))})">📊 ふりかえり(勉強時間の円グラフ)を見る</button>
+      <button class="sd-rv" onclick="event.stopPropagation();rvTeacher(${esc_(JSON.stringify(r.st.id))})">📊 ふりかえり(勉強時間・登竜門のあゆみ)を見る</button>
       <div class="sd-time">7日間の教科別:${Object.keys(per).length?Object.entries(per).sort((a,b)=>b[1]-a[1]).map(([s,m])=>`<span style="color:${SUBJ_COLOR[s]||'#555'}">${s} ${fmtMin(m)}</span>`).join('　'):'記録なし'}</div>
       ${goals.length?`<div class="sd-goals">${goals.map(g=>`<div class="${g.done?'done':g.due<today?'late':''}">${g.done?'✅':g.due<today?'⚠':'□'} ${esc_(g.subj)}｜${esc_(g.mat)} ${goalRange(g)} 〜${sdLabel(g.due)}</div>`).join('')}</div>`:'<div class="sd-goals"><div>今週の目標:なし</div></div>'}
     </div>`;
@@ -6224,6 +6385,7 @@ function rvTeacher(id){
   document.getElementById('sv-modal-body').innerHTML = `
     <div class="rvt-head"><button ${i>0?'':'disabled'} onclick="${nav(i-1)}">‹ 前</button><div><b>${esc_(st.name)}</b><small>${esc_(st.grade||'')}　${i+1} / ${list.length}</small></div><button ${i>=0&&i<list.length-1?'':'disabled'} onclick="${nav(i+1)}">次 ›</button></div>
     ${reviewCard(st, d, `rvTeacher(${esc_(JSON.stringify(id))})`)}
+    ${histCard(st, d, false)}
     <button class="sv-btn ghost" style="width:100%;margin-top:10px" onclick="sdCloseModal()">とじる</button>`;
   document.getElementById('sv-modal').classList.add('on');
   const b = document.getElementById('sv-modal-body'); if(b) b.scrollTop = 0;
