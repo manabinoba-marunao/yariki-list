@@ -584,6 +584,11 @@ td.td-name { padding-left: 16px; text-align: left; }
 .pm.st-cat .pm-face { font-size:28px; }
 .pm.st-ghost .pm-body { background:radial-gradient(circle,#4a4a6a,#1c1c38); }
 .pm.st-ghost .pm-face { font-size:28px; opacity:.75; animation:fx-ghost 2s ease-in-out infinite; }
+.pm.st-turkey .pm-body { background:radial-gradient(circle,#6a3a12,#1c1c38); }
+.pm.st-turkey .pm-face { font-size:30px; animation:fx-turkey 1.4s ease-in-out infinite; }
+.pm.st-roast .pm-body { background:radial-gradient(circle,#8a4a10,#3a1a08); box-shadow:0 0 12px 2px rgba(255,140,40,.7); }
+.pm.st-roast .pm-face { font-size:30px; }
+@keyframes fx-turkey { 0%,100%{transform:rotate(-6deg)} 50%{transform:rotate(6deg)} }
 @keyframes fx-ghost { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
 @keyframes fx-bat { 0%,100%{transform:translate(0,0) rotate(-10deg)} 50%{transform:translate(4px,-6px) rotate(10deg)} }
 @keyframes fx-spin { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
@@ -841,6 +846,9 @@ td.td-name { padding-left: 16px; text-align: left; }
 .status-box.calm .status-howto { border-top-color:var(--border); }
 .candy-chip { margin-left:auto; font-family:var(--mono); font-size:13px; padding:4px 10px; border-radius:999px; background:rgba(255,215,0,.15); border:1px solid rgba(255,215,0,.5); white-space:nowrap; }
 .status-box.calm .candy-chip { background:var(--warn-light); border-color:var(--warn); }
+.thanks-box { margin-top:10px; padding:10px 12px; border-radius:10px; background:#fff7e0; border:1.5px solid #f0b84a; color:#5a3a00; font-size:12px; line-height:1.6; }
+.thanks-btn { display:block; width:100%; margin-top:8px; padding:10px; border:none; border-radius:999px; background:linear-gradient(135deg,#ffb347,#ff7a3d); color:#fff; font-weight:900; font-size:15px; box-shadow:0 3px 10px rgba(255,122,61,.4); }
+.thanks-btn:disabled { opacity:.5; }
 
 .attack-overlay {
   position:fixed; inset:0; z-index:650; background:rgba(10,0,20,.94);
@@ -2839,10 +2847,13 @@ function showBossIntro() {
   nm.classList.remove('show'); sub.classList.remove('show'); skip.classList.remove('show');
   nm.textContent = BOSS_DATA.name || '大魔王';
   const revive = BOSS_DATA.type === 'boss_final', kim = isKimatsu();
-  const warn = ov.querySelector('.bi-warning'); if (warn) warn.textContent = revive ? '🎃 HALLOWEEN 🎃' : kim ? '📝 期末テスト 📝' : '⚠ WARNING ⚠';
+  const shimo = String(BOSS_DATA.attack || '').indexOf('霜月') >= 0, shimoAwk = shimo && String(BOSS_DATA.name || '').indexOf('覚醒') === 0;
+  const warn = ov.querySelector('.bi-warning'); if (warn) warn.textContent = revive ? '🎃 HALLOWEEN 🎃' : kim ? '📝 期末テスト 📝' : shimo ? '🦃 THANKSGIVING 🦃' : '⚠ WARNING ⚠';
   if (kim) nm.innerHTML = '期末の誘魔<div style="font-size:.5em;margin-top:4px;opacity:.9">― 心の奥にささやく者 ―</div>';
   sub.innerHTML = revive ? 'ハロウィンが近づき、夜の闇から魔力が集まる…<br><b>ハロウィンの魔力でよみがえった！</b><br>もう一度、全員の力を合わせて倒せ！'
     : kim ? '「あと1本だけ」「あとでやる」…<br>心の奥で、誘いの声がささやく。<br><b>剣は届かない。学びのマルナだけが、誘いを打ち破る！</b><br>5科目のマル単のマルナで、5つの「誘いの盾」を割れ！<br>🍠 倒したら、塾で全員に<b>季節のおやつ</b>！'
+    : shimoAwk ? '「まだだ……我らの恨みは、こんなものではない……！」<br><b>ターキーの怨念が、さらに燃えあがった！</b><br>攻撃されると、仲間を<b>丸焼き🍗</b>にしてくる。<br>不思議なアメで、仲間を助け合おう！'
+    : shimo ? '「毎年この季節、我らは食卓に並べられてきた……<br>今度は、お前たちの番だ」<br><b>ターキーの怨念が、大魔王になった！</b><br>攻撃されると、仲間を<b>ターキー🦃</b>に変えてくる。<br>不思議なアメで、仲間を助け合おう！'
     : 'が現れた！ 全員の力を合わせて倒せ！';
   if (BOSS_DATA.imageUrl && String(BOSS_DATA.imageUrl).trim() !== '') {
     art.innerHTML = '<img src="' + BOSS_DATA.imageUrl + '" alt="">';
@@ -2870,6 +2881,8 @@ const STATUS_DEFS = {
   ghost:   { icon:'👻', name:'おばけ',             short:'0.6倍・お菓子2倍',       desc:'からだがスケスケで攻撃が当たりにくい！ダメージ0.6倍。でもお菓子を見つけやすい（2倍）', mult:() => 0.6 },
   cat:     { icon:'🐈‍⬛', name:'黒猫',             short:'0.8倍・会心が出やすい', desc:'気まぐれ。ダメージは0.8倍だけど、会心の一撃が出やすい（6つ全部やりきったとき）', mult:() => 0.8, critRate:0.6 },
   curse:   { icon:'😵', name:'呪い',               short:'ダメージ0.7倍',          desc:'呪いで体が重い。ダメージが0.7倍', mult:() => 0.7 },
+  turkey:  { icon:'🦃', name:'ターキー',           short:'ダメージ0.8倍',          desc:'ターキーにされた！羽がじゃまでペンが持ちにくい。ダメージが0.8倍', mult:() => 0.8 },
+  roast:   { icon:'🍗', name:'丸焼き',             short:'ダメージ半分',           desc:'こんがり丸焼きにされて力が出ない…。ダメージが半分', mult:() => 0.5 },
 };
 const ENEMY_ATTACK_LINES = {
   mob_slime:  'あやしいスライムがベトベトをとばしてきた！',
@@ -2884,6 +2897,8 @@ const STATUS_RESULT_LINES = {
   cat:     '黒猫にされてしまった！',
   ghost:   'おばけにされてしまった！',
   curse:   '呪われてしまった！',
+  turkey:  'ターキーにされてしまった！',
+  roast:   '丸焼きにされてしまった！',
 };
 
 let STATUS_MAP = {};   // { 生徒ID: { status, end, candies, ... } }
@@ -2902,7 +2917,7 @@ async function loadStatuses() {
       STATUS_MAP = res.statuses;
       if (currentStudent && STATUS_MAP[String(currentStudent.id)]) {
         const m = STATUS_MAP[String(currentStudent.id)];
-        MY_STATUS = { status: m.status || '', end: m.end || '', enemy: m.enemy || '', candies: Number(m.candies) || 0 };
+        MY_STATUS = { status: m.status || '', end: m.end || '', enemy: m.enemy || '', candies: Number(m.candies) || 0, helpers: (MY_STATUS && MY_STATUS.helpers) || [] };
         renderMyStatus();
       }
     }
@@ -2923,10 +2938,36 @@ async function checkEnemyAttack() {
   const sid = currentStudent.id;
   const res = await api('rollAttack', { studentId: sid, nickname: currentStudent.nickname || currentStudent.name });
   if (!res || !res.ok || !currentStudent || currentStudent.id !== sid) return; // GAS未更新・別の子に切替済みなら何もしない
-  setMyStatus({ status: res.status || '', end: res.end || '', enemy: res.enemy || '', candies: Number(res.candies) || 0 });
+  setMyStatus({ status: res.status || '', end: res.end || '', enemy: res.enemy || '', candies: Number(res.candies) || 0, helpers: res.helpers || [] });
   if (res.attacked) showEnemyAttack(res);
+  if (res.thanked && res.thanked.length) {   // 自分が助けた仲間から「ありがとう」が届いた
+    const names = [...new Set(res.thanked.map(t => t.name))].join('・');
+    const exp = res.thanked.reduce((a, t) => a + (Number(t.exp) || 0), 0);
+    fxEnqueue(() => { showToast(`🙏 ${names}から「ありがとう」が届いた！ EXP+${exp}`, 4500); api('getExpBonus', {}).then(r => { if (r.ok) EXP_BONUSES = r.bonuses || {}; }); });
+  }
 }
 
+function thanksHTML() {
+  const hs = (MY_STATUS && MY_STATUS.helpers) || [];
+  if (!hs.length) return '';
+  const names = hs.map(h => esc(h.name || '仲間')).join('・');
+  return `<div class="thanks-box">🍬 <b>${names}</b>が、アメで助けてくれたよ！
+    <button class="thanks-btn" onclick="sayThanks(this)">🙏 ありがとうを伝える</button>
+    <div style="font-size:11px;margin-top:4px;opacity:.8">伝えると、あなたにも${hs.length > 1 ? 'みんな' : names}にもEXPが入るよ</div></div>`;
+}
+async function sayThanks(btn) {
+  if (!currentStudent) return;
+  if (btn) btn.disabled = true;
+  const res = await api('sayThanks', { studentId: currentStudent.id, nickname: currentStudent.nickname || currentStudent.name });
+  if (res && res.ok) {
+    if (res.thanked && res.thanked.length) showToast(`🙏 ${res.thanked.join('・')}に「ありがとう」を伝えた！ EXP+${res.exp}(${res.thanked.join('・')}にも+${res.each})`, 4500);
+    setMyStatus({ helpers: [] });
+    api('getExpBonus', {}).then(r => { if (r.ok) EXP_BONUSES = r.bonuses || {}; });
+  } else {
+    showToast('⚠ ' + ((res && res.error) || 'うまくいかなかったよ。もう一度ためしてね'));
+    if (btn) btn.disabled = false;
+  }
+}
 function renderMyStatus() {
   const box = document.getElementById('s-status-box');
   if (!box || !MY_STATUS) return;
@@ -2947,7 +2988,7 @@ function renderMyStatus() {
         ・習慣を<b>6つ全部</b>やりきる（自力で打ち破れる！）<br>
         ・友達がお菓子🍬をくれる<br>
         ・何もしなくても ${until}
-      </div>`;
+      </div>${thanksHTML()}`;
   } else {
     box.className = 'status-box show calm';
     box.innerHTML = `
@@ -2955,7 +2996,7 @@ function renderMyStatus() {
         <div class="status-icon">🛡</div>
         <div><div class="status-name">元気いっぱい！</div><div class="status-desc">仲間がピンチなら「ボス討伐」でお菓子をあげて助けよう</div></div>
         ${chip}
-      </div>`;
+      </div>${thanksHTML()}`;
   }
 }
 
@@ -2985,6 +3026,10 @@ function playEnemyAttack(res) {
     line.textContent = ENEMY_ATTACK_LINES[type] || `${res.enemy}がおそいかかってきた！`;
   } else if (res.status === 'curse') {
     line.textContent = `${res.enemy}が呪いの言葉をとなえた！`;
+  } else if (res.status === 'turkey') {
+    line.textContent = `${res.enemy}「お前も……ターキーになれ……！」`;
+  } else if (res.status === 'roast') {
+    line.textContent = `${res.enemy}「丸焼きにしてやる……！」`;
   } else {
     line.textContent = `${res.enemy}が「トリック・オア・トリート！」と魔法をとなえた！`;
   }
@@ -3113,7 +3158,7 @@ function todayParty() {
   return Object.values(map).filter(m => !testers.has(String(m.id))).sort((a,b) => (b.hit+b.magic) - (a.hit+a.magic));
 }
 
-const FACE_ST_ALL = { pumpkin:'🎃', bat:'🦇', cat:'🐈‍⬛', ghost:'👻' };
+const FACE_ST_ALL = { pumpkin:'🎃', bat:'🦇', cat:'🐈‍⬛', ghost:'👻', turkey:'🦃', roast:'🍗' };
 function renderParty() {
   const box = document.getElementById('party'); if (!box) return;
   const list = todayParty();
