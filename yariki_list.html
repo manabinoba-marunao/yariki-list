@@ -588,6 +588,8 @@ td.td-name { padding-left: 16px; text-align: left; }
 .pm.st-turkey .pm-face { font-size:30px; animation:fx-turkey 1.4s ease-in-out infinite; }
 .pm.st-roast .pm-body { background:radial-gradient(circle,#8a4a10,#3a1a08); box-shadow:0 0 12px 2px rgba(255,140,40,.7); }
 .pm.st-roast .pm-face { font-size:30px; }
+.st-img { height:1.15em; width:auto; vertical-align:middle; }
+.pm.st-roast .pm-face .st-img { height:1.3em; }
 @keyframes fx-turkey { 0%,100%{transform:rotate(-6deg)} 50%{transform:rotate(6deg)} }
 @keyframes fx-ghost { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
 @keyframes fx-bat { 0%,100%{transform:translate(0,0) rotate(-10deg)} 50%{transform:translate(4px,-6px) rotate(10deg)} }
@@ -2882,8 +2884,10 @@ const STATUS_DEFS = {
   cat:     { icon:'🐈‍⬛', name:'黒猫',             short:'0.8倍・会心が出やすい', desc:'気まぐれ。ダメージは0.8倍だけど、会心の一撃が出やすい（6つ全部やりきったとき）', mult:() => 0.8, critRate:0.6 },
   curse:   { icon:'😵', name:'呪い',               short:'ダメージ0.7倍',          desc:'呪いで体が重い。ダメージが0.7倍', mult:() => 0.7 },
   turkey:  { icon:'🦃', name:'ターキー',           short:'ダメージ0.8倍',          desc:'ターキーにされた！羽がじゃまでペンが持ちにくい。ダメージが0.8倍', mult:() => 0.8 },
-  roast:   { icon:'🍗', name:'丸焼き',             short:'ダメージ半分',           desc:'こんがり丸焼きにされて力が出ない…。ダメージが半分', mult:() => 0.5 },
+  roast:   { icon:'🍗', img:'status/roast.png', name:'丸焼き',             short:'ダメージ半分',           desc:'こんがり丸焼きにされて力が出ない…。ダメージが半分', mult:() => 0.5 },
 };
+// 状態のアイコン(絵があれば絵、なければ絵文字)
+function stIcon(d) { return d && d.img ? `<img class="st-img" src="${d.img}" alt="${d.name}">` : (d ? d.icon : ''); }
 const ENEMY_ATTACK_LINES = {
   mob_slime:  'あやしいスライムがベトベトをとばしてきた！',
   mob_goblin: 'おこりんぼゴブリンがこん棒をふりまわした！',
@@ -2979,7 +2983,7 @@ function renderMyStatus() {
     box.className = 'status-box show';
     box.innerHTML = `
       <div class="status-top">
-        <div class="status-icon">${def.icon}</div>
+        <div class="status-icon">${stIcon(def)}</div>
         <div><div class="status-name">${def.name}になっている！</div><div class="status-desc">${def.desc}</div></div>
         ${chip}
       </div>
@@ -3033,10 +3037,10 @@ function playEnemyAttack(res) {
   } else {
     line.textContent = `${res.enemy}が「トリック・オア・トリート！」と魔法をとなえた！`;
   }
-  icon.textContent = def.icon;
+  icon.innerHTML = stIcon(def);
   const until = def.todayOnly ? '今日だけ' : `${mdLabel(res.end)}まで`;
   if (res.counterNow && res.victims) {
-    icon.textContent = res.victims.map(v => STATUS_DEFS[v.status]?.icon || '').join(' ');
+    icon.innerHTML = res.victims.map(v => stIcon(STATUS_DEFS[v.status])).join(' ');
     result.innerHTML = res.victims.map(v =>
       `${v.isMe ? 'あなた' : v.name}が${STATUS_RESULT_LINES[v.status] || 'ばけさせられた！'}`).join('<br>');
     const anyMe = res.victims.some(v => v.isMe);
@@ -3066,7 +3070,7 @@ function studentNameById(id) {
 function statusTagById(id) {
   const m = STATUS_MAP[String(id)];
   const def = m && m.status ? STATUS_DEFS[m.status] : null;
-  return def ? `<span class="st-tag" title="${def.name}">${def.icon}</span>` : '';
+  return def ? `<span class="st-tag" title="${def.name}">${stIcon(def)}</span>` : '';
 }
 function statusTagByNick(nick) {
   const st = STUDENTS.find(s => (s.nickname || s.name) === nick || s.name === nick);
@@ -3158,7 +3162,7 @@ function todayParty() {
   return Object.values(map).filter(m => !testers.has(String(m.id))).sort((a,b) => (b.hit+b.magic) - (a.hit+a.magic));
 }
 
-const FACE_ST_ALL = { pumpkin:'🎃', bat:'🦇', cat:'🐈‍⬛', ghost:'👻', turkey:'🦃', roast:'🍗' };
+const FACE_ST_ALL = { pumpkin:'🎃', bat:'🦇', cat:'🐈‍⬛', ghost:'👻', turkey:'🦃', roast:'<img class="st-img" src="status/roast.png" alt="丸焼き">' };
 function renderParty() {
   const box = document.getElementById('party'); if (!box) return;
   const list = todayParty();
@@ -3201,7 +3205,7 @@ function openMember(id) {
     let btn = '';
     if (myId && p.id !== myId) btn = `<div style="margin-top:8px"><button class="candy-btn" ${myCandies > 0 ? '' : 'disabled'} onclick="closeMember();giveCandyTo('${p.id}', this)">🍬 お菓子をあげて助ける(のこり${myCandies})</button></div>`;
     else if (myId && p.id === myId) btn = '<div style="margin-top:6px;color:#8888bb">仲間の助けを待とう</div>';
-    stHtml = `<div class="pm-st">${def.icon} <b>${def.name}</b>(${until})<br>${def.desc}${btn}</div>`;
+    stHtml = `<div class="pm-st">${stIcon(def)} <b>${def.name}</b>(${until})<br>${def.desc}${btn}</div>`;
   }
   document.getElementById('pm-sheet-body').innerHTML = `
     <h3>${esc(studentNameById(p.id))}</h3>
@@ -3242,7 +3246,7 @@ function renderRescue() {
       btn = `<span style="font-size:10px;color:#8888bb;">助けを待とう</span>`;
     }
     return `<div class="rescue-item">
-      <div class="rescue-icon">${def.icon}</div>
+      <div class="rescue-icon">${stIcon(def)}</div>
       <div class="rescue-body">
         <div class="rescue-name">${studentNameById(id)}</div>
         <div class="rescue-sub">${def.name}（${def.short}）・${until}</div>
