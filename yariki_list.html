@@ -4635,6 +4635,20 @@ function mqStrike(o){
 .tm-subj button[aria-pressed=true]{border-color:var(--c,var(--accent));background:var(--c,var(--accent));color:#fff}
 .tm-clock{font:500 46px var(--mono);text-align:center;letter-spacing:.04em;margin:4px 0 2px}
 .tm-clock.run{color:var(--accent)}
+.tm-clock.pause{color:var(--ink3);animation:tmblink 1.2s steps(2) infinite}
+@keyframes tmblink{50%{opacity:.35}}
+.tm-goal{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:-4px 0 8px;font:700 12px var(--font);color:var(--ink2)}
+.tm-goal button{border:1.5px solid var(--border);background:var(--surface2);border-radius:999px;padding:4px 10px;font:700 12px var(--font);color:var(--ink);cursor:pointer}
+.tm-goal button[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tm-goal .tm-snd{margin-left:auto;font-size:16px;padding:2px 8px}
+.tm-gbar{height:8px;border-radius:6px;background:var(--border);overflow:hidden;margin:4px 0}
+.tm-gbar i{display:block;height:100%;background:var(--accent);transition:width 1s linear}
+.tm-gtxt{text-align:center;font-size:12px;color:var(--ink2)}
+.tm-gtxt b{font-family:var(--mono);color:var(--ink)}
+.tm-row{display:flex;gap:8px}
+.tm-row .tm-btn{flex:1}
+.tm-btn.pz{background:var(--ink2)}
+.tm-hint{text-align:center;font-size:11px;color:var(--ink3);margin-top:6px}
 .tm-now{text-align:center;font-size:12px;color:var(--ink2);min-height:18px}
 .tm-btn{display:block;width:100%;margin-top:10px;padding:15px;border:none;border-radius:var(--radius);font:900 16px var(--font);color:#fff;background:var(--ink);cursor:pointer}
 .tm-btn.stop{background:var(--danger)}
@@ -5171,9 +5185,11 @@ function timerCard(st){
   const last = SD.sessions.length ? SD.sessions[SD.sessions.length-1] : null;
   return `<div class="sv-card"><h3>⏱ 勉強タイマー<span class="sub">${run?'計測中':'教科を選んでスタート'}</span></h3>
     <div class="tm-subj">${subs.map(s=>`<button style="--c:${SUBJ_COLOR[s]||'#2a6b4e'}" aria-pressed="${s===sel}" ${run?'disabled':''} onclick="sdTimerPick='${s}';renderStudy()">${s}</button>`).join('')}</div>
-    <div class="tm-clock ${run?'run':''}" id="tm-clock">${run?'':'00:00:00'}</div>
-    <div class="tm-now">${run?`${esc_(SD.timer.subj)} を勉強中…(スマホを閉じても計り続けます)`:''}</div>
-    ${run?`<button class="tm-btn stop" onclick="sdTimerStop()">■ ストップして記録</button>`:`<button class="tm-btn" onclick="sdTimerStart()">▶ スタート</button>`}
+    ${run?'':`<div class="tm-goal"><span>🎯 目標</span>${TM_GOALS.map(g=>`<button aria-pressed="${tmGoal()===g}" onclick="tmSetGoal(${g})">${g?g+'分':'なし'}</button>`).join('')}<button class="tm-snd" onclick="tmToggleSound()" title="音のオン・オフ">${tmSound()?'🔊':'🔇'}</button></div>`}
+    <div class="tm-clock ${run?(SD.timer.pausedAt?'pause':'run'):''}" id="tm-clock">${run?tmFmt(tmElapsed(SD.timer)):'00:00:00'}</div>
+    ${run&&SD.timer.goal?`<div class="tm-gbar"><i id="tm-gfill" style="width:${Math.min(100,tmElapsed(SD.timer)/(SD.timer.goal*6e4)*100)}%"></i></div><div class="tm-gtxt" id="tm-gtxt">${tmGoalText(SD.timer)}</div>`:''}
+    <div class="tm-now">${run?(SD.timer.pausedAt?`⏸ 一時停止中(${esc_(SD.timer.subj)})`:`${esc_(SD.timer.subj)} を勉強中…(スマホを閉じても計り続けます)`):''}</div>
+    ${run?`<div class="tm-row">${SD.timer.pausedAt?`<button class="tm-btn" onclick="sdTimerResume()">▶ 再開</button>`:`<button class="tm-btn pz" onclick="sdTimerPause()">⏸ 一時停止</button>`}<button class="tm-btn stop" onclick="sdTimerStop()">■ ストップして記録</button></div>${SD.timer.goal&&!SD.timer.rang?`<div class="tm-hint">目標の時間になると音でお知らせ(画面を開いているとき)</div>`:''}`:`<button class="tm-btn" onclick="sdTimerStart()">▶ スタート</button>`}
     <div class="tm-bar">${total?subs.filter(s=>per[s]>0).map(s=>`<i style="width:${per[s]/total*100}%;background:${SUBJ_COLOR[s]}"></i>`).join(''):''}</div>
     <div class="tm-legend">${subs.map(s=>`<span class="${per[s]?'':'zero'}"><i class="dot" style="background:${per[s]?SUBJ_COLOR[s]:'#ddd'}"></i>${s} <b>${fmtMin(per[s])}</b></span>`).join('')}</div>
     <div class="tm-total"><span>今日の合計 <b>${fmtMin(total)}</b></span><span>この7日間 <b>${fmtMin(week)}</b></span></div>
@@ -5375,17 +5391,61 @@ function sdHistGet(k){ sdAutoArchive(currentStudent); return (SD.history||[]).fi
 function sdHistScore(k, sj, v){ const h = sdHistGet(k); if(!h) return; h.scores = h.scores||{}; const n = parseInt(v,10); if(isNaN(n)) delete h.scores[sj]; else h.scores[sj] = Math.max(0, Math.min(100, n)); sdSave(); }
 function sdHistTerm(k, t){ const h = sdHistGet(k); if(!h) return; h.term = t; sdSave(); renderStudy(); }
 let sdTimerPick = null;
+/* ---------- ストップウォッチ:一時停止・目標時間・音 ----------
+   一時停止していた時間は勉強時間に入れない。目標の時間になったらチャイムとバイブでお知らせ */
+const TM_GOALS = [0, 10, 15, 25, 30, 45, 60];
+function tmGoal(){ try{ return +(localStorage.getItem('yk-timer-goal')||0); }catch(e){ return 0; } }
+function tmSetGoal(g){ try{ localStorage.setItem('yk-timer-goal', g); }catch(e){} tmBeep('tap'); renderStudy(); }
+function tmSound(){ try{ return localStorage.getItem('yk-timer-sound')!=='off'; }catch(e){ return true; } }
+function tmToggleSound(){ try{ localStorage.setItem('yk-timer-sound', tmSound()?'off':'on'); }catch(e){} tmBeep('tap'); renderStudy(); }
+function tmElapsed(t){ if(!t || !t.start) return 0; return Math.max(0, (t.pausedAt||Date.now()) - t.start - (t.pausedMs||0)); }
+function tmFmt(ms){ const s = Math.floor(ms/1000); return [Math.floor(s/3600), Math.floor(s/60)%60, s%60].map(n=>String(n).padStart(2,'0')).join(':'); }
+function tmGoalText(t){
+  const left = t.goal*6e4 - tmElapsed(t);
+  if(left > 0){ const s = Math.ceil(left/1000); return `目標 ${t.goal}分まで あと <b>${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}</b>`; }
+  const s = Math.floor(-left/1000); return `🎉 目標の${t.goal}分 達成！ <b>+${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}</b>`;
+}
+let tmAC = null;
+function tmBeep(kind){
+  if(!tmSound()) return;
+  try{
+    tmAC = tmAC || new (window.AudioContext||window.webkitAudioContext)();
+    if(tmAC.state==='suspended') tmAC.resume();
+    const seq = {start:[[660,0,.12],[990,.12,.18]], pause:[[520,0,.16]], resume:[[520,0,.1],[780,.1,.14]], stop:[[880,0,.12],[660,.12,.12],[440,.24,.22]], tap:[[1200,0,.05]],
+      goal:[[784,0,.25],[988,.25,.25],[1175,.5,.25],[1568,.75,.6],[784,1.6,.25],[988,1.85,.25],[1175,2.1,.25],[1568,2.35,.8]]}[kind] || [];
+    const now = tmAC.currentTime;
+    seq.forEach(([f,at,d])=>{
+      const o = tmAC.createOscillator(), g = tmAC.createGain();
+      o.type = kind==='goal' ? 'triangle' : 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, now+at); g.gain.exponentialRampToValueAtTime(kind==='goal'?.35:.22, now+at+.02); g.gain.exponentialRampToValueAtTime(0.0001, now+at+d);
+      o.connect(g); g.connect(tmAC.destination); o.start(now+at); o.stop(now+at+d+.05);
+    });
+  }catch(e){}
+}
+function tmCheckGoal(){
+  const t = SD && SD.timer; if(!t || !t.start || !t.goal || t.rang || t.pausedAt) return;
+  if(tmElapsed(t) >= t.goal*6e4){
+    t.rang = true; sdSave(); tmBeep('goal');
+    try{ navigator.vibrate && navigator.vibrate([300,150,300,150,600]); }catch(e){}
+    showToast(`🎉 目標の${t.goal}分 達成！このまま続けてもOK`); renderStudy();
+  }
+}
+function sdTimerPause(){ const t = SD.timer; if(!t.start || t.pausedAt) return; t.pausedAt = Date.now(); tmBeep('pause'); sdSave(); renderStudy(); }
+function sdTimerResume(){ const t = SD.timer; if(!t.start || !t.pausedAt) return; t.pausedMs = (t.pausedMs||0) + (Date.now() - t.pausedAt); t.pausedAt = null; tmBeep('resume'); sdSave(); renderStudy(); }
 function sdTimerStart(){
   const st = currentStudent; const subs=[...studySubjects(st),'その他'];
-  SD.timer = {subj: sdTimerPick || subs[0], start: Date.now()}; sdSave(); renderStudy();
+  SD.timer = {subj: sdTimerPick || subs[0], start: Date.now(), pausedAt:null, pausedMs:0, goal: tmGoal(), rang:false}; tmBeep('start'); sdSave(); renderStudy();
 }
 function sdTimerStop(){
   const t = SD.timer; if(!t.start) return;
-  let end = Date.now();
-  const capped = end - t.start > TIMER_MAX_MIN*6e4;
-  if(capped) end = t.start + TIMER_MAX_MIN*6e4;
-  const min = (end-t.start)/6e4;
-  if(min >= 1) SD.sessions.push({s:t.subj, a:t.start, b:end});
+  let end = t.pausedAt || Date.now();
+  let active = tmElapsed(t);
+  const capped = active > TIMER_MAX_MIN*6e4;
+  if(capped) active = TIMER_MAX_MIN*6e4;
+  const min = active/6e4;
+  tmBeep('stop');
+  // 一時停止の時間は入れずに記録(勉強していた時間だけ)
+  if(min >= 1) SD.sessions.push({s:t.subj, a:end - active, b:end});
   SD.timer = {subj:null, start:null}; sdTimerPick = t.subj;
   sdSave(); renderStudy();
   showToast(min<1 ? '1分未満なので記録しませんでした' : capped ? `止め忘れかも？ ${TIMER_MAX_MIN/60}時間で記録しました` : `${t.subj} ${fmtMin(min)} 記録しました！`);
@@ -5397,8 +5457,10 @@ function sdStartTick(){
   if(!SD) return;
   if(!SD.timer.start){ if(document.getElementById('cz-count')) sdTick=setInterval(sdCountdown,1000); return; }
   const upd = ()=>{ const el=document.getElementById('tm-clock'); if(!el||!SD.timer.start) return;
-    const s = Math.floor((Date.now()-SD.timer.start)/1000);
-    el.textContent = [Math.floor(s/3600), Math.floor(s/60)%60, s%60].map(n=>String(n).padStart(2,'0')).join(':'); };
+    el.textContent = tmFmt(tmElapsed(SD.timer));
+    const gf=document.getElementById('tm-gfill'), gt=document.getElementById('tm-gtxt');
+    if(gf && SD.timer.goal){ gf.style.width = Math.min(100, tmElapsed(SD.timer)/(SD.timer.goal*6e4)*100)+'%'; gt.innerHTML = tmGoalText(SD.timer); }
+    tmCheckGoal(); };
   upd(); sdTick = setInterval(()=>{ upd(); sdCountdown(); }, 1000);
 }
 
