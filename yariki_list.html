@@ -5393,7 +5393,7 @@ function sdHistTerm(k, t){ const h = sdHistGet(k); if(!h) return; h.term = t; sd
 let sdTimerPick = null;
 /* ---------- ストップウォッチ:一時停止・目標時間・音 ----------
    一時停止していた時間は勉強時間に入れない。目標の時間になったらチャイムとバイブでお知らせ */
-const TM_GOALS = [0, 10, 15, 25, 30, 45, 60];
+const TM_GOALS = [0, 10, 15, 20, 25, 30, 45, 60];
 function tmGoal(){ try{ return +(localStorage.getItem('yk-timer-goal')||0); }catch(e){ return 0; } }
 function tmSetGoal(g){ try{ localStorage.setItem('yk-timer-goal', g); }catch(e){} tmBeep('tap'); renderStudy(); }
 function tmSound(){ try{ return localStorage.getItem('yk-timer-sound')!=='off'; }catch(e){ return true; } }
